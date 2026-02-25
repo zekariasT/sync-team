@@ -1,0 +1,11 @@
+# Dependencies
+node_modules/
+.next/
+dist/
+
+# Env secrets
+.env
+
+# Database
+prisma/dev.db (if using sqlite)
+*.log
