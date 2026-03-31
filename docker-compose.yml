@@ -1,0 +1,14 @@
+services:
+  db:
+    image: mariadb:11.4
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: sync_team
+    ports:
+      - "3307:3306" # Mapped to 3307 to avoid conflict with potential local MySQL/MariaDB
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:
