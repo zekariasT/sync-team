@@ -21,6 +21,6 @@ export default function MemberClock({ timezone }: { timezone: string }) {
 
     }, [timezone])
 
-    return <span className="font-mono text-cyan-400">{time}</span>;
+    return <span className="font-mono text-primary font-bold">{time}</span>;
     
 }

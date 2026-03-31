@@ -14,32 +14,14 @@ echo -e "${BLUE}Starting Sync Team Development Environment...${NC}"
 if [ ! -f backend/.env ]; then
   echo -e "${RED}Warning: backend/.env file not found.${NC}"
   echo -e "The backend requires a DATABASE_URL to run. Please create backend/.env with your MariaDB connection string."
-  echo -e "Example: DATABASE_URL=\"mysql://root:password@localhost:3306/sync_team\""
 fi
 
-# Function to kill background processes on exit
-cleanup() {
-  echo -e "\n${BLUE}Shutting down services...${NC}"
-  kill $(jobs -p)
-  exit
-}
-
-trap cleanup SIGINT SIGTERM
-
-# Start Backend in background
-echo -e "${GREEN}Starting Backend on port 3001...${NC}"
-(cd backend && bun run start:dev) &
-
-# Give backend a moment to start
-sleep 2
-
-# Start Frontend in background
-echo -e "${GREEN}Starting Frontend on port 3000...${NC}"
-(cd frontend && bun run dev) &
-
-# Start Prisma Studio in background
-echo -e "${GREEN}Starting Prisma Studio on port 5555...${NC}"
-(cd backend && npx prisma studio) &
-
-# Keep script running
-wait
+# Run all services concurrently with clean, color-coded logs
+concurrently \
+  --kill-others \
+  --prefix "[{name}]" \
+  --names "BACKEND,FRONTEND,STUDIO" \
+  --prefix-colors "blue,green,magenta" \
+  "cd backend && bun run start:dev" \
+  "cd frontend && bun run dev" \
+  "cd backend && npx prisma studio"
