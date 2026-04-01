@@ -43,10 +43,10 @@ export default function AiSummaryPanel({ teamId, teamName }: AiSummaryPanelProps
     return (
       <button
         onClick={() => { setIsOpen(true); handleSummarize(); }}
-        className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-violet-600/20 to-indigo-600/20 border border-violet-500/20 hover:border-violet-500/40 rounded-xl text-sm font-semibold text-violet-300 hover:text-violet-200 transition-all group"
+        className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-violet-600/20 to-indigo-600/20 border border-violet-500/20 hover:border-violet-500/40 rounded-xl text-xs font-semibold text-violet-300 hover:text-violet-200 transition-all group w-full mb-1"
       >
-        <Sparkles size={16} className="group-hover:animate-pulse" />
-        AI Summary
+        <Sparkles size={14} className="group-hover:animate-pulse shrink-0" />
+        <span className="truncate">Summary: {teamName}</span>
       </button>
     );
   }
@@ -77,15 +77,15 @@ export default function AiSummaryPanel({ teamId, teamName }: AiSummaryPanelProps
         <div className="flex-1 overflow-y-auto p-6">
           {loading && (
             <div className="flex flex-col items-center justify-center py-16 gap-4">
-              <div className="relative">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-600/20 to-indigo-600/20 flex items-center justify-center">
+              <div className="relative w-16 h-16">
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-600/20 to-indigo-600/20 flex items-center justify-center">
                   <Sparkles size={28} className="text-violet-400 animate-pulse" />
                 </div>
-                <Loader2 size={56} className="absolute -inset-2 text-violet-500/30 animate-spin" />
+                <Loader2 size={72} className="absolute -inset-[4px] text-violet-500/40 animate-spin" />
               </div>
-              <div className="text-center">
+              <div className="text-center mt-2">
                 <p className="text-sm font-semibold text-text">Analyzing team activity...</p>
-                <p className="text-xs text-primary/40 mt-1 font-mono">GATHERING PULSES + MESSAGES → GEMINI</p>
+                <p className="text-[10px] text-primary/40 mt-1 font-mono tracking-widest uppercase">GATHERING PULSES + MESSAGES → GEMINI</p>
               </div>
             </div>
           )}
