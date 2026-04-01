@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 
-export async function updatePulse(id: number, formData: FormData) {
+export async function updatePulse(id: string, formData: FormData) {
   const status = formData.get('status') as string;
 
   if (!status) return;

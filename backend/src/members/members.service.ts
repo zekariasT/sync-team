@@ -6,17 +6,36 @@ export class MembersService {
   constructor(private prisma: PrismaService) {}
 
   async findAll() {
-    return await this.prisma.member.findMany(); 
+    return await this.prisma.user.findMany(); 
   }
 
-  async update(id: number, status: string) {
+  async update(id: string, status: string) {
     try {
-      return await this.prisma.member.update({
+      return await this.prisma.user.update({
         where: { id },
-        data: { status }
+        data: { status },
+        include: { teamMembers: true }
       });
     } catch (error) {
-       throw new NotFoundException(`Member with ID ${id} not found`);
+       throw new NotFoundException(`User with ID ${id} not found`);
     }
+  }
+
+  async syncUser(data: { id: string, email: string, name: string, avatar?: string | null }) {
+    return this.prisma.user.upsert({
+      where: { id: data.id },
+      update: {
+        email: data.email,
+        name: data.name,
+        avatar: data.avatar || null,
+      },
+      create: {
+        id: data.id,
+        email: data.email,
+        name: data.name,
+        avatar: data.avatar || null,
+        status: 'Available',
+      },
+    });
   }
 }
