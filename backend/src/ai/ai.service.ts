@@ -93,4 +93,25 @@ Keep the summary concise (under 300 words). Use a professional but friendly tone
       };
     }
   }
+
+  async transcribeAudio(buffer: Buffer, mimeType: string): Promise<string> {
+    try {
+      const response = await this.ai.models.generateContent({
+        model: 'gemini-2.5-flash-lite',
+        contents: [
+          {
+            inlineData: {
+              data: buffer.toString("base64"),
+              mimeType: mimeType,
+            }
+          },
+          { text: "Please transcribe the audio from this video. Return only the transcription text, nothing else." }
+        ],
+      });
+      return response.text || '';
+    } catch (error: any) {
+      console.error('Transcription failed:', error.message);
+      return '';
+    }
+  }
 }

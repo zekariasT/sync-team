@@ -24,18 +24,21 @@ model User {
   sentMessages   Message[]       @relation("SentMessages")
   sentDMs        DirectMessage[] @relation("SentDMs")
   receivedDMs    DirectMessage[] @relation("ReceivedDMs")
+  sentVideos     VideoMessage[]  @relation("SentVideos")
+  videoReactions VideoReaction[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 }
 
 model Team {
-  id          String       @id @default(cuid())
+  id          String         @id @default(cuid())
   name        String
   description String?
   members     TeamMember[]
   channels    Channel[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  videos      VideoMessage[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 }
 
 enum Role {
@@ -94,4 +97,33 @@ model DirectMessage {
   receiver   User     @relation("ReceivedDMs", fields: [receiverId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+// --- Loom-style Async Video Messaging ---
+
+model VideoMessage {
+  id          String          @id @default(cuid())
+  teamId      String
+  senderId    String
+  title       String?
+  videoUrl    String          // Cloudinary URL
+  duration    Float?          // seconds
+  transcript  String?         @db.Text
+  team        Team            @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  sender      User            @relation("SentVideos", fields: [senderId], references: [id], onDelete: Cascade)
+  reactions   VideoReaction[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model VideoReaction {
+  id          String       @id @default(cuid())
+  videoId     String
+  userId      String
+  timestamp   Float        // Seconds into the video
+  emoji       String?
+  comment     String?      @db.Text
+  video       VideoMessage @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime     @default(now())
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
-import { Hash, Radio, Plus, MessageSquare, Users, ChevronDown, ChevronRight } from 'lucide-react';
+import { Hash, Radio, Plus, MessageSquare, Users, ChevronDown, ChevronRight, Video } from 'lucide-react';
 import AiSummaryPanel from './AiSummaryPanel';
 
 interface Channel {
@@ -18,8 +18,8 @@ interface Team {
 }
 
 interface SidebarProps {
-  activeView: 'pulse' | 'chat';
-  onViewChange: (view: 'pulse' | 'chat') => void;
+  activeView: 'pulse' | 'chat' | 'videos';
+  onViewChange: (view: 'pulse' | 'chat' | 'videos') => void;
   activeChannelId: string | null;
   onChannelSelect: (channelId: string) => void;
 }
@@ -114,6 +114,16 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
         >
           <MessageSquare size={14} />
           Chat
+        </button>
+        <button
+          onClick={() => onViewChange('videos')}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold uppercase tracking-wider transition-all
+            ${activeView === 'videos' 
+              ? 'text-secondary border-b-2 border-secondary bg-secondary/5' 
+              : 'text-primary/50 hover:text-primary hover:bg-primary/5'}`}
+        >
+          <Video size={14} />
+          Videos
         </button>
       </div>
 

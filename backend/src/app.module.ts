@@ -11,10 +11,11 @@ import { RolesGuard } from './auth/roles.guard.js';
 import { ChatModule } from './chat/chat.module.js';
 import { TeamsController } from './teams/teams.controller.js';
 import { AiModule } from './ai/ai.module.js';
+import { VideoModule } from './video/video.module.js';
 
 @Global()
 @Module({
-  imports: [ChatModule, AiModule],
+  imports: [ChatModule, AiModule, VideoModule],
   controllers: [AppController, MembersController, TeamsController],
   providers: [
     AppService, 

@@ -178,7 +178,7 @@ export default function ChatArea({ channelId, channelName }: ChatAreaProps) {
                       <span className="text-[10px] text-primary/0 group-hover:text-primary/40 font-mono w-10 pt-0.5 shrink-0 transition-colors">
                         {formatTime(msg.createdAt)}
                       </span>
-                      <p className="text-sm text-text/90 leading-relaxed">{msg.content}</p>
+                      <p className="text-sm text-text/90 leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                     </div>
                   ) : (
                     /* Full message with avatar */
@@ -197,7 +197,7 @@ export default function ChatArea({ channelId, channelName }: ChatAreaProps) {
                           <span className="font-bold text-sm text-text">{msg.sender?.name || 'Unknown'}</span>
                           <span className="text-[10px] text-primary/40 font-mono">{formatTime(msg.createdAt)}</span>
                         </div>
-                        <p className="text-sm text-text/90 leading-relaxed mt-0.5">{msg.content}</p>
+                        <p className="text-sm text-text/90 leading-relaxed mt-0.5 whitespace-pre-wrap">{msg.content}</p>
                       </div>
                     </div>
                   );
@@ -212,18 +212,34 @@ export default function ChatArea({ channelId, channelName }: ChatAreaProps) {
       {/* Message Input */}
       <div className="px-5 pb-5 pt-2 shrink-0">
         <div className="flex items-end gap-2 bg-primary/5 border border-primary/15 rounded-xl p-2 focus-within:border-secondary/50 transition-colors">
-          <input
-            type="text"
+          <textarea
+            rows={1}
             value={newMessage}
-            onChange={e => setNewMessage(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+            onChange={e => {
+              setNewMessage(e.target.value);
+              // Auto-resize
+              e.target.style.height = 'auto';
+              e.target.style.height = e.target.scrollHeight + 'px';
+            }}
+            onKeyDown={e => { 
+                if (e.key === 'Enter' && !e.shiftKey) { 
+                    e.preventDefault(); 
+                    handleSend(); 
+                    // Reset height
+                    (e.target as HTMLTextAreaElement).style.height = 'auto';
+                } 
+            }}
             placeholder={`Message #${channelName || 'channel'}...`}
-            className="flex-1 bg-transparent text-sm text-text px-2 py-2 focus:outline-none placeholder:text-primary/30 resize-none"
+            className="flex-1 bg-transparent text-sm text-text px-2 py-2 focus:outline-none placeholder:text-primary/30 resize-none max-h-32 min-h-[40px]"
           />
           <button
-            onClick={handleSend}
+            onClick={() => {
+                handleSend();
+                const textarea = document.querySelector('textarea');
+                if (textarea) textarea.style.height = 'auto';
+            }}
             disabled={!newMessage.trim()}
-            className="p-2 rounded-lg bg-secondary hover:bg-secondary/80 text-background disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            className="p-2 mb-1 rounded-lg bg-secondary hover:bg-secondary/80 text-background disabled:opacity-30 disabled:cursor-not-allowed transition-all shrink-0"
           >
             <Send size={16} />
           </button>

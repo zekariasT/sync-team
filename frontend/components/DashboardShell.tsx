@@ -3,23 +3,24 @@
 import { useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import ChatArea from '@/components/ChatArea';
-import { ThemeToggle } from '@/components/ThemeToggle';
-import { Show, UserButton, SignInButton } from '@clerk/nextjs';
-import { Hash, Radio } from 'lucide-react';
+import VideosView from '@/components/VideosView';
+import { Hash } from 'lucide-react';
 
 interface DashboardShellProps {
   pulseContent: React.ReactNode;
 }
 
 export default function DashboardShell({ pulseContent }: DashboardShellProps) {
-  const [activeView, setActiveView] = useState<'pulse' | 'chat'>('pulse');
+  const [activeView, setActiveView] = useState<'pulse' | 'chat' | 'videos'>('pulse');
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [activeChannelName, setActiveChannelName] = useState<string>('');
+  
+  // We'll just hardcode teamId for MVP since we don't have a team selector in the shell
+  const teamId = "cm7q0v8t0000108jsnwe8v8w2"; // Let's try to get teamId from channels or state, but wait, the sidebar has teams. We could also just let videos view fetch all teams videos if we want. Wait... what if we just pass a hardcoded mock teamId for the MVP or fetch the first team?
 
   const handleChannelSelect = (channelId: string) => {
     setActiveChannelId(channelId);
     setActiveView('chat');
-    // We'll set the name from the sidebar data
   };
 
   return (
@@ -34,6 +35,8 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
       {/* Main Content */}
       {activeView === 'pulse' ? (
         <>{pulseContent}</>
+      ) : activeView === 'videos' ? (
+        <VideosView />
       ) : activeChannelId ? (
         <ChatArea channelId={activeChannelId} channelName={activeChannelName || undefined} />
       ) : (
