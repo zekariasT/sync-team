@@ -1,9 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 import ChatArea from '@/components/ChatArea';
 import VideosView from '@/components/VideosView';
+import BoardView from '@/components/BoardView';
+import CycleView from '@/components/CycleView';
+import RoadmapView from '@/components/RoadmapView';
+import CommandPalette from '@/components/CommandPalette';
 import { Hash } from 'lucide-react';
 
 interface DashboardShellProps {
@@ -11,20 +15,59 @@ interface DashboardShellProps {
 }
 
 export default function DashboardShell({ pulseContent }: DashboardShellProps) {
-  const [activeView, setActiveView] = useState<'pulse' | 'chat' | 'videos'>('pulse');
+  const [activeView, setActiveView] = useState<'pulse' | 'chat' | 'videos' | 'tasks' | 'cycles' | 'roadmap'>('pulse');
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [activeChannelName, setActiveChannelName] = useState<string>('');
-  
-  // We'll just hardcode teamId for MVP since we don't have a team selector in the shell
-  const teamId = "cm7q0v8t0000108jsnwe8v8w2"; // Let's try to get teamId from channels or state, but wait, the sidebar has teams. We could also just let videos view fetch all teams videos if we want. Wait... what if we just pass a hardcoded mock teamId for the MVP or fetch the first team?
+  const [isCmdkOpen, setIsCmdkOpen] = useState(false);
+  const [teamId, setTeamId] = useState<string>('');
+
+  useEffect(() => {
+    fetch('http://localhost:3001/teams')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.length > 0) {
+          const seedTeam = data.find((t: any) => t.id === 'seed-team-id');
+          setTeamId(seedTeam ? seedTeam.id : data[0].id);
+        }
+      });
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // CMD/CTRL + K -> Open command palette
+      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setIsCmdkOpen(true);
+      }
+      // Pressing 'c' outside inputs to create task
+      if (e.key.toLowerCase() === 'c' && !isCmdkOpen && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        setActiveView('tasks');
+        // A full implementation would pop open a strictly "New Task" modal here.
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isCmdkOpen]);
 
   const handleChannelSelect = (channelId: string) => {
     setActiveChannelId(channelId);
     setActiveView('chat');
   };
 
+  const handleCommandPaletteAction = (action: string) => {
+    if (action === 'create_task') setActiveView('tasks');
+    if (action === 'create_cycle') setActiveView('cycles');
+    if (action === 'create_channel') setActiveView('chat'); // Would normally open channel modal
+  };
+
   return (
     <div className="flex h-screen bg-background text-text overflow-hidden">
+      <CommandPalette 
+        isOpen={isCmdkOpen} 
+        onClose={() => setIsCmdkOpen(false)} 
+        onSelectAction={handleCommandPaletteAction} 
+      />
       <Sidebar
         activeView={activeView}
         onViewChange={setActiveView}
@@ -37,9 +80,15 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
         <>{pulseContent}</>
       ) : activeView === 'videos' ? (
         <VideosView />
-      ) : activeChannelId ? (
+      ) : activeView === 'tasks' ? (
+        <BoardView teamId={teamId} />
+      ) : activeView === 'cycles' ? ( 
+        <CycleView teamId={teamId} />
+      ) : activeView === 'roadmap' ? (
+        <RoadmapView teamId={teamId} />
+      ) : activeView === 'chat' && activeChannelId ? (
         <ChatArea channelId={activeChannelId} channelName={activeChannelName || undefined} />
-      ) : (
+      ) : activeView === 'chat' ? (
         /* No channel selected placeholder */
         <div className="flex-1 flex items-center justify-center h-screen bg-background">
           <div className="text-center">
@@ -52,7 +101,7 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
             </p>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

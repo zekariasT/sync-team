@@ -18,8 +18,8 @@ interface Team {
 }
 
 interface SidebarProps {
-  activeView: 'pulse' | 'chat' | 'videos';
-  onViewChange: (view: 'pulse' | 'chat' | 'videos') => void;
+  activeView: 'pulse' | 'chat' | 'videos' | 'tasks' | 'cycles' | 'roadmap';
+  onViewChange: (view: 'pulse' | 'chat' | 'videos' | 'tasks' | 'cycles' | 'roadmap') => void;
   activeChannelId: string | null;
   onChannelSelect: (channelId: string) => void;
 }
@@ -86,7 +86,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
   };
 
   return (
-    <aside className="w-64 h-screen bg-background border-r border-primary/15 flex flex-col shrink-0 overflow-hidden">
+    <aside className="w-64 bg-background border-r border-primary/15 flex flex-col h-screen shadow-[4px_0_24px_rgba(33,35,40,0.5)] z-20 relative">
       {/* Logo */}
       <div className="p-4 border-b border-primary/15">
         <h1 className="text-lg font-black tracking-tighter text-primary">SYNCPOINT_OS</h1>
@@ -94,36 +94,65 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
       </div>
 
       {/* Nav Tabs */}
-      <div className="flex border-b border-primary/15">
+      <div className="flex flex-col p-2 gap-1 border-b border-primary/15">
+        <div className="text-xs font-bold text-primary/50 uppercase tracking-wider px-2 py-2">Workspace</div>
         <button
           onClick={() => onViewChange('pulse')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold uppercase tracking-wider transition-all
+          className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all
             ${activeView === 'pulse' 
-              ? 'text-secondary border-b-2 border-secondary bg-secondary/5' 
-              : 'text-primary/50 hover:text-primary hover:bg-primary/5'}`}
+              ? 'bg-secondary/10 text-secondary' 
+              : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
         >
-          <Radio size={14} />
-          Pulse
+          <Radio size={16} /> Heartbeat
         </button>
         <button
           onClick={() => onViewChange('chat')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold uppercase tracking-wider transition-all
+          className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all
             ${activeView === 'chat' 
-              ? 'text-secondary border-b-2 border-secondary bg-secondary/5' 
-              : 'text-primary/50 hover:text-primary hover:bg-primary/5'}`}
+              ? 'bg-secondary/10 text-secondary' 
+              : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
         >
-          <MessageSquare size={14} />
-          Chat
+          <MessageSquare size={16} /> Channels
         </button>
         <button
           onClick={() => onViewChange('videos')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold uppercase tracking-wider transition-all
+          className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all
             ${activeView === 'videos' 
-              ? 'text-secondary border-b-2 border-secondary bg-secondary/5' 
-              : 'text-primary/50 hover:text-primary hover:bg-primary/5'}`}
+              ? 'bg-secondary/10 text-secondary' 
+              : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
         >
-          <Video size={14} />
-          Videos
+          <Video size={16} /> Sync Videos
+        </button>
+      </div>
+
+      <div className="flex flex-col p-2 gap-1 border-b border-primary/15">
+        <div className="text-xs font-bold text-primary/50 uppercase tracking-wider px-2 py-2">Linear Tasks</div>
+        <button
+          onClick={() => onViewChange('tasks')}
+          className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all
+            ${activeView === 'tasks' 
+              ? 'bg-secondary/10 text-secondary' 
+              : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
+        >
+          <div className="w-4 h-4 rounded-full border-2 border-current opacity-70" /> Board
+        </button>
+        <button
+          onClick={() => onViewChange('cycles')}
+          className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all
+            ${activeView === 'cycles' 
+              ? 'bg-secondary/10 text-secondary' 
+              : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
+        >
+          <div className="flex gap-0.5 items-end h-4 w-4 opacity-70"><div className="w-1 h-2 bg-current rounded-sm"/><div className="w-1 h-4 bg-current rounded-sm"/><div className="w-1 h-3 bg-current rounded-sm"/></div> Cycles
+        </button>
+        <button
+          onClick={() => onViewChange('roadmap')}
+          className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all
+            ${activeView === 'roadmap' 
+              ? 'bg-secondary/10 text-secondary' 
+              : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
+        >
+          <div className="w-4 h-4 rounded-full border border-current opacity-70 flex items-center justify-center"><div className="w-1.5 h-1.5 bg-current rounded-full" /></div> Roadmap
         </button>
       </div>
 

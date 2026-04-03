@@ -127,7 +127,39 @@ async function main() {
     }
   }
 
+  // 5. Create dummy Tasks across all board states
+  const dummyTasks = [
+    // TODO
+    { title: 'Design onboarding flow wireframes', state: 'TODO', assigneeId: 'user-elena', reporterId: 'user-sarah' },
+    { title: 'Set up error monitoring with Sentry', state: 'TODO', assigneeId: 'user-marcus', reporterId: 'user-sarah' },
+    { title: 'Write API docs for /members endpoint', state: 'TODO', reporterId: 'user-jamal' },
+    // IN_PROGRESS
+    { title: 'Implement Kanban drag-and-drop board', state: 'IN_PROGRESS', assigneeId: 'user-marcus', reporterId: 'user-sarah' },
+    { title: 'Build async video transcription pipeline', state: 'IN_PROGRESS', assigneeId: 'user-sarah', reporterId: 'user-sarah' },
+    { title: 'Migrate DB to use Prisma migrations', state: 'IN_PROGRESS', assigneeId: 'user-jamal', reporterId: 'user-marcus' },
+    // IN_REVIEW
+    { title: 'Add timestamped video reactions', state: 'IN_REVIEW', assigneeId: 'user-sarah', reporterId: 'user-marcus' },
+    { title: 'Fix WebSocket room cleanup on disconnect', state: 'IN_REVIEW', assigneeId: 'user-jamal', reporterId: 'user-marcus' },
+    // DONE
+    { title: 'Scaffold NestJS backend with Prisma', state: 'DONE', assigneeId: 'user-marcus', reporterId: 'user-sarah' },
+    { title: 'Deploy Prisma schema to MariaDB', state: 'DONE', assigneeId: 'user-sarah', reporterId: 'user-sarah' },
+    { title: 'Set up Clerk auth integration', state: 'DONE', assigneeId: 'user-elena', reporterId: 'user-marcus' },
+  ];
+
+  for (const task of dummyTasks) {
+    await prisma.task.create({
+      data: {
+        teamId: team.id,
+        title: task.title,
+        state: task.state as any,
+        assigneeId: (task as any).assigneeId || null,
+        reporterId: task.reporterId,
+      },
+    });
+  }
+
   console.log('Seed completed successfully!');
+
 }
 
 main()
