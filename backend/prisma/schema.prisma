@@ -26,10 +26,11 @@ model User {
   receivedDMs    DirectMessage[] @relation("ReceivedDMs")
   sentVideos     VideoMessage[]  @relation("SentVideos")
   videoReactions VideoReaction[]
-  assignedTasks  Task[]          @relation("AssignedTasks")
-  reportedTasks  Task[]          @relation("ReportedTasks")
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  assignedTasks     Task[]          @relation("AssignedTasks")
+  reportedTasks     Task[]          @relation("ReportedTasks")
+  uploadedDocuments Document[]      @relation("UploadedDocuments")
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 }
 
 model Team {
@@ -42,6 +43,7 @@ model Team {
   projects    Project[]
   cycles      Cycle[]
   tasks       Task[]
+  documents   Document[]
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 }
@@ -182,4 +184,17 @@ model Task {
   project     Project?  @relation(fields: [projectId], references: [id])
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+// --- RAG Documentation Features ---
+
+model Document {
+  id          String   @id @default(cuid())
+  teamId      String
+  uploaderId  String
+  title       String
+  fileUrl     String   // URL to original document
+  team        Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  uploader    User     @relation("UploadedDocuments", fields: [uploaderId], references: [id])
+  createdAt   DateTime @default(now())
 }

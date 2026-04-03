@@ -13,10 +13,11 @@ import { TeamsController } from './teams/teams.controller.js';
 import { AiModule } from './ai/ai.module.js';
 import { VideoModule } from './video/video.module.js';
 import { TasksModule } from './tasks/tasks.module.js';
+import { KbModule } from './kb/kb.module.js';
 
 @Global()
 @Module({
-  imports: [ChatModule, AiModule, VideoModule, TasksModule],
+  imports: [ChatModule, AiModule, VideoModule, TasksModule, KbModule],
   controllers: [AppController, MembersController, TeamsController],
   providers: [
     AppService, 

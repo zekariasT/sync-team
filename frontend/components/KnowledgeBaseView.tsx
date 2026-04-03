@@ -1,0 +1,113 @@
+'use client';
+
+import { useState } from 'react';
+import { Database, Search, Bot, FileText } from 'lucide-react';
+import DocumentUploader from './DocumentUploader';
+
+export default function KnowledgeBaseView({ teamId }: { teamId?: string }) {
+  const [query, setQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [answer, setAnswer] = useState<string | null>(null);
+
+  const handleQuery = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!query.trim() || !teamId) return;
+
+    setIsSearching(true);
+    setAnswer(null);
+
+    try {
+      const res = await fetch(`http://localhost:3001/teams/${teamId}/kb/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
+      });
+      if (res.ok) {
+         const data = await res.json();
+         setAnswer(data.answer);
+      } else {
+         setAnswer('❌ Failed to get answer from Knowledge Base.');
+      }
+    } catch (err) {
+       console.error(err);
+       setAnswer('❌ Error connecting to RAG service.');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  return (
+    <div className="flex-1 flex flex-col bg-background overflow-y-auto p-6 max-w-5xl mx-auto w-full gap-6">
+      <header className="flex justify-between items-center shrink-0">
+        <h2 className="text-xl font-bold flex items-center gap-2">
+          <Database size={20} className="text-secondary" />
+          Knowledge Base (RAG)
+        </h2>
+      </header>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+        <div className="flex flex-col gap-4">
+           {teamId ? (
+             <DocumentUploader teamId={teamId} onUploadSuccess={() => {
+                alert('Document successfully embedded into Pinecone!');
+             }} />
+           ) : (
+             <div className="p-4 border border-primary/20 bg-primary/5 rounded-xl text-center text-sm text-primary/50">
+                Waiting for team context...
+             </div>
+           )}
+
+           <div className="border border-primary/20 bg-primary/5 p-6 rounded-xl relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-secondary/10 rounded-bl-full -mr-4 -mt-4 opacity-50 group-hover:scale-110 transition-transform"></div>
+              <h3 className="font-bold flex items-center gap-2 mb-2"><FileText size={16} className="text-secondary" /> Indexed Documents</h3>
+              <p className="text-sm text-primary/60 mb-3">All files uploaded here are securely vectorized and stored in a Pinecone vector database using Gemini embeddings, scoped exclusively to your team.</p>
+           </div>
+        </div>
+
+        <div className="flex flex-col border border-primary/20 bg-primary/5 rounded-xl overflow-hidden h-[500px]">
+           <div className="bg-background border-b border-primary/10 p-4 shrink-0 flex items-center gap-2">
+              <Bot size={18} className="text-secondary" />
+              <div className="font-bold text-sm">Ask the Knowledge Base</div>
+           </div>
+           
+           <div className="flex-1 p-4 overflow-y-auto text-sm">
+             {answer ? (
+                 <div className="bg-secondary/10 border border-secondary/20 p-4 rounded-lg text-text leading-relaxed prose prose-sm prose-invert max-w-none">
+                    {answer}
+                 </div>
+             ) : (
+                 <div className="h-full flex flex-col items-center justify-center text-center opacity-50">
+                    <Search size={32} className="mb-2 text-primary/40" />
+                    <p className="max-w-[200px]">Ask a question and the AI will consult your uploaded documents to find the answer.</p>
+                 </div>
+             )}
+           </div>
+
+           <div className="p-4 bg-background border-t border-primary/10 shrink-0">
+             <form onSubmit={handleQuery} className="relative">
+               <input
+                 type="text"
+                 value={query}
+                 onChange={e => setQuery(e.target.value)}
+                 disabled={isSearching}
+                 placeholder="E.g. What is our vacation policy?"
+                 className="w-full bg-primary/5 border border-primary/10 rounded-full pl-5 pr-12 py-3 text-sm focus:outline-none focus:border-secondary transition-colors"
+               />
+               <button 
+                  type="submit" 
+                  disabled={!query.trim() || isSearching}
+                  className="absolute right-2 top-2 bottom-2 w-8 flex items-center justify-center bg-secondary text-white rounded-full hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+               >
+                 {isSearching ? (
+                    <div className="w-3 h-3 border-2 border-white border-b-transparent rounded-full animate-spin"></div>
+                 ) : (
+                    <Search size={14} />
+                 )}
+               </button>
+             </form>
+           </div>
+        </div>
+      </div>
+    </div>
+  );
+}

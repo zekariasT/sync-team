@@ -1,0 +1,115 @@
+'use client';
+
+import { useState } from 'react';
+import { Upload, X, FileText, CheckCircle2 } from 'lucide-react';
+
+interface DocumentUploaderProps {
+  teamId: string;
+  onUploadSuccess: () => void;
+}
+
+export default function DocumentUploader({ teamId, onUploadSuccess }: DocumentUploaderProps) {
+  const [isUploading, setIsUploading] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleFile = async (file: File) => {
+    if (file.type !== 'application/pdf' && file.type !== 'text/plain') {
+      setError('Only PDF and Text files are supported right now.');
+      return;
+    }
+
+    if (!teamId) {
+      setError('No active team context.');
+      return;
+    }
+
+    setIsUploading(true);
+    setError(null);
+
+    try {
+      // Need a valid user ID, lets fetch the members to grab one for prototype purposes
+      let uploaderId = 'user-sarah';
+      const membersRes = await fetch('http://localhost:3001/members');
+      if (membersRes.ok) {
+        const members = await membersRes.json();
+        if (members && members.length > 0 && members[0].id) {
+          uploaderId = members[0].id;
+        }
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('uploaderId', uploaderId);
+
+      const res = await fetch(`http://localhost:3001/teams/${teamId}/kb/documents`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+         throw new Error(await res.text());
+      }
+      
+      onUploadSuccess();
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Upload failed');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  return (
+    <div className="w-full">
+      <div 
+        className={`w-full border-2 border-dashed rounded-xl p-8 transition-colors flex flex-col items-center justify-center text-center ${
+          dragActive ? 'border-secondary bg-secondary/5' : 'border-primary/20 bg-primary/5 hover:border-primary/40'
+        } ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}
+        onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+        onDragLeave={() => setDragActive(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragActive(false);
+          if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            handleFile(e.dataTransfer.files[0]);
+          }
+        }}
+      >
+        <div className="w-16 h-16 rounded-full bg-background border border-primary/20 flex items-center justify-center text-secondary mb-4 shadow-sm">
+          {isUploading ? (
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-secondary"></div>
+          ) : (
+            <Upload size={28} />
+          )}
+        </div>
+        <h3 className="text-lg font-bold text-text mb-1 flex items-center justify-center gap-2">
+          Drag & Drop Document Here
+        </h3>
+        <p className="text-sm text-primary/50 mb-6 max-w-sm">
+          Upload PDFs or Text files to the Knowledge Base. The AI will chunk, embed, and index them automatically.
+        </p>
+
+        <label className="cursor-pointer bg-secondary text-white px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-secondary/90 transition-colors">
+          Browse Files
+          <input 
+            type="file" 
+            className="hidden" 
+            accept=".pdf,.txt"
+            onChange={(e) => {
+               if (e.target.files && e.target.files[0]) {
+                 handleFile(e.target.files[0]);
+               }
+            }}
+          />
+        </label>
+
+        {error && (
+          <div className="mt-4 text-red-500 text-sm font-semibold flex items-center gap-1 bg-red-500/10 px-3 py-1.5 rounded-full">
+            <X size={14} /> {error}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

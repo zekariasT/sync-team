@@ -7,6 +7,7 @@ import VideosView from '@/components/VideosView';
 import BoardView from '@/components/BoardView';
 import CycleView from '@/components/CycleView';
 import RoadmapView from '@/components/RoadmapView';
+import KnowledgeBaseView from '@/components/KnowledgeBaseView';
 import CommandPalette from '@/components/CommandPalette';
 import { Hash } from 'lucide-react';
 
@@ -15,7 +16,7 @@ interface DashboardShellProps {
 }
 
 export default function DashboardShell({ pulseContent }: DashboardShellProps) {
-  const [activeView, setActiveView] = useState<'pulse' | 'chat' | 'videos' | 'tasks' | 'cycles' | 'roadmap'>('pulse');
+  const [activeView, setActiveView] = useState<'pulse' | 'chat' | 'videos' | 'tasks' | 'cycles' | 'roadmap' | 'kb'>('pulse');
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [activeChannelName, setActiveChannelName] = useState<string>('');
   const [isCmdkOpen, setIsCmdkOpen] = useState(false);
@@ -86,6 +87,8 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
         <CycleView teamId={teamId} />
       ) : activeView === 'roadmap' ? (
         <RoadmapView teamId={teamId} />
+      ) : activeView === 'kb' ? (
+        <KnowledgeBaseView teamId={teamId} />
       ) : activeView === 'chat' && activeChannelId ? (
         <ChatArea channelId={activeChannelId} channelName={activeChannelName || undefined} />
       ) : activeView === 'chat' ? (
