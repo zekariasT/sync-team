@@ -6,7 +6,11 @@ export class MembersService {
   constructor(private prisma: PrismaService) {}
 
   async findAll() {
-    return await this.prisma.user.findMany(); 
+    return await this.prisma.user.findMany({
+      include: {
+        teamMembers: true,
+      },
+    }); 
   }
 
   async update(id: string, status: string) {

@@ -2,8 +2,10 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import MemberClock from '@/components/MemberClock';
 import { updatePulse } from '@/app/actions';
 import { Show, UserButton } from '@clerk/nextjs';
+import { currentUser } from '@clerk/nextjs/server';
 
 export default async function PulseView() {
+  const user = await currentUser();
   let members: any[] = [];
   try {
     const res = await fetch('http://localhost:3001/members', { cache: 'no-store' });
@@ -11,6 +13,9 @@ export default async function PulseView() {
   } catch {
     members = [];
   }
+
+  const currentMember = members.find(m => m.id === user?.id);
+  const isAdmin = currentMember?.teamMembers?.some((tm: any) => tm.role === 'ADMIN');
 
   return (
     <div className="flex-1 h-screen overflow-y-auto bg-background">
@@ -61,20 +66,22 @@ export default async function PulseView() {
                 </div>
                 <p className="text-secondary mt-2 italic text-sm ml-12">"{member.status}"</p>
 
-                <form action={updatePulse.bind(null, member.id)} className="mt-3 flex gap-2 ml-12">
-                  <input
-                    type="text"
-                    name="status"
-                    placeholder="Set custom status..."
-                    className="bg-background border border-primary/20 text-text rounded-lg px-3 py-1.5 text-sm w-full focus:outline-none focus:border-secondary placeholder:text-primary/30 transition-colors"
-                  />
-                  <button
-                    type="submit"
-                    className="bg-secondary hover:bg-secondary/80 text-background px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors shrink-0"
-                  >
-                    Pulse
-                  </button>
-                </form>
+                {(isAdmin || user?.id === member.id) && (
+                  <form action={updatePulse.bind(null, member.id)} className="mt-3 flex gap-2 ml-12">
+                    <input
+                      type="text"
+                      name="status"
+                      placeholder="Set custom status..."
+                      className="bg-background border border-primary/20 text-text rounded-lg px-3 py-1.5 text-sm w-full focus:outline-none focus:border-secondary placeholder:text-primary/30 transition-colors"
+                    />
+                    <button
+                      type="submit"
+                      className="bg-secondary hover:bg-secondary/80 text-background px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors shrink-0"
+                    >
+                      Pulse
+                    </button>
+                  </form>
+                )}
               </div>
               <div className="mt-4 pt-3 border-t flex justify-between items-center border-primary/10 text-[10px] font-mono text-primary/40 ml-12">
                 TZ: {member.timezone}

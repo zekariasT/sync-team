@@ -256,7 +256,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
         <div className="p-3 border-t border-primary/15 relative">
           {/* User Menu Drawer */}
           {showUserMenu && (
-            <div className="absolute top-[100%] left-2 right-2 mb-2 bg-background border border-primary/15 rounded-xl shadow-2xl p-1 z-50 overflow-hidden backdrop-blur-md">
+            <div className="absolute top-[100%] left-2 right-2 bg-background border border-primary/15 rounded-xl shadow-2xl p-1 z-50 overflow-hidden backdrop-blur-md">
               <button 
                 onClick={() => { setShowUserMenu(false); openUserProfile(); }}
                 className="w-full flex items-center gap-3 px-3 py-2 text-xs font-semibold text-text hover:bg-primary/5 rounded-lg transition-colors"
