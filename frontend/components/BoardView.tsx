@@ -18,6 +18,7 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import ViewHeader from './ViewHeader';
 import CreateTaskModal from './CreateTaskModal';
 
 interface Task {
@@ -89,7 +90,7 @@ function DroppableColumn({ status, tasks }: { status: string; tasks: Task[] }) {
   return (
     <div 
       ref={setNodeRef}
-      className={`w-80 flex flex-col bg-primary/5 rounded-xl border-2 shrink-0 p-3 h-full transition-colors ${isOver ? 'border-secondary/50 bg-secondary/5' : 'border-transparent bg-primary/5'}`}
+      className={`w-[85vw] md:w-80 flex flex-col bg-primary/5 rounded-xl border-2 shrink-0 p-3 h-full transition-colors ${isOver ? 'border-secondary/50 bg-secondary/5' : 'border-transparent bg-primary/5'}`}
     >
       <h3 className="font-bold text-sm mb-3 px-1 text-primary/70 flex items-center justify-between">
         <span>{status.replace('_', ' ')}</span>
@@ -114,7 +115,7 @@ function DroppableColumn({ status, tasks }: { status: string; tasks: Task[] }) {
   );
 }
 
-export default function BoardView({ teamId }: { teamId?: string }) {
+export default function BoardView({ teamId, onMenuClick }: { teamId?: string; onMenuClick?: () => void }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -207,26 +208,27 @@ export default function BoardView({ teamId }: { teamId?: string }) {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-background overflow-hidden p-6 gap-6">
+    <div className="flex-1 flex flex-col bg-background overflow-hidden h-full">
       <CreateTaskModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         onSubmit={handleCreateTask} 
       />
-      <header className="flex justify-between items-center shrink-0">
-        <h2 className="text-xl font-bold flex items-center gap-2">
-          <div className="w-5 h-5 rounded border-2 border-secondary/50 text-secondary flex items-center justify-center"><CheckCircle2 size={12}/></div>
-           Board
-        </h2>
+      
+      <ViewHeader 
+        title="Board" 
+        Icon={CheckCircle2} 
+        onMenuClick={onMenuClick || (() => {})}
+      >
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="bg-secondary text-white px-3 py-1.5 rounded text-sm font-bold flex items-center gap-1 hover:bg-secondary/90 transition-colors"
+          className="bg-secondary text-white px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1 hover:bg-secondary/90 transition-colors shadow-sm"
         >
-          <Plus size={16} /> New Task
+          <Plus size={16} /> <span className="hidden sm:inline">New Task</span>
         </button>
-      </header>
+      </ViewHeader>
 
-      <div className="flex-1 overflow-x-auto pb-4 custom-scrollbar">
+      <div className="flex-1 overflow-x-auto p-4 md:p-6 custom-scrollbar">
         <DndContext 
           sensors={sensors} 
           collisionDetection={pointerWithin}

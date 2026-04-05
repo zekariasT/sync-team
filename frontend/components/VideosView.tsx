@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { Video, Plus, MessageSquare, PlayCircle, FileText, X } from 'lucide-react';
+import ViewHeader from './ViewHeader';
 import VideoRecorder from './VideoRecorder';
 
 interface VideoMessage {
@@ -18,7 +19,7 @@ interface VideoMessage {
   };
 }
 
-export default function VideosView({ teamId: initialTeamId }: { teamId?: string }) {
+export default function VideosView({ teamId: initialTeamId, onMenuClick }: { teamId?: string; onMenuClick?: () => void }) {
   const { user } = useUser();
   const [teamId, setTeamId] = useState<string | null>(initialTeamId || null);
   const [videos, setVideos] = useState<VideoMessage[]>([]);
@@ -64,20 +65,21 @@ export default function VideosView({ teamId: initialTeamId }: { teamId?: string 
   };
 
   return (
-    <div className="flex-1 overflow-y-auto bg-background">
-      <header className="sticky top-0 z-10 backdrop-blur-md bg-background/80 border-b border-primary/15 h-14 flex items-center justify-between px-6">
-        <h2 className="font-bold text-text flex items-center gap-2">
-          <Video size={18} className="text-secondary" /> Sync Videos
-        </h2>
+    <div className="flex-1 flex flex-col bg-background overflow-hidden h-full">
+      <ViewHeader 
+        title="Sync Videos" 
+        Icon={Video} 
+        onMenuClick={onMenuClick || (() => {})}
+      >
         <button
           onClick={() => setIsRecording(true)}
-          className="flex items-center gap-2 bg-secondary hover:bg-secondary/80 text-background px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors shadow-sm"
+          className="flex items-center gap-2 bg-secondary hover:bg-secondary/80 text-background px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors shadow-sm"
         >
-          <Plus size={16} /> New Recording
+          <Plus size={16} /> <span className="hidden sm:inline">New Recording</span>
         </button>
-      </header>
+      </ViewHeader>
 
-      <div className="p-10">
+      <div className="flex-1 overflow-y-auto w-full p-4 md:p-10">
         {isRecording && teamId ? (
           <div className="mb-8 flex justify-center">
             <VideoRecorder teamId={teamId} onClose={() => setIsRecording(false)} onVideoUploaded={handleVideoUploaded} />

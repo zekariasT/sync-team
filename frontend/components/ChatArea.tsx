@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { io, Socket } from 'socket.io-client';
-import { Send, Hash, Smile } from 'lucide-react';
+import { Send, Hash, Smile, Menu } from 'lucide-react';
+import ViewHeader from './ViewHeader';
 
 interface Message {
   id: string;
@@ -21,9 +22,10 @@ interface Message {
 interface ChatAreaProps {
   channelId: string;
   channelName?: string;
+  onMenuClick?: () => void;
 }
 
-export default function ChatArea({ channelId, channelName }: ChatAreaProps) {
+export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAreaProps) {
   const { user } = useUser();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -129,15 +131,15 @@ export default function ChatArea({ channelId, channelName }: ChatAreaProps) {
   });
 
   return (
-    <div className="flex-1 flex flex-col h-screen bg-background">
-      {/* Channel Header */}
-      <div className="h-14 border-b border-primary/15 flex items-center px-5 shrink-0">
-        <Hash size={18} className="text-primary/50 mr-2" />
-        <h2 className="font-bold text-text">{channelName || 'Channel'}</h2>
-      </div>
+    <div className="flex-1 flex flex-col h-screen bg-background overflow-hidden">
+      <ViewHeader 
+        title={channelName || 'Channel'} 
+        Icon={Hash}
+        onMenuClick={onMenuClick || (() => {})}
+      />
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-5 py-4">
+      <div className="flex-1 overflow-y-auto px-4 md:px-5 py-4">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="flex flex-col items-center gap-3">

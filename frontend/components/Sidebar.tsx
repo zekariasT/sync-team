@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useUser } from '@clerk/nextjs';
-import { Hash, Radio, Plus, MessageSquare, Users, ChevronDown, ChevronRight, Video, Database } from 'lucide-react';
+import { useUser, useClerk } from '@clerk/nextjs';
+import { Hash, Radio, Plus, MessageSquare, Users, ChevronDown, ChevronRight, Video, Database, Settings, LogOut } from 'lucide-react';
 import AiSummaryPanel from './AiSummaryPanel';
 
 interface Channel {
@@ -31,6 +31,8 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
   const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set());
   const [showNewChannel, setShowNewChannel] = useState<string | null>(null);
   const [newChannelName, setNewChannelName] = useState('');
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const { signOut, openUserProfile } = useClerk();
 
   useEffect(() => {
     // Fetch teams the user belongs to
@@ -251,14 +253,39 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
 
       {/* User Info Footer */}
       {user && (
-        <div className="p-3 border-t border-primary/15 flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-secondary/20 overflow-hidden shrink-0">
-            {user.imageUrl && <img src={user.imageUrl} alt="" className="w-full h-full object-cover" />}
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs font-semibold text-text truncate">{user.fullName || user.username}</p>
-            <p className="text-[10px] text-primary/50 truncate">{user.primaryEmailAddress?.emailAddress}</p>
-          </div>
+        <div className="p-3 border-t border-primary/15 relative">
+          {/* User Menu Drawer */}
+          {showUserMenu && (
+            <div className="absolute top-[100%] left-2 right-2 mb-2 bg-background border border-primary/15 rounded-xl shadow-2xl p-1 z-50 overflow-hidden backdrop-blur-md">
+              <button 
+                onClick={() => { setShowUserMenu(false); openUserProfile(); }}
+                className="w-full flex items-center gap-3 px-3 py-2 text-xs font-semibold text-text hover:bg-primary/5 rounded-lg transition-colors"
+              >
+                <Settings size={14} className="text-primary/50" />
+                Manage Account
+              </button>
+              <button 
+                onClick={() => { setShowUserMenu(false); signOut(); }}
+                className="w-full flex items-center gap-3 px-3 py-2 text-xs font-semibold text-accent hover:bg-accent/5 rounded-lg transition-colors"
+              >
+                <LogOut size={14} className="text-accent/50" />
+                Sign Out
+              </button>
+            </div>
+          )}
+          
+          <button 
+            onClick={() => setShowUserMenu(!showUserMenu)}
+            className="w-full flex items-center gap-2 p-1.5 hover:bg-primary/5 rounded-xl transition-all group"
+          >
+            <div className="w-8 h-8 rounded-lg bg-secondary/20 overflow-hidden shrink-0 border border-secondary/20 group-hover:border-secondary/40 transition-colors">
+              {user.imageUrl && <img src={user.imageUrl} alt="" className="w-full h-full object-cover" />}
+            </div>
+            <div className="min-w-0 flex-1 text-left">
+              <p className="text-xs font-bold text-text truncate leading-tight">{user.fullName || user.username}</p>
+              <p className="text-[10px] text-primary/40 truncate leading-tight">{user.primaryEmailAddress?.emailAddress}</p>
+            </div>
+          </button>
         </div>
       )}
     </aside>
