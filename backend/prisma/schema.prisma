@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,44 +8,38 @@ datasource db {
 }
 
 model User {
-  id             String          @id @default(cuid())
-  email          String          @unique
-  name           String
-  avatar         String?
-  status         String          @default("Available")
-  timezone       String          @default("UTC")
-  teamMembers    TeamMember[]
-  sentMessages   Message[]       @relation("SentMessages")
-  sentDMs        DirectMessage[] @relation("SentDMs")
-  receivedDMs    DirectMessage[] @relation("ReceivedDMs")
-  sentVideos     VideoMessage[]  @relation("SentVideos")
-  videoReactions VideoReaction[]
-  assignedTasks     Task[]          @relation("AssignedTasks")
-  reportedTasks     Task[]          @relation("ReportedTasks")
-  uploadedDocuments Document[]      @relation("UploadedDocuments")
+  id                String          @id @default(cuid())
+  email             String          @unique
+  name              String
+  avatar            String?
+  status            String          @default("Available")
+  timezone          String          @default("UTC")
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
+  receivedDMs       DirectMessage[] @relation("ReceivedDMs")
+  sentDMs           DirectMessage[] @relation("SentDMs")
+  uploadedDocuments Document[]      @relation("UploadedDocuments")
+  sentMessages      Message[]       @relation("SentMessages")
+  assignedTasks     Task[]          @relation("AssignedTasks")
+  reportedTasks     Task[]          @relation("ReportedTasks")
+  teamMembers       TeamMember[]
+  sentVideos        VideoMessage[]  @relation("SentVideos")
+  videoReactions    VideoReaction[]
 }
 
 model Team {
   id          String         @id @default(cuid())
   name        String
   description String?
-  members     TeamMember[]
-  channels    Channel[]
-  videos      VideoMessage[]
-  projects    Project[]
-  cycles      Cycle[]
-  tasks       Task[]
-  documents   Document[]
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
-}
-
-enum Role {
-  ADMIN
-  LEAD
-  MEMBER
+  channels    Channel[]
+  cycles      Cycle[]
+  documents   Document[]
+  projects    Project[]
+  tasks       Task[]
+  members     TeamMember[]
+  videos      VideoMessage[]
 }
 
 model TeamMember {
@@ -59,18 +47,13 @@ model TeamMember {
   userId    String
   teamId    String
   role      Role     @default(MEMBER)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, teamId])
-}
-
-enum ChannelType {
-  GENERAL
-  ANNOUNCEMENT
-  TOPIC
+  @@index([teamId], map: "TeamMember_teamId_fkey")
 }
 
 model Channel {
@@ -78,10 +61,12 @@ model Channel {
   teamId    String
   name      String
   type      ChannelType @default(GENERAL)
-  team      Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  messages  Message[]
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
+  team      Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  messages  Message[]
+
+  @@index([teamId], map: "Channel_teamId_fkey")
 }
 
 model Message {
@@ -89,10 +74,13 @@ model Message {
   channelId String
   senderId  String
   content   String   @db.Text
-  channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  sender    User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  sender    User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([channelId], map: "Message_channelId_fkey")
+  @@index([senderId], map: "Message_senderId_fkey")
 }
 
 model DirectMessage {
@@ -100,48 +88,46 @@ model DirectMessage {
   senderId   String
   receiverId String
   content    String   @db.Text
-  sender     User     @relation("SentDMs", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver   User     @relation("ReceivedDMs", fields: [receiverId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  receiver   User     @relation("ReceivedDMs", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender     User     @relation("SentDMs", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([receiverId], map: "DirectMessage_receiverId_fkey")
+  @@index([senderId], map: "DirectMessage_senderId_fkey")
 }
 
-// --- Loom-style Async Video Messaging ---
-
 model VideoMessage {
-  id          String          @id @default(cuid())
-  teamId      String
-  senderId    String
-  title       String?
-  videoUrl    String          // Cloudinary URL
-  duration    Float?          // seconds
-  transcript  String?         @db.Text
-  team        Team            @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  sender      User            @relation("SentVideos", fields: [senderId], references: [id], onDelete: Cascade)
-  reactions   VideoReaction[]
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  id         String          @id @default(cuid())
+  teamId     String
+  senderId   String
+  title      String?
+  videoUrl   String
+  duration   Float?
+  transcript String?         @db.Text
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  sender     User            @relation("SentVideos", fields: [senderId], references: [id], onDelete: Cascade)
+  team       Team            @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  reactions  VideoReaction[]
+
+  @@index([senderId], map: "VideoMessage_senderId_fkey")
+  @@index([teamId], map: "VideoMessage_teamId_fkey")
 }
 
 model VideoReaction {
-  id          String       @id @default(cuid())
-  videoId     String
-  userId      String
-  timestamp   Float        // Seconds into the video
-  emoji       String?
-  comment     String?      @db.Text
-  video       VideoMessage @relation(fields: [videoId], references: [id], onDelete: Cascade)
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime     @default(now())
-}
+  id        String       @id @default(cuid())
+  videoId   String
+  userId    String
+  timestamp Float
+  emoji     String?
+  comment   String?      @db.Text
+  createdAt DateTime     @default(now())
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video     VideoMessage @relation(fields: [videoId], references: [id], onDelete: Cascade)
 
-// --- Linear-style Task & Issue Tracking ---
-
-enum TaskState {
-  TODO
-  IN_PROGRESS
-  IN_REVIEW
-  DONE
+  @@index([userId], map: "VideoReaction_userId_fkey")
+  @@index([videoId], map: "VideoReaction_videoId_fkey")
 }
 
 model Project {
@@ -149,21 +135,25 @@ model Project {
   teamId      String
   name        String
   description String?  @db.Text
-  tasks       Task[]
-  team        Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  team        Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+
+  @@index([teamId], map: "Project_teamId_fkey")
 }
 
 model Cycle {
-  id          String   @id @default(cuid())
-  teamId      String
-  name        String
-  startDate   DateTime
-  endDate     DateTime
-  tasks       Task[]
-  team        Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  teamId    String
+  name      String
+  startDate DateTime
+  endDate   DateTime
+  createdAt DateTime @default(now())
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  tasks     Task[]
+
+  @@index([teamId], map: "Cycle_teamId_fkey")
 }
 
 model Task {
@@ -176,25 +166,50 @@ model Task {
   reporterId  String
   cycleId     String?
   projectId   String?
-  
-  team        Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  assignee    User?     @relation("AssignedTasks", fields: [assigneeId], references: [id])
-  reporter    User      @relation("ReportedTasks", fields: [reporterId], references: [id])
-  cycle       Cycle?    @relation(fields: [cycleId], references: [id])
-  project     Project?  @relation(fields: [projectId], references: [id])
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  assignee    User?     @relation("AssignedTasks", fields: [assigneeId], references: [id])
+  cycle       Cycle?    @relation(fields: [cycleId], references: [id])
+  project     Project?  @relation(fields: [projectId], references: [id])
+  reporter    User      @relation("ReportedTasks", fields: [reporterId], references: [id])
+  team        Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@index([assigneeId], map: "Task_assigneeId_fkey")
+  @@index([cycleId], map: "Task_cycleId_fkey")
+  @@index([projectId], map: "Task_projectId_fkey")
+  @@index([reporterId], map: "Task_reporterId_fkey")
+  @@index([teamId], map: "Task_teamId_fkey")
 }
 
-// --- RAG Documentation Features ---
-
 model Document {
-  id          String   @id @default(cuid())
-  teamId      String
-  uploaderId  String
-  title       String
-  fileUrl     String   // URL to original document
-  team        Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  uploader    User     @relation("UploadedDocuments", fields: [uploaderId], references: [id])
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  teamId     String
+  uploaderId String
+  title      String
+  fileUrl    String
+  createdAt  DateTime @default(now())
+  team       Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  uploader   User     @relation("UploadedDocuments", fields: [uploaderId], references: [id])
+
+  @@index([teamId], map: "Document_teamId_fkey")
+  @@index([uploaderId], map: "Document_uploaderId_fkey")
+}
+
+enum Role {
+  ADMIN
+  LEAD
+  MEMBER
+}
+
+enum ChannelType {
+  GENERAL
+  ANNOUNCEMENT
+  TOPIC
+}
+
+enum TaskState {
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
 }
