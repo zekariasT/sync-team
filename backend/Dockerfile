@@ -21,9 +21,9 @@ COPY . .
 
 # Build the NestJS application
 RUN npm run build
-
+# DEBUG: This will show us exactly what was built in the logs
+RUN ls -R dist
 # Expose the API port
 EXPOSE 3001
-
-# Run the application (using .js extension since you use ESM)
-CMD ["node", "dist/main.js"]
+# Start using the found path (most likely dist/src/main.js in ESM mode)
+CMD ["node", "dist/src/main.js"]
