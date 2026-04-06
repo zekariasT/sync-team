@@ -120,19 +120,8 @@ Keep the summary concise (under 300 words). Use a professional but friendly tone
     
     Analyze the following user status update: "${status}"
     
-    Determine if this status is appropriate for a professional workplace.
-    Inappropriate content includes:
-    - Profanity or offensive language
-    - Targeted harassment or bullying
-    - Sexually explicit content
-    - Hate speech
-    - Extremely violent or gore descriptions
-    
-    Respond in JSON format:
-    {
-      "isAppropriate": boolean,
-      "reason": "Short explanation if inappropriate, otherwise empty"
-    }`;
+    Determine if this status is appropriate for a professional workplace. Respond in JSON format:
+    { "isAppropriate": boolean, "reason": "Short explanation if inappropriate" }`;
 
     try {
       const response = await this.ai.models.generateContent({
@@ -140,7 +129,6 @@ Keep the summary concise (under 300 words). Use a professional but friendly tone
         contents: prompt,
       });
 
-      // Simple JSON extraction
       const text = response.text || '{ "isAppropriate": true }';
       const jsonStart = text.indexOf('{');
       const jsonEnd = text.lastIndexOf('}');
@@ -150,9 +138,21 @@ Keep the summary concise (under 300 words). Use a professional but friendly tone
       }
       return { isAppropriate: true };
     } catch (error) {
-      console.error('AI Moderation failed:', error);
-      // Fail open if AI is down, or implement a basic backup. 
-      // For this OS, we trust the AI, so we'll allow if it fails.
+      console.error('AI Moderation failed, using basic fallback:', error);
+      
+      // FALLBACK: Basic sanity check for extreme cases if AI is down
+      const extremeWords = ['fuck', 'shit', 'piss', 'cunt', 'nigger', 'faggot']; 
+      const lowerStatus = status.toLowerCase();
+      
+      const containsExtreme = extremeWords.some(word => lowerStatus.includes(word));
+      if (containsExtreme) {
+        return { 
+          isAppropriate: false, 
+          reason: "(Backup Moderator) Detected inappropriate language in status update." 
+        };
+      }
+
+      // If not obviously bad, fail open to maintain user productivity
       return { isAppropriate: true };
     }
   }

@@ -148,9 +148,10 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
 
   const fetchProjects = async () => {
     if (!teamId || !user) return;
+    const userId = user.id;
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/tasks/teams/${teamId}/projects`, {
-        headers: { 'x-user-id': user.id }
+        headers: { 'x-user-id': userId }
       });
       if (res.ok) setProjects(await res.json());
     } catch(err) { console.error(err); }
@@ -158,9 +159,10 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
 
   const fetchCycles = async () => {
     if (!teamId || !user) return;
+    const userId = user.id;
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/tasks/teams/${teamId}/cycles`, {
-        headers: { 'x-user-id': user.id }
+        headers: { 'x-user-id': userId }
       });
       if (res.ok) setCycles(await res.json());
     } catch(err) { console.error(err); }
@@ -168,9 +170,10 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
 
   const fetchMembers = async () => {
     if (!teamId || !user) return;
+    const userId = user.id;
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams/${teamId}`, {
-        headers: { 'x-user-id': user.id }
+        headers: { 'x-user-id': userId }
       });
       if (res.ok) {
         const team = await res.json();
@@ -180,9 +183,11 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
   };
 
   const fetchTasks = async () => {
+    if (!teamId || !user) return;
+    const userId = user.id;
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/tasks/teams/${teamId}/tasks`, {
-        headers: { 'x-user-id': user?.id || '' }
+        headers: { 'x-user-id': userId }
       });
       if (res.ok) setTasks(await res.json());
     } catch(err) { console.error(err); }
@@ -217,12 +222,13 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
 
     if (activeTask.state !== newStatus) {
       setTasks(prev => prev.map(t => t.id === activeId ? { ...t, state: newStatus } : t));
+      const userId = user?.id || '';
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/tasks/${activeId}/state`, {
           method: 'PATCH',
           headers: { 
             'Content-Type': 'application/json',
-            'x-user-id': user?.id || ''
+            'x-user-id': userId
           },
           body: JSON.stringify({ state: newStatus })
         });
@@ -248,11 +254,12 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
       
       const method = editingTask ? 'PATCH' : 'POST';
 
+      const userId = user?.id || '';
       const body = editingTask 
         ? JSON.stringify(data)
         : JSON.stringify({ 
             ...data,
-            reporterId: user?.id || '', 
+            reporterId: userId, 
             state: 'TODO' 
           });
 
@@ -260,7 +267,7 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
         method,
         headers: { 
           'Content-Type': 'application/json',
-          'x-user-id': user?.id || ''
+          'x-user-id': userId
         },
         body
       });

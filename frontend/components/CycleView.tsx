@@ -32,9 +32,10 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
 
   const fetchProjects = async () => {
     if (!teamId || !user) return;
+    const userId = user.id;
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/tasks/teams/${teamId}/projects`, {
-        headers: { 'x-user-id': user.id }
+        headers: { 'x-user-id': userId }
       });
       if (res.ok) setProjects(await res.json());
     } catch(err) { console.error(err); }
@@ -42,9 +43,10 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
 
   const fetchMembers = async () => {
     if (!teamId || !user) return;
+    const userId = user.id;
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams/${teamId}`, {
-        headers: { 'x-user-id': user.id }
+        headers: { 'x-user-id': userId }
       });
       if (res.ok) {
         const team = await res.json();
@@ -55,9 +57,10 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
 
   const fetchCycles = async () => {
     if (!teamId || !user) return;
+    const userId = user.id;
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/tasks/teams/${teamId}/cycles`, {
-        headers: { 'x-user-id': user.id }
+        headers: { 'x-user-id': userId }
       });
       if (res.ok) setCycles(await res.json());
     } catch(err) { console.error(err); }

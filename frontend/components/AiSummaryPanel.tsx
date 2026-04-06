@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Sparkles, X, Loader2, Brain, AlertTriangle } from 'lucide-react';
+import { useAuth } from '@clerk/nextjs';
 
 interface AiSummaryPanelProps {
   teamId: string;
@@ -16,6 +17,7 @@ export default function AiSummaryPanel({ teamId, teamName }: AiSummaryPanelProps
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const { getToken } = useAuth();
 
   useEffect(() => {
     setMounted(true);
@@ -27,8 +29,12 @@ export default function AiSummaryPanel({ teamId, teamName }: AiSummaryPanelProps
     setSummary(null);
 
     try {
+      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/ai/teams/${teamId}/summarize`, {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
 
       if (!res.ok) {

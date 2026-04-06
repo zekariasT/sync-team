@@ -11,12 +11,13 @@ export default function RealTimeProvider({ children }: { children: React.ReactNo
 
     useEffect(() => {
         if (isLoaded && user) {
+            const userId = user.id;
             // Sync user details to backend
             fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/members/sync`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    id: user.id,
+                    id: userId,
                     email: user.primaryEmailAddress?.emailAddress,
                     name: user.fullName || user.username || 'Unknown',
                     avatar: user.imageUrl,

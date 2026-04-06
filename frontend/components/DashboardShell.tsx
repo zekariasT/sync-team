@@ -15,10 +15,11 @@ interface DashboardShellProps {
   pulseContent: React.ReactNode;
 }
 
-import { useUser } from '@clerk/nextjs';
+import { useUser, useAuth } from '@clerk/nextjs';
 
 export default function DashboardShell({ pulseContent }: DashboardShellProps) {
   const { user } = useUser();
+  const { getToken } = useAuth();
   const [activeView, setActiveView] = useState<'pulse' | 'chat' | 'videos' | 'tasks' | 'cycles' | 'roadmap' | 'kb'>('pulse');
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [activeChannelName, setActiveChannelName] = useState<string>('');
@@ -53,17 +54,25 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
   useEffect(() => {
     if (!user) return;
     
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams`, {
-      headers: { 'x-user-id': user.id }
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.length > 0) {
-          const seedTeam = data.find((t: any) => t.id === 'seed-team-id');
-          setTeamId(seedTeam ? seedTeam.id : data[0].id);
+    const userId = user.id;
+    
+    async function loadTeams() {
+      const token = await getToken();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams`, {
+        headers: { 
+          'x-user-id': userId,
+          'Authorization': `Bearer ${token}`
         }
       });
-  }, [user]);
+      const data = await res.json();
+      if (data && data.length > 0) {
+        const seedTeam = data.find((t: any) => t.id === 'seed-team-id');
+        setTeamId(seedTeam ? seedTeam.id : data[0].id);
+      }
+    }
+
+    loadTeams().catch(err => console.error(err));
+  }, [user, getToken]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

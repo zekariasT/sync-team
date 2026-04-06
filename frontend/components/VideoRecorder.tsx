@@ -86,17 +86,18 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
     if (recordedChunks.length === 0 || !user) return;
     setUploading(true);
 
+    const userId = user.id;
     const blob = new Blob(recordedChunks, { type: 'video/webm' });
     const formData = new FormData();
     formData.append('file', blob, 'recording.webm');
-    formData.append('senderId', user.id);
+    formData.append('senderId', userId);
     formData.append('title', title || 'Screen Recording');
 
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/video/teams/${teamId}/upload`, {
         method: 'POST',
         headers: {
-          'x-user-id': user.id
+          'x-user-id': userId
         },
         body: formData,
       });

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useUser, useClerk } from '@clerk/nextjs';
+import { useUser, useClerk, useAuth } from '@clerk/nextjs';
 import { Hash, Radio, Plus, MessageSquare, Users, ChevronDown, ChevronRight, Video, Database, Settings, LogOut } from 'lucide-react';
 import AiSummaryPanel from './AiSummaryPanel';
 
@@ -33,32 +33,44 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
   const [newChannelName, setNewChannelName] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const { signOut, openUserProfile } = useClerk();
+  const { getToken } = useAuth();
 
   useEffect(() => {
     if (!user) return;
     
-    // Fetch teams the user belongs to
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams`, {
-      headers: { 'x-user-id': user.id }
-    })
-      .then(res => res.ok ? res.json() : [])
-      .then(data => {
-        setTeams(data);
-        // Auto-expand all teams
-        setExpandedTeams(new Set(data.map((t: Team) => t.id)));
-        // Fetch channels for each team
-        data.forEach((team: Team) => {
-          fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/chat/teams/${team.id}/channels`, {
-            headers: { 'x-user-id': user.id }
-          })
-            .then(res => res.ok ? res.json() : [])
-            .then(chans => {
-              setChannels(prev => [...prev.filter(c => c.teamId !== team.id), ...chans]);
-            });
+    const userId = user.id;
+    
+    async function loadInitialData() {
+      const token = await getToken();
+      
+      // Fetch teams the user belongs to
+      const teamsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams`, {
+        headers: { 
+          'x-user-id': userId,
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await (teamsRes.ok ? teamsRes.json() : []);
+      
+      setTeams(data);
+      // Auto-expand all teams
+      setExpandedTeams(new Set(data.map((t: Team) => t.id)));
+      
+      // Fetch channels for each team
+      data.forEach(async (team: Team) => {
+        const chanRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/chat/teams/${team.id}/channels`, {
+          headers: { 
+            'x-user-id': userId,
+            'Authorization': `Bearer ${token}`
+          }
         });
-      })
-      .catch(() => setTeams([]));
-  }, [user]);
+        const chans = await (chanRes.ok ? chanRes.json() : []);
+        setChannels(prev => [...prev.filter(c => c.teamId !== team.id), ...chans]);
+      });
+    }
+
+    loadInitialData().catch(() => setTeams([]));
+  }, [user, getToken]);
 
   const toggleTeam = (teamId: string) => {
     setExpandedTeams(prev => {

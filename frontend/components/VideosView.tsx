@@ -50,9 +50,10 @@ export default function VideosView({ teamId: initialTeamId, onMenuClick }: { tea
 
   const fetchVideos = async () => {
     if (!teamId || !user) return;
+    const userId = user.id;
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/video/teams/${teamId}`, {
-        headers: { 'x-user-id': user.id }
+        headers: { 'x-user-id': userId }
       });
       if (res.ok) {
         setVideos(await res.json());
@@ -151,15 +152,15 @@ export default function VideosView({ teamId: initialTeamId, onMenuClick }: { tea
                    
                    const videoEl = document.querySelector('video');
                    const timestamp = videoEl ? videoEl.currentTime : 0;
-                   
+                   const userId = user.id;
                    try {
                      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/video/${selectedVideo.id}/reactions`, {
                        method: 'POST',
                         headers: {
                           'Content-Type': 'application/json',
-                          'x-user-id': user.id
+                          'x-user-id': userId
                         },
-                       body: JSON.stringify({ userId: user.id, timestamp, comment })
+                       body: JSON.stringify({ userId, timestamp, comment })
                      });
                      if (res.ok) {
                        const savedReaction = await res.json();

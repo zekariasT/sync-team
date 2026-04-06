@@ -1,7 +1,7 @@
 import { ThemeToggle } from '@/components/ThemeToggle';
 import MemberClock from '@/components/MemberClock';
 import { Show, UserButton } from '@clerk/nextjs';
-import { currentUser } from '@clerk/nextjs/server';
+import { currentUser, auth } from '@clerk/nextjs/server';
 import PulseForm from './PulseForm';
 import MemberRoleBadge from './MemberRoleBadge';
 
@@ -9,10 +9,13 @@ export default async function PulseView() {
   const user = await currentUser();
   let members: any[] = [];
   try {
+    const { getToken } = await auth();
+    const token = await getToken();
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/members`, { 
       cache: 'no-store',
       headers: {
         'x-user-id': user?.id || '',
+        'Authorization': `Bearer ${token}`
       }
     });
     members = await res.json();

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useUser } from '@clerk/nextjs';
+import { useUser, useAuth } from '@clerk/nextjs';
 import { io, Socket } from 'socket.io-client';
 import { Send, Hash, Smile, Menu } from 'lucide-react';
 import ViewHeader from './ViewHeader';
@@ -28,6 +28,7 @@ interface ChatAreaProps {
 export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAreaProps) {
   const { user } = useUser();
   const [messages, setMessages] = useState<Message[]>([]);
+  const { getToken } = useAuth();
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -49,15 +50,20 @@ export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAr
 
     // Fetch existing messages
     if (user) {
-      fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/chat/channels/${channelId}/messages`, {
-        headers: { 'x-user-id': user.id }
-      })
-        .then(res => res.ok ? res.json() : [])
-        .then(data => {
-          setMessages(data);
-          setLoading(false);
-        })
-        .catch(() => setLoading(false));
+      const userId = user.id;
+      const getMsgs = async () => {
+        const token = await getToken();
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/chat/channels/${channelId}/messages`, {
+          headers: { 
+            'x-user-id': userId,
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await (res.ok ? res.json() : []);
+        setMessages(data);
+        setLoading(false);
+      };
+      getMsgs().catch(() => setLoading(false));
     }
 
     // Set up WebSocket for real-time messages
@@ -83,15 +89,16 @@ export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAr
     const content = newMessage.trim();
     setNewMessage('');
 
+    const userId = user.id;
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/chat/channels/${channelId}/messages`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'x-user-id': user.id
+          'x-user-id': userId
         },
         body: JSON.stringify({
-          senderId: user.id,
+          senderId: userId,
           content,
         }),
       });
