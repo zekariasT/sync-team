@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useUser } from '@clerk/nextjs';
+import { useUser, useAuth } from '@clerk/nextjs';
 import { Plus, CheckCircle2 } from 'lucide-react';
 import { 
   DndContext, 
@@ -121,6 +121,7 @@ function DroppableColumn({ status, tasks, onTaskClick }: { status: string; tasks
 
 export default function BoardView({ teamId, onMenuClick }: { teamId?: string; onMenuClick?: () => void }) {
   const { user } = useUser();
+  const { getToken } = useAuth();
   const { success, error: toastError } = useToast();
   const { role, isAdmin, isLead } = useTeamRole(teamId);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -150,8 +151,12 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
     if (!teamId || !user) return;
     const userId = user.id;
     try {
+      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/tasks/teams/${teamId}/projects`, {
-        headers: { 'x-user-id': userId }
+        headers: { 
+          'x-user-id': userId,
+          'Authorization': `Bearer ${token}`
+        }
       });
       if (res.ok) setProjects(await res.json());
     } catch(err) { console.error(err); }

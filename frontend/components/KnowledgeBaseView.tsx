@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useUser } from '@clerk/nextjs';
+import { useUser, useAuth } from '@clerk/nextjs';
 import { Database, Search, Bot, FileText } from 'lucide-react';
 import { useToast } from './ToastProvider';
 import ViewHeader from './ViewHeader';
@@ -9,6 +9,7 @@ import DocumentUploader from './DocumentUploader';
 
 export default function KnowledgeBaseView({ teamId, onMenuClick }: { teamId?: string; onMenuClick?: () => void }) {
   const { user } = useUser();
+  const { getToken } = useAuth();
   const { error: toastError } = useToast();
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -22,11 +23,13 @@ export default function KnowledgeBaseView({ teamId, onMenuClick }: { teamId?: st
     setAnswer(null);
 
     try {
+      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams/${teamId}/kb/query`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'x-user-id': user?.id || ''
+          'x-user-id': user?.id || '',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ query }),
       });

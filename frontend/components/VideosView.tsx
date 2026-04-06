@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useUser } from '@clerk/nextjs';
+import { useUser, useAuth } from '@clerk/nextjs';
 import { Video, Plus, MessageSquare, PlayCircle, FileText, X } from 'lucide-react';
 import ViewHeader from './ViewHeader';
 import VideoRecorder from './VideoRecorder';
@@ -23,6 +23,7 @@ interface VideoMessage {
 
 export default function VideosView({ teamId: initialTeamId, onMenuClick }: { teamId?: string; onMenuClick?: () => void }) {
   const { user } = useUser();
+  const { getToken } = useAuth();
   const { success, error: toastError } = useToast();
   const [teamId, setTeamId] = useState<string | null>(initialTeamId || null);
   const [videos, setVideos] = useState<VideoMessage[]>([]);
@@ -52,8 +53,12 @@ export default function VideosView({ teamId: initialTeamId, onMenuClick }: { tea
     if (!teamId || !user) return;
     const userId = user.id;
     try {
+      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/video/teams/${teamId}`, {
-        headers: { 'x-user-id': userId }
+        headers: { 
+          'x-user-id': userId,
+          'Authorization': `Bearer ${token}`
+        }
       });
       if (res.ok) {
         setVideos(await res.json());
