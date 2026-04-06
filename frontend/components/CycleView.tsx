@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Plus } from 'lucide-react';
 import ViewHeader from './ViewHeader';
-import { useUser } from '@clerk/nextjs';
+import { useUser, useAuth } from '@clerk/nextjs';
 import CreateCycleModal from './CreateCycleModal';
 import { useTeamRole } from '@/hooks/useTeamRole';
 import { useToast } from './ToastProvider';
@@ -11,6 +11,7 @@ import TaskModal from './TaskModal';
 
 export default function CycleView({ teamId, onMenuClick }: { teamId?: string; onMenuClick?: () => void }) {
   const { user } = useUser();
+  const { getToken } = useAuth();
   const { success, error: toastError } = useToast();
   const { isAdmin, isLead } = useTeamRole(teamId);
   const [cycles, setCycles] = useState<any[]>([]);
@@ -34,8 +35,12 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
     if (!teamId || !user) return;
     const userId = user.id;
     try {
+      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/tasks/teams/${teamId}/projects`, {
-        headers: { 'x-user-id': userId }
+        headers: { 
+          'x-user-id': userId,
+          'Authorization': `Bearer ${token}`
+        }
       });
       if (res.ok) setProjects(await res.json());
     } catch(err) { console.error(err); }
@@ -93,13 +98,16 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
   };
 
   const handleTaskSubmit = async (data: any) => {
-    if (!editingTask) return;
+    if (!editingTask || !user) return;
+    const userId = user.id;
     try {
+      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/tasks/${editingTask.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': user?.id || ''
+          'x-user-id': userId,
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(data)
       });

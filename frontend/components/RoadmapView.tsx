@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Route, Plus, FolderKanban } from 'lucide-react';
-import { useUser } from '@clerk/nextjs';
+import { useUser, useAuth } from '@clerk/nextjs';
 import ViewHeader from './ViewHeader';
 import CreateProjectModal from './CreateProjectModal';
 import { useTeamRole } from '@/hooks/useTeamRole';
@@ -11,6 +11,7 @@ import TaskModal from './TaskModal';
 
 export default function RoadmapView({ teamId, onMenuClick }: { teamId?: string; onMenuClick?: () => void }) {
   const { user } = useUser();
+  const { getToken } = useAuth();
   const { success, error: toastError } = useToast();
   const { isAdmin, isLead } = useTeamRole(teamId);
   const [projects, setProjects] = useState<any[]>([]);
@@ -34,8 +35,12 @@ export default function RoadmapView({ teamId, onMenuClick }: { teamId?: string; 
     if (!teamId || !user) return;
     const userId = user.id;
     try {
+      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/tasks/teams/${teamId}/cycles`, {
-        headers: { 'x-user-id': userId }
+        headers: { 
+          'x-user-id': userId,
+          'Authorization': `Bearer ${token}`
+        }
       });
       if (res.ok) setCycles(await res.json());
     } catch(err) { console.error(err); }

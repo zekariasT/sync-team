@@ -1,19 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --text: #041116;
-  --background: #ddf0f8;
-  --primary: #668793;
-  --secondary: #196c8a;
-  --accent: #9d1515;
+  --text: #0f172a;       /* Deep Slate for high contrast */
+  --background: #f8fafc; /* Clean Slate background */
+  --primary: #475569;    /* Darker Slate for primary text/icons */
+  --secondary: #0284c7;  /* High-contrast Sky blue for actions */
+  --accent: #be123c;     /* Sharp Rose for accents */
 }
 
 .dark {
-  --text: #ddf0f8;
-  --background: #041116;
-  --primary: #668793;
-  --secondary: #196c8a;
-  --accent: #9d1515;
+  --text: #f1f5f9;       /* Off-white Slate */
+  --background: #020617; /* Deep Slate black */
+  --primary: #94a3b8;    /* Lighter Slate for secondary text */
+  --secondary: #38bdf8;  /* Vibrant Sky blue */
+  --accent: #fb7185;     /* Soft Rose accent */
 }
 
 
