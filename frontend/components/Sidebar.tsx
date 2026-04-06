@@ -19,9 +19,9 @@ interface Team {
 
 interface SidebarProps {
   activeView: 'pulse' | 'chat' | 'videos' | 'tasks' | 'cycles' | 'roadmap' | 'kb';
-  onViewChange: (view: 'pulse' | 'chat' | 'videos' | 'tasks' | 'cycles' | 'roadmap' | 'kb') => void;
+  onViewChange: (view: any) => void;
   activeChannelId: string | null;
-  onChannelSelect: (channelId: string) => void;
+  onChannelSelect: (channelId: string, channelName: string) => void;
 }
 
 export default function Sidebar({ activeView, onViewChange, activeChannelId, onChannelSelect }: SidebarProps) {
@@ -201,7 +201,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
                       .map(channel => (
                         <button
                           key={channel.id}
-                          onClick={() => onChannelSelect(channel.id)}
+                          onClick={() => onChannelSelect(channel.id, channel.name)}
                           className={`w-full flex items-center gap-2 px-4 py-1.5 text-sm transition-all rounded-r-lg
                             ${activeChannelId === channel.id
                               ? 'text-text bg-secondary/15 border-l-2 border-secondary font-semibold'

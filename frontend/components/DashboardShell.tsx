@@ -25,6 +25,30 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
   const [isCmdkOpen, setIsCmdkOpen] = useState(false);
   const [teamId, setTeamId] = useState<string>('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Persistence: Load on mount
+  useEffect(() => {
+    const savedView = localStorage.getItem('syncpoint_active_view');
+    const savedChannelId = localStorage.getItem('syncpoint_active_channel_id');
+    const savedChannelName = localStorage.getItem('syncpoint_active_channel_name');
+
+    if (savedView) setActiveView(savedView as any);
+    if (savedChannelId) setActiveChannelId(savedChannelId);
+    if (savedChannelName) setActiveChannelName(savedChannelName);
+    
+    setIsInitialized(true);
+  }, []);
+
+  // Persistence: Save on change
+  useEffect(() => {
+    if (!isInitialized) return;
+    localStorage.setItem('syncpoint_active_view', activeView);
+    if (activeChannelId) {
+      localStorage.setItem('syncpoint_active_channel_id', activeChannelId);
+      localStorage.setItem('syncpoint_active_channel_name', activeChannelName);
+    }
+  }, [activeView, activeChannelId, activeChannelName, isInitialized]);
 
   useEffect(() => {
     if (!user) return;
@@ -58,8 +82,9 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isCmdkOpen]);
 
-  const handleChannelSelect = (channelId: string) => {
+  const handleChannelSelect = (channelId: string, channelName: string) => {
     setActiveChannelId(channelId);
+    setActiveChannelName(channelName);
     setActiveView('chat');
     setIsSidebarOpen(false); // Close sidebar on mobile after selection
   };
