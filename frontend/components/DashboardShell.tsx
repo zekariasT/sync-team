@@ -48,11 +48,10 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
         e.preventDefault();
         setIsCmdkOpen(true);
       }
-      // Pressing 'c' outside inputs to create task
-      if (e.key.toLowerCase() === 'c' && !isCmdkOpen && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+      // Pressing 'Alt + N' outside inputs to create task
+      if (e.key.toLowerCase() === 'n' && e.altKey && !isCmdkOpen && !['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName || '')) {
         e.preventDefault();
         setActiveView('tasks');
-        // A full implementation would pop open a strictly "New Task" modal here.
       }
     };
     window.addEventListener('keydown', handleKeyDown);
