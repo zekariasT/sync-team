@@ -69,4 +69,27 @@ export class TeamsController {
             },
         });
     }
+
+    @Post(':teamId/members/:userId/role')
+    async updateRole(
+        @Param('teamId') teamId: string,
+        @Param('userId') userId: string,
+        @Body() body: { role: string },
+        @Headers('x-user-id') requesterId: string
+    ) {
+        if (!requesterId) throw new ForbiddenException('Unauthorized');
+
+        // Check if requester is ADMIN
+        const adminMembership = await this.prisma.teamMember.findFirst({
+            where: { userId: requesterId, role: 'ADMIN' }
+        });
+
+        if (!adminMembership) throw new ForbiddenException('Only administrators can change roles');
+
+        // Update role
+        return this.prisma.teamMember.update({
+            where: { userId_teamId: { userId, teamId } },
+            data: { role: body.role as any }
+        });
+    }
 }

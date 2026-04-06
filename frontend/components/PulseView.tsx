@@ -3,6 +3,7 @@ import MemberClock from '@/components/MemberClock';
 import { Show, UserButton } from '@clerk/nextjs';
 import { currentUser } from '@clerk/nextjs/server';
 import PulseForm from './PulseForm';
+import MemberRoleBadge from './MemberRoleBadge';
 
 export default async function PulseView() {
   const user = await currentUser();
@@ -64,7 +65,17 @@ export default async function PulseView() {
                           {member.name?.charAt(0)?.toUpperCase() || '?'}
                         </div>
                       )}
-                      <h2 className="text-base font-bold">{member.name}</h2>
+                      <div>
+                        <h2 className="text-base font-bold">{member.name}</h2>
+                        {member.teamMembers?.[0] && (
+                          <MemberRoleBadge 
+                             memberId={member.id} 
+                             teamId={member.teamMembers[0].teamId} 
+                             role={member.teamMembers[0].role}
+                             canEdit={isAdmin} 
+                          />
+                        )}
+                      </div>
                     </div>
                     <span
                       className={`w-2 h-2 rounded-full shadow-[0_0_8px] mt-2 ${
