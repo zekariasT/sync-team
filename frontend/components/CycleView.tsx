@@ -7,6 +7,7 @@ import { useUser } from '@clerk/nextjs';
 import CreateCycleModal from './CreateCycleModal';
 import { useTeamRole } from '@/hooks/useTeamRole';
 import { useToast } from './ToastProvider';
+import TaskModal from './TaskModal';
 
 export default function CycleView({ teamId, onMenuClick }: { teamId?: string; onMenuClick?: () => void }) {
   const { user } = useUser();
@@ -14,10 +15,43 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
   const { isAdmin, isLead } = useTeamRole(teamId);
   const [cycles, setCycles] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [expandedCycleId, setExpandedCycleId] = useState<string | null>(null);
+  
+  const [editingTask, setEditingTask] = useState<any>(null);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [members, setMembers] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
 
   useEffect(() => {
-    if (teamId) fetchCycles();
+    if (teamId) {
+      fetchCycles();
+      fetchProjects();
+      fetchMembers();
+    }
   }, [teamId]);
+
+  const fetchProjects = async () => {
+    if (!teamId || !user) return;
+    try {
+      const res = await fetch(`http://localhost:3001/tasks/teams/${teamId}/projects`, {
+        headers: { 'x-user-id': user.id }
+      });
+      if (res.ok) setProjects(await res.json());
+    } catch(err) { console.error(err); }
+  };
+
+  const fetchMembers = async () => {
+    if (!teamId || !user) return;
+    try {
+      const res = await fetch(`http://localhost:3001/teams/${teamId}`, {
+        headers: { 'x-user-id': user.id }
+      });
+      if (res.ok) {
+        const team = await res.json();
+        setMembers(team.members || []);
+      }
+    } catch(err) { console.error(err); }
+  };
 
   const fetchCycles = async () => {
     if (!teamId || !user) return;
@@ -55,12 +89,47 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
     }
   };
 
+  const handleTaskSubmit = async (data: any) => {
+    if (!editingTask) return;
+    try {
+      const res = await fetch(`http://localhost:3001/tasks/${editingTask.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': user?.id || ''
+        },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) throw new Error(await res.text());
+      success('Task updated successfully');
+      fetchCycles();
+      setIsTaskModalOpen(false);
+      setEditingTask(null);
+    } catch(err: any) {
+      toastError(err.message || 'Failed to update task');
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col bg-background overflow-hidden h-full">
       <CreateCycleModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleCreateCycle}
+      />
+
+      <TaskModal
+        isOpen={isTaskModalOpen}
+        onClose={() => {
+          setIsTaskModalOpen(false);
+          setEditingTask(null);
+        }}
+        onSubmit={handleTaskSubmit}
+        members={members}
+        projects={projects}
+        cycles={cycles}
+        canAssign={isAdmin || isLead}
+        initialData={editingTask}
       />
       
       <ViewHeader 
@@ -88,7 +157,15 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
             </div>
           ) : (
             cycles.map(cycle => (
-              <div key={cycle.id} className="border border-primary/20 rounded-xl p-5 hover:border-secondary/50 transition-colors bg-primary/5">
+              <div 
+                key={cycle.id} 
+                className={`border rounded-xl p-5 transition-all cursor-pointer ${
+                  expandedCycleId === cycle.id 
+                    ? 'border-secondary/40 bg-secondary/5 ring-1 ring-secondary/20 shadow-lg' 
+                    : 'border-primary/20 hover:border-secondary/30 bg-primary/5'
+                }`}
+                onClick={() => setExpandedCycleId(expandedCycleId === cycle.id ? null : cycle.id)}
+              >
                 <div className="flex justify-between items-start mb-4">
                   <h3 className="font-bold text-lg">{cycle.name}</h3>
                   <span className="text-xs font-mono bg-background border border-primary/10 px-2 py-1 rounded text-primary/70 shadow-sm">
@@ -100,7 +177,7 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
                   const doneTasks = cycle.tasks?.filter((t: any) => t.state === 'DONE').length || 0;
                   const percentage = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
                   return (
-                    <>
+                    <div className={expandedCycleId === cycle.id ? 'pb-4 mb-4 border-b border-secondary/10' : ''}>
                       <div className="text-sm font-semibold text-primary/50 mb-2 flex justify-between">
                         <span>Tasks ({totalTasks})</span>
                         <span className="text-secondary font-mono">{percentage}%</span>
@@ -111,9 +188,42 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
                           style={{ width: `${percentage}%` }}
                         ></div>
                       </div>
-                    </>
+                    </div>
                   );
                 })()}
+
+                {expandedCycleId === cycle.id && (
+                  <div className="space-y-2 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                    {cycle.tasks && cycle.tasks.length > 0 ? (
+                      cycle.tasks.map((task: any) => (
+                        <div 
+                          key={task.id} 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingTask(task);
+                            setIsTaskModalOpen(true);
+                          }}
+                          className="flex items-center justify-between p-2 rounded-lg bg-background/40 border border-primary/10 hover:border-secondary/20 transition-all group cursor-pointer"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                             <div className={`w-2 h-2 rounded-full shrink-0 ${
+                               task.state === 'DONE' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 
+                               task.state === 'TODO' ? 'bg-primary/30' : 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]'
+                             }`} />
+                             <span className="text-sm font-medium text-text truncate group-hover:text-secondary transition-colors">{task.title}</span>
+                          </div>
+                          <span className="text-[10px] font-mono text-primary/30 px-1.5 py-0.5 rounded border border-primary/5 shrink-0 ml-2">
+                             {task.state.replace('_', ' ')}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-6 text-xs text-primary/30 font-bold uppercase tracking-widest italic">
+                        No tasks in this cycle
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ))
           )}
