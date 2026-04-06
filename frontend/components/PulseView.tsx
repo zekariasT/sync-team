@@ -1,6 +1,6 @@
 import { ThemeToggle } from '@/components/ThemeToggle';
 import MemberClock from '@/components/MemberClock';
-import { Show, UserButton } from '@clerk/nextjs';
+import { SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
 import { currentUser, auth } from '@clerk/nextjs/server';
 import PulseForm from './PulseForm';
 import MemberRoleBadge from './MemberRoleBadge';
@@ -40,9 +40,9 @@ export default async function PulseView() {
         </div>
         <div className="flex items-center gap-3">
           <ThemeToggle />
-          <Show when="signed-in">
+          <SignedIn>
             <UserButton />
-          </Show>
+          </SignedIn>
         </div>
       </header>
 
