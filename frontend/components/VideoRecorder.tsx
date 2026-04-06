@@ -4,9 +4,11 @@ import { useState, useRef, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { Video, Mic, StopCircle, X, CheckSquare, RefreshCcw } from 'lucide-react';
 
+import { VideoMessage } from './VideosView';
+
 interface VideoRecorderProps {
   teamId: string;
-  onVideoUploaded?: (videoMessage: any) => void;
+  onVideoUploaded?: (videoMessage: VideoMessage) => void;
   onClose?: () => void;
 }
 

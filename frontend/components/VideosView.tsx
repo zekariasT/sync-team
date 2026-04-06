@@ -8,7 +8,17 @@ import VideoRecorder from './VideoRecorder';
 
 import { useToast } from './ToastProvider';
 
-interface VideoMessage {
+interface Reaction {
+  id: string;
+  timestamp: number;
+  comment: string;
+  emoji?: string;
+  user?: {
+    name: string;
+  };
+}
+
+export interface VideoMessage {
   id: string;
   title: string;
   videoUrl: string;
@@ -19,12 +29,12 @@ interface VideoMessage {
     name: string;
     avatar: string | null;
   };
+  reactions?: Reaction[];
 }
 
 export default function VideosView({ teamId: initialTeamId, onMenuClick }: { teamId?: string; onMenuClick?: () => void }) {
   const { user } = useUser();
   const { getToken } = useAuth();
-  const { success, error: toastError } = useToast();
   const [teamId, setTeamId] = useState<string | null>(initialTeamId || null);
   const [videos, setVideos] = useState<VideoMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -128,7 +138,7 @@ export default function VideosView({ teamId: initialTeamId, onMenuClick }: { tea
                <div className="bg-background rounded-lg border border-primary/15 p-4 flex-1 flex flex-col">
                  <h4 className="font-bold text-sm mb-3 text-text">Reactions</h4>
                  <div className="flex-1 overflow-y-auto mb-3 space-y-2 max-h-[200px]">
-                   {(selectedVideo as any).reactions?.map((reaction: any) => (
+                   {selectedVideo.reactions?.map((reaction) => (
                      <div key={reaction.id} className="text-xs flex items-start gap-2 bg-primary/5 p-2 rounded relative group cursor-pointer hover:bg-primary/10 transition-colors"
                           onClick={() => {
                             const v = document.querySelector('video');
@@ -144,7 +154,7 @@ export default function VideosView({ teamId: initialTeamId, onMenuClick }: { tea
                        </div>
                      </div>
                    ))}
-                   {!(selectedVideo as any).reactions?.length && (
+                   {!selectedVideo.reactions?.length && (
                      <div className="text-primary/50 text-xs italic">No reactions yet. Be the first!</div>
                    )}
                  </div>
@@ -172,7 +182,7 @@ export default function VideosView({ teamId: initialTeamId, onMenuClick }: { tea
                        // Optimistically update
                        setSelectedVideo(prev => {
                          if (!prev) return prev;
-                         return { ...prev, reactions: [...((prev as any).reactions || []), savedReaction] };
+                         return { ...prev, reactions: [...(prev.reactions || []), savedReaction] };
                        });
                        form.reset();
                      }
