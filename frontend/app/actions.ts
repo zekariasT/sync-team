@@ -22,13 +22,14 @@ export async function updatePulse(id: string, formData: FormData) {
     });
 
     if (!response.ok) {
-       const err = await response.text();
-       throw new Error(err || 'Failed to update status');
+       const err = await response.json();
+       return { error: err.message || 'Failed to update status' };
     }
 
     revalidatePath('/');
-  } catch (error) {
+    return { success: true };
+  } catch (error: any) {
     console.error('Failed to update status:', error);
-    throw error;
+    return { error: error.message || 'An unexpected error occurred' };
   }
 }

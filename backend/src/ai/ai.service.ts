@@ -114,4 +114,46 @@ Keep the summary concise (under 300 words). Use a professional but friendly tone
       return '';
     }
   }
+
+  async validateStatus(status: string): Promise<{ isAppropriate: boolean; reason?: string }> {
+    const prompt = `You are a content moderator for a professional team collaboration platform (SyncPoint OS).
+    
+    Analyze the following user status update: "${status}"
+    
+    Determine if this status is appropriate for a professional workplace.
+    Inappropriate content includes:
+    - Profanity or offensive language
+    - Targeted harassment or bullying
+    - Sexually explicit content
+    - Hate speech
+    - Extremely violent or gore descriptions
+    
+    Respond in JSON format:
+    {
+      "isAppropriate": boolean,
+      "reason": "Short explanation if inappropriate, otherwise empty"
+    }`;
+
+    try {
+      const response = await this.ai.models.generateContent({
+        model: 'gemini-2.5-flash-lite',
+        contents: prompt,
+      });
+
+      // Simple JSON extraction
+      const text = response.text || '{ "isAppropriate": true }';
+      const jsonStart = text.indexOf('{');
+      const jsonEnd = text.lastIndexOf('}');
+      if (jsonStart !== -1 && jsonEnd !== -1) {
+        const jsonStr = text.substring(jsonStart, jsonEnd + 1);
+        return JSON.parse(jsonStr);
+      }
+      return { isAppropriate: true };
+    } catch (error) {
+      console.error('AI Moderation failed:', error);
+      // Fail open if AI is down, or implement a basic backup. 
+      // For this OS, we trust the AI, so we'll allow if it fails.
+      return { isAppropriate: true };
+    }
+  }
 }

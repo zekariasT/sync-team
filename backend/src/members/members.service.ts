@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException, ForbiddenException } from "@nestjs/common";
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from "@nestjs/common";
 import { PrismaService } from "../prisma.service.js";
+import { AiService } from "../ai/ai.service.js";
 
 @Injectable()
 export class MembersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private aiService: AiService) {}
 
   async findAll(requesterId?: string) {
     if (!requesterId) {
@@ -54,6 +55,12 @@ export class MembersService {
   }
 
   async update(id: string, status: string, requesterId?: string) {
+    if (status) {
+       const validation = await this.aiService.validateStatus(status);
+       if (!validation.isAppropriate) {
+          throw new BadRequestException(validation.reason || 'Inappropriate content detected in status pulse.');
+       }
+    }
     if (requesterId && id !== requesterId) {
       // Check permissions: Is requester ADMIN in any team, or LEAD in a shared team?
       const requesterMemberships = await this.prisma.teamMember.findMany({
