@@ -1,4 +1,6 @@
-export const runtime = 'nodejs';
+// 1. We must use 'edge' to avoid the "unsupported modules" error in Clerk/Vercel
+export const runtime = 'edge';
+
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
 // Define which routes are public (unprotected)
@@ -6,8 +8,9 @@ const isPublicRoute = createRouteMatcher(['/sign-in(.*)', '/sign-up(.*)']);
 
 export default clerkMiddleware(async (auth, request) => {
   // 🛡️ Debug: identify the active runtime and request path
-  if (process.env.NODE_ENV === 'development' || process.env.VERCEL) {
-    console.log(`[SyncPoint Middleware] Runtime: ${process.env.NEXT_RUNTIME || 'unknown'} | Path: ${request.nextUrl.pathname}`);
+  // Note: process.env checks work differently on Edge, but this is safe for logging
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[SyncPoint] Path: ${request.nextUrl.pathname}`);
   }
 
   if (!isPublicRoute(request)) {
