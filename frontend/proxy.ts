@@ -1,14 +1,15 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-// Define which routes are public (unprotected)
+// 1. Define public routes
 const isPublicRoute = createRouteMatcher(['/sign-in(.*)', '/sign-up(.*)']);
 
 export default clerkMiddleware(async (auth, request) => {
-  // Simple logging for dev mode
+  // 2. Simple log for development
   if (process.env.NODE_ENV === 'development') {
-    console.log(`[SyncPoint] Path: ${request.nextUrl.pathname}`);
+    console.log(`[SyncPoint] Intercepting: ${request.nextUrl.pathname}`);
   }
 
+  // 3. Protect all routes except public ones
   if (!isPublicRoute(request)) {
     await auth.protect();
   }
