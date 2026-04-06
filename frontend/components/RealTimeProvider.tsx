@@ -12,7 +12,7 @@ export default function RealTimeProvider({ children }: { children: React.ReactNo
     useEffect(() => {
         if (isLoaded && user) {
             // Sync user details to backend
-            fetch('http://localhost:3001/members/sync', {
+            fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/members/sync`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -27,7 +27,7 @@ export default function RealTimeProvider({ children }: { children: React.ReactNo
 
     useEffect(() => {
         // Connect to your NestJS backend on port 3001
-        const socket = io('http://localhost:3001');
+        const socket = io(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}`);
 
         // Listen for the "statusChanged" event from the backend
         socket.on('statusChanged', (data) => {

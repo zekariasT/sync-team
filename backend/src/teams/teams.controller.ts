@@ -1,12 +1,13 @@
-import { Controller, Get, Post, Body, Param, ForbiddenException, Headers } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service.js';
+import { UserId } from '../auth/user-id.decorator.js';
 
 @Controller('teams')
 export class TeamsController {
     constructor(private readonly prisma: PrismaService) {}
 
     @Get()
-    async findAll(@Headers('x-user-id') requesterId?: string) {
+    async findAll(@UserId() requesterId?: string) {
         if (!requesterId) return [];
 
         const adminMembership = await this.prisma.teamMember.findFirst({
@@ -30,7 +31,7 @@ export class TeamsController {
     }
 
     @Get(':id')
-    async findOne(@Param('id') id: string, @Headers('x-user-id') requesterId?: string) {
+    async findOne(@Param('id') id: string, @UserId() requesterId?: string) {
         if (!requesterId) throw new ForbiddenException('Unauthorized');
 
         const adminMembership = await this.prisma.teamMember.findFirst({
@@ -51,7 +52,7 @@ export class TeamsController {
     }
 
     @Post()
-    async create(@Body() body: { name: string, description?: string }, @Headers('x-user-id') requesterId?: string) {
+    async create(@Body() body: { name: string, description?: string }, @UserId() requesterId?: string) {
         // Only Admins can create teams in this MVP? Or anybody?
         // Let's assume only Admins for now to be safe.
         if (!requesterId) throw new ForbiddenException('Unauthorized');
@@ -75,7 +76,7 @@ export class TeamsController {
         @Param('teamId') teamId: string,
         @Param('userId') userId: string,
         @Body() body: { role: string },
-        @Headers('x-user-id') requesterId: string
+        @UserId() requesterId: string
     ) {
         if (!requesterId) throw new ForbiddenException('Unauthorized');
 

@@ -38,7 +38,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
     if (!user) return;
     
     // Fetch teams the user belongs to
-    fetch('http://localhost:3001/teams', {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams`, {
       headers: { 'x-user-id': user.id }
     })
       .then(res => res.ok ? res.json() : [])
@@ -48,7 +48,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
         setExpandedTeams(new Set(data.map((t: Team) => t.id)));
         // Fetch channels for each team
         data.forEach((team: Team) => {
-          fetch(`http://localhost:3001/chat/teams/${team.id}/channels`, {
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/chat/teams/${team.id}/channels`, {
             headers: { 'x-user-id': user.id }
           })
             .then(res => res.ok ? res.json() : [])
@@ -72,7 +72,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
   const handleCreateChannel = async (teamId: string) => {
     if (!newChannelName.trim()) return;
     try {
-      const res = await fetch(`http://localhost:3001/chat/teams/${teamId}/channels`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/chat/teams/${teamId}/channels`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

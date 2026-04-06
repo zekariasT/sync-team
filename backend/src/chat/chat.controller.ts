@@ -1,17 +1,18 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Headers } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { ChatService } from './chat.service.js';
+import { UserId } from '../auth/user-id.decorator.js';
 
 @Controller('chat')
 export class ChatController {
     constructor(private readonly chatService: ChatService) {}
 
     @Get('teams/:teamId/channels')
-    async getTeamChannels(@Param('teamId') teamId: string, @Headers('x-user-id') requesterId?: string) {
+    async getTeamChannels(@Param('teamId') teamId: string, @UserId() requesterId?: string) {
         return this.chatService.getTeamChannels(teamId, requesterId);
     }
 
     @Get('channels/:channelId/messages')
-    async getChannelMessages(@Param('channelId') channelId: string, @Headers('x-user-id') requesterId?: string) {
+    async getChannelMessages(@Param('channelId') channelId: string, @UserId() requesterId?: string) {
         return this.chatService.getChannelMessages(channelId, requesterId);
     }
 
@@ -19,7 +20,7 @@ export class ChatController {
     async createMessage(
         @Param('channelId') channelId: string,
         @Body() body: { senderId: string, content: string },
-        @Headers('x-user-id') requesterId?: string
+        @UserId() requesterId?: string
     ) {
         return this.chatService.createMessage(channelId, body.senderId, body.content, requesterId);
     }
@@ -28,7 +29,7 @@ export class ChatController {
     async createChannel(
         @Param('teamId') teamId: string,
         @Body() body: { name: string },
-        @Headers('x-user-id') requesterId?: string
+        @UserId() requesterId?: string
     ) {
         return this.chatService.createChannel(teamId, body.name, requesterId);
     }

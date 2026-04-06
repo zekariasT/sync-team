@@ -36,7 +36,7 @@ export default function DocumentUploader({ teamId, onUploadSuccess }: DocumentUp
       formData.append('file', file);
       formData.append('uploaderId', user?.id || '');
 
-      const res = await fetch(`http://localhost:3001/teams/${teamId}/kb/documents`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams/${teamId}/kb/documents`, {
         method: 'POST',
         headers: { 'x-user-id': user?.id || '' },
         body: formData,

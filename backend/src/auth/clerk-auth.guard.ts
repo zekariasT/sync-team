@@ -10,7 +10,14 @@ export class ClerkAuthGuard implements CanActivate {
     const authHeader = request.headers['authorization'];
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return true; // Allow public routes if not protected by @UseGuards at class/method level or if middleware handled it
+       // Check if there is an x-user-id fallback for dev/testing if needed, 
+       // but for production, we strictly require the token.
+       const requesterId = request.headers['x-user-id'];
+       if (process.env.NODE_ENV !== 'production' && requesterId) {
+         request['user'] = { clerkId: requesterId };
+         return true;
+       }
+       throw new UnauthorizedException('Missing Authorization Header');
     }
 
     const token = authHeader.split(' ')[1];
@@ -20,6 +27,7 @@ export class ClerkAuthGuard implements CanActivate {
       request['user'] = { clerkId: claims.sub };
       return true;
     } catch (err) {
+      console.error('Clerk Auth Error:', err);
       throw new UnauthorizedException('Invalid or expired token');
     }
   }

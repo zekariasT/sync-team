@@ -49,7 +49,7 @@ export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAr
 
     // Fetch existing messages
     if (user) {
-      fetch(`http://localhost:3001/chat/channels/${channelId}/messages`, {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/chat/channels/${channelId}/messages`, {
         headers: { 'x-user-id': user.id }
       })
         .then(res => res.ok ? res.json() : [])
@@ -61,7 +61,7 @@ export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAr
     }
 
     // Set up WebSocket for real-time messages
-    const socket = io('http://localhost:3001');
+    const socket = io(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}`);
     socketRef.current = socket;
 
     socket.emit('joinChannel', channelId);
@@ -84,7 +84,7 @@ export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAr
     setNewMessage('');
 
     try {
-      const res = await fetch(`http://localhost:3001/chat/channels/${channelId}/messages`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/chat/channels/${channelId}/messages`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

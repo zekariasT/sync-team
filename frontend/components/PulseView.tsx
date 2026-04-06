@@ -9,7 +9,7 @@ export default async function PulseView() {
   const user = await currentUser();
   let members: any[] = [];
   try {
-    const res = await fetch('http://localhost:3001/members', { 
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/members`, { 
       cache: 'no-store',
       headers: {
         'x-user-id': user?.id || '',

@@ -12,7 +12,7 @@ export async function updatePulse(id: string, formData: FormData) {
 
   try {
     // Redundant role check removed - backend handles this securely.
-    const response = await fetch(`http://localhost:3001/members/${id}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/members/${id}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -39,7 +39,7 @@ export async function updateRole(userId: string, teamId: string, role: string) {
   if (!user) throw new Error('Unauthorized');
 
   try {
-    const response = await fetch(`http://localhost:3001/teams/${teamId}/members/${userId}/role`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams/${teamId}/members/${userId}/role`, {
       method: 'POST', // Backend currently uses @Post (should have been PATCH, but keep consistent)
       headers: {
         'Content-Type': 'application/json',

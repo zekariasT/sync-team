@@ -53,7 +53,7 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
   useEffect(() => {
     if (!user) return;
     
-    fetch('http://localhost:3001/teams', {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams`, {
       headers: { 'x-user-id': user.id }
     })
       .then(res => res.json())

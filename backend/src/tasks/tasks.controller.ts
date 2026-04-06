@@ -1,14 +1,14 @@
-import { Controller, Get, Post, Patch, Body, Param, UseGuards, Headers } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, UseGuards } from '@nestjs/common';
 import { TasksService } from './tasks.service.js';
 import { TaskState } from '@prisma/client';
+import { UserId } from '../auth/user-id.decorator.js';
 
-// Removing ClerkAuthGuard temporarily since frontend passes x-user-id instead
 @Controller('tasks')
 export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 
   @Get('teams/:teamId/projects')
-  getProjects(@Param('teamId') teamId: string, @Headers('x-user-id') requesterId: string) {
+  getProjects(@Param('teamId') teamId: string, @UserId() requesterId: string) {
     return this.tasksService.getProjects(teamId, requesterId);
   }
 
@@ -16,13 +16,13 @@ export class TasksController {
   createProject(
     @Param('teamId') teamId: string,
     @Body() data: { name: string; description?: string },
-    @Headers('x-user-id') requesterId: string
+    @UserId() requesterId: string
   ) {
     return this.tasksService.createProject(teamId, data, requesterId);
   }
 
   @Get('teams/:teamId/cycles')
-  getCycles(@Param('teamId') teamId: string, @Headers('x-user-id') requesterId: string) {
+  getCycles(@Param('teamId') teamId: string, @UserId() requesterId: string) {
     return this.tasksService.getCycles(teamId, requesterId);
   }
 
@@ -30,13 +30,13 @@ export class TasksController {
   createCycle(
     @Param('teamId') teamId: string, 
     @Body() data: { name: string; startDate: string; endDate: string },
-    @Headers('x-user-id') requesterId: string
+    @UserId() requesterId: string
   ) {
     return this.tasksService.createCycle(teamId, data, requesterId);
   }
 
   @Get('teams/:teamId/tasks')
-  getTasks(@Param('teamId') teamId: string, @Headers('x-user-id') requesterId: string) {
+  getTasks(@Param('teamId') teamId: string, @UserId() requesterId: string) {
     return this.tasksService.getTasks(teamId, requesterId);
   }
 
@@ -52,7 +52,7 @@ export class TasksController {
       cycleId?: string;
       reporterId?: string;
     },
-    @Headers('x-user-id') requesterId: string
+    @UserId() requesterId: string
   ) {
     const { reporterId, ...taskData } = data as any; 
     return this.tasksService.createTask(teamId, reporterId || requesterId, taskData, requesterId);
@@ -62,7 +62,7 @@ export class TasksController {
   updateTaskState(
     @Param('id') id: string, 
     @Body('state') state: TaskState,
-    @Headers('x-user-id') requesterId: string
+    @UserId() requesterId: string
   ) {
     return this.tasksService.updateTaskState(id, state, requesterId);
   }
@@ -71,7 +71,7 @@ export class TasksController {
   updateTaskAssignee(
     @Param('id') id: string, 
     @Body('assigneeId') assigneeId: string | null,
-    @Headers('x-user-id') requesterId: string
+    @UserId() requesterId: string
   ) {
     return this.tasksService.updateTaskAssignee(id, assigneeId, requesterId);
   }
@@ -80,7 +80,7 @@ export class TasksController {
   updateTask(
     @Param('id') id: string,
     @Body() data: any,
-    @Headers('x-user-id') requesterId: string
+    @UserId() requesterId: string
   ) {
     return this.tasksService.updateTask(id, data, requesterId);
   }

@@ -1,7 +1,8 @@
-import { Controller, Get, Patch, Post, Body, Param, Headers } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Body, Param } from '@nestjs/common';
 import { MembersService } from './members.service.js';
 import { PulseGateway } from '../pulse/pulse.gateway.js';
 import { Member } from "./member.interface.js";
+import { UserId } from '../auth/user-id.decorator.js';
 
 @Controller('members')
 export class MembersController {
@@ -11,7 +12,7 @@ export class MembersController {
     ) { }
 
     @Get()
-    async findAll(@Headers('x-user-id') requesterId?: string): Promise<Member[]> {
+    async findAll(@UserId() requesterId?: string): Promise<Member[]> {
         return this.membersService.findAll(requesterId);
     }
 
@@ -24,7 +25,7 @@ export class MembersController {
     async update(
         @Param('id') id: string, 
         @Body() body: { status: string },
-        @Headers('x-user-id') requesterId?: string
+        @UserId() requesterId?: string
     ) {
         const updatedMember = await this.membersService.update(id, body.status, requesterId);
 

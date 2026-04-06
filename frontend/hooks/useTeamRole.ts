@@ -22,7 +22,7 @@ export function useTeamRole(teamId?: string) {
 
       try {
         // Fetch all teams the user belongs to
-        const teamsRes = await fetch('http://localhost:3001/teams', {
+        const teamsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams`, {
           headers: { 'x-user-id': user.id }
         });
         const teams = teamsRes.ok ? await teamsRes.json() : [];
@@ -43,7 +43,7 @@ export function useTeamRole(teamId?: string) {
             }
           } else {
             // If not found in user's team list, try direct fetch (maybe they are a global admin viewing a team they aren't part of)
-            const teamRes = await fetch(`http://localhost:3001/teams/${teamId}`, {
+            const teamRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams/${teamId}`, {
               headers: { 'x-user-id': user.id }
             });
             if (teamRes.ok) {

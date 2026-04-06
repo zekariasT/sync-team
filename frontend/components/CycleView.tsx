@@ -33,7 +33,7 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
   const fetchProjects = async () => {
     if (!teamId || !user) return;
     try {
-      const res = await fetch(`http://localhost:3001/tasks/teams/${teamId}/projects`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/tasks/teams/${teamId}/projects`, {
         headers: { 'x-user-id': user.id }
       });
       if (res.ok) setProjects(await res.json());
@@ -43,7 +43,7 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
   const fetchMembers = async () => {
     if (!teamId || !user) return;
     try {
-      const res = await fetch(`http://localhost:3001/teams/${teamId}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams/${teamId}`, {
         headers: { 'x-user-id': user.id }
       });
       if (res.ok) {
@@ -56,7 +56,7 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
   const fetchCycles = async () => {
     if (!teamId || !user) return;
     try {
-      const res = await fetch(`http://localhost:3001/tasks/teams/${teamId}/cycles`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/tasks/teams/${teamId}/cycles`, {
         headers: { 'x-user-id': user.id }
       });
       if (res.ok) setCycles(await res.json());
@@ -67,7 +67,7 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
     if (!teamId) return;
 
     try {
-      const res = await fetch(`http://localhost:3001/tasks/teams/${teamId}/cycles`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/tasks/teams/${teamId}/cycles`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -92,7 +92,7 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
   const handleTaskSubmit = async (data: any) => {
     if (!editingTask) return;
     try {
-      const res = await fetch(`http://localhost:3001/tasks/${editingTask.id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/tasks/${editingTask.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

@@ -33,7 +33,7 @@ export default function VideosView({ teamId: initialTeamId, onMenuClick }: { tea
   useEffect(() => {
     if (!teamId) {
       // Fetch teams first
-      fetch('http://localhost:3001/teams')
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams`)
         .then(res => res.json())
         .then(data => {
           if (data && data.length > 0) {
@@ -46,12 +46,12 @@ export default function VideosView({ teamId: initialTeamId, onMenuClick }: { tea
     } else {
       fetchVideos();
     }
-  }, [teamId, user]); // Added user to dependency array to ensure header is ready
+  }, [teamId, user]);
 
   const fetchVideos = async () => {
     if (!teamId || !user) return;
     try {
-      const res = await fetch(`http://localhost:3001/video/teams/${teamId}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/video/teams/${teamId}`, {
         headers: { 'x-user-id': user.id }
       });
       if (res.ok) {
@@ -153,7 +153,7 @@ export default function VideosView({ teamId: initialTeamId, onMenuClick }: { tea
                    const timestamp = videoEl ? videoEl.currentTime : 0;
                    
                    try {
-                     const res = await fetch(`http://localhost:3001/video/${selectedVideo.id}/reactions`, {
+                     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/video/${selectedVideo.id}/reactions`, {
                        method: 'POST',
                         headers: {
                           'Content-Type': 'application/json',

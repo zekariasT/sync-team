@@ -22,7 +22,7 @@ export default function KnowledgeBaseView({ teamId, onMenuClick }: { teamId?: st
     setAnswer(null);
 
     try {
-      const res = await fetch(`http://localhost:3001/teams/${teamId}/kb/query`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams/${teamId}/kb/query`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
