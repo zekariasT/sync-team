@@ -1,9 +1,15 @@
+export const runtime = 'nodejs';
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
 // Define which routes are public (unprotected)
 const isPublicRoute = createRouteMatcher(['/sign-in(.*)', '/sign-up(.*)']);
 
 export default clerkMiddleware(async (auth, request) => {
+  // 🛡️ Debug: identify the active runtime and request path
+  if (process.env.NODE_ENV === 'development' || process.env.VERCEL) {
+    console.log(`[SyncPoint Middleware] Runtime: ${process.env.NEXT_RUNTIME || 'unknown'} | Path: ${request.nextUrl.pathname}`);
+  }
+
   if (!isPublicRoute(request)) {
     await auth.protect();
   }

@@ -8,8 +8,13 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // 🧭 Transpile Clerk packages for Edge Runtime compatibility
+  // 🧭 Transpile Clerk packages for Edge/Node Runtime compatibility
   transpilePackages: ["@clerk/nextjs", "@clerk/shared"]
 };
+
+// 🛡️ Debug: Log build configuration success
+if (process.env.NODE_ENV === 'development' || process.env.VERCEL) {
+  console.log('[SyncPoint Build] Next.js config initialized with Clerk transpilation enabled.');
+}
 
 export default nextConfig;
