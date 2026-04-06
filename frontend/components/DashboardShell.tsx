@@ -15,7 +15,10 @@ interface DashboardShellProps {
   pulseContent: React.ReactNode;
 }
 
+import { useUser } from '@clerk/nextjs';
+
 export default function DashboardShell({ pulseContent }: DashboardShellProps) {
+  const { user } = useUser();
   const [activeView, setActiveView] = useState<'pulse' | 'chat' | 'videos' | 'tasks' | 'cycles' | 'roadmap' | 'kb'>('pulse');
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [activeChannelName, setActiveChannelName] = useState<string>('');
@@ -24,7 +27,11 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
-    fetch('http://localhost:3001/teams')
+    if (!user) return;
+    
+    fetch('http://localhost:3001/teams', {
+      headers: { 'x-user-id': user.id }
+    })
       .then(res => res.json())
       .then(data => {
         if (data && data.length > 0) {
@@ -32,7 +39,7 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
           setTeamId(seedTeam ? seedTeam.id : data[0].id);
         }
       });
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

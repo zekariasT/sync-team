@@ -1,11 +1,15 @@
 'use client';
 
 import { useState } from 'react';
+import { useUser } from '@clerk/nextjs';
 import { Database, Search, Bot, FileText } from 'lucide-react';
+import { useToast } from './ToastProvider';
 import ViewHeader from './ViewHeader';
 import DocumentUploader from './DocumentUploader';
 
 export default function KnowledgeBaseView({ teamId, onMenuClick }: { teamId?: string; onMenuClick?: () => void }) {
+  const { user } = useUser();
+  const { error: toastError } = useToast();
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [answer, setAnswer] = useState<string | null>(null);
@@ -20,18 +24,23 @@ export default function KnowledgeBaseView({ teamId, onMenuClick }: { teamId?: st
     try {
       const res = await fetch(`http://localhost:3001/teams/${teamId}/kb/query`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-user-id': user?.id || ''
+        },
         body: JSON.stringify({ query }),
       });
       if (res.ok) {
          const data = await res.json();
          setAnswer(data.answer);
       } else {
+         const errText = await res.text();
+         toastError(errText || 'Failed to get answer');
          setAnswer('❌ Failed to get answer from Knowledge Base.');
       }
-    } catch (err) {
-       console.error(err);
-       setAnswer('❌ Error connecting to RAG service.');
+    } catch (err: any) {
+        toastError(err.message || 'Error connecting to RAG service');
+        setAnswer('❌ Error connecting to RAG service.');
     } finally {
       setIsSearching(false);
     }

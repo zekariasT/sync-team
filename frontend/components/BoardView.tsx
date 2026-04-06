@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useUser } from '@clerk/nextjs';
 import { Plus, CheckCircle2 } from 'lucide-react';
 import { 
   DndContext, 
@@ -19,7 +20,9 @@ import {
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import ViewHeader from './ViewHeader';
-import CreateTaskModal from './CreateTaskModal';
+import TaskModal from './TaskModal';
+import { useTeamRole } from '@/hooks/useTeamRole';
+import { useToast } from './ToastProvider';
 
 interface Task {
   id: string;
@@ -36,7 +39,7 @@ const STATE_COLORS: Record<string, string> = {
   DONE: 'bg-emerald-500',
 };
 
-function SortableTask({ task, isOverlay = false }: { task: Task; isOverlay?: boolean }) {
+function SortableTask({ task, onClick, isOverlay = false }: { task: Task; onClick?: () => void; isOverlay?: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
   
   const style = {
@@ -53,6 +56,7 @@ function SortableTask({ task, isOverlay = false }: { task: Task; isOverlay?: boo
       style={style}
       {...listeners}
       {...attributes}
+      onClick={onClick}
       className={`bg-background border ${
         isOverlay 
           ? 'border-secondary shadow-2xl rotate-1 scale-105' 
@@ -84,7 +88,7 @@ function SortableTask({ task, isOverlay = false }: { task: Task; isOverlay?: boo
   );
 }
 
-function DroppableColumn({ status, tasks }: { status: string; tasks: Task[] }) {
+function DroppableColumn({ status, tasks, onTaskClick }: { status: string; tasks: Task[]; onTaskClick: (task: Task) => void }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   
   return (
@@ -101,7 +105,7 @@ function DroppableColumn({ status, tasks }: { status: string; tasks: Task[] }) {
         <SortableContext id={status} items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
            <div className="min-h-[150px] flex flex-col gap-2 pb-10">
              {tasks.map(task => (
-               <SortableTask key={task.id} task={task} />
+               <SortableTask key={task.id} task={task} onClick={() => onTaskClick(task)} />
              ))}
              {tasks.length === 0 && !isOver && (
                <div className="flex-1 flex items-center justify-center border border-dashed border-primary/10 rounded-lg p-4 opacity-30 text-[10px] uppercase tracking-widest font-bold">
@@ -116,8 +120,15 @@ function DroppableColumn({ status, tasks }: { status: string; tasks: Task[] }) {
 }
 
 export default function BoardView({ teamId, onMenuClick }: { teamId?: string; onMenuClick?: () => void }) {
+  const { user } = useUser();
+  const { success, error: toastError } = useToast();
+  const { role, isAdmin, isLead } = useTeamRole(teamId);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [members, setMembers] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [cycles, setCycles] = useState<any[]>([]);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const columns = ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE'] as const;
 
@@ -127,12 +138,52 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
   );
 
   useEffect(() => {
-    if (teamId) fetchTasks();
+    if (teamId) {
+      fetchTasks();
+      fetchMembers();
+      fetchProjects();
+      fetchCycles();
+    }
   }, [teamId]);
+
+  const fetchProjects = async () => {
+    if (!teamId || !user) return;
+    try {
+      const res = await fetch(`http://localhost:3001/tasks/teams/${teamId}/projects`, {
+        headers: { 'x-user-id': user.id }
+      });
+      if (res.ok) setProjects(await res.json());
+    } catch(err) { console.error(err); }
+  };
+
+  const fetchCycles = async () => {
+    if (!teamId || !user) return;
+    try {
+      const res = await fetch(`http://localhost:3001/tasks/teams/${teamId}/cycles`, {
+        headers: { 'x-user-id': user.id }
+      });
+      if (res.ok) setCycles(await res.json());
+    } catch(err) { console.error(err); }
+  };
+
+  const fetchMembers = async () => {
+    if (!teamId || !user) return;
+    try {
+      const res = await fetch(`http://localhost:3001/teams/${teamId}`, {
+        headers: { 'x-user-id': user.id }
+      });
+      if (res.ok) {
+        const team = await res.json();
+        setMembers(team.members || []);
+      }
+    } catch(err) { console.error('Failed to fetch members', err); }
+  };
 
   const fetchTasks = async () => {
     try {
-      const res = await fetch(`http://localhost:3001/tasks/teams/${teamId}/tasks`);
+      const res = await fetch(`http://localhost:3001/tasks/teams/${teamId}/tasks`, {
+        headers: { 'x-user-id': user?.id || '' }
+      });
       if (res.ok) setTasks(await res.json());
     } catch(err) { console.error(err); }
   };
@@ -167,52 +218,78 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
     if (activeTask.state !== newStatus) {
       setTasks(prev => prev.map(t => t.id === activeId ? { ...t, state: newStatus } : t));
       try {
-        await fetch(`http://localhost:3001/tasks/${activeId}/state`, {
+        const res = await fetch(`http://localhost:3001/tasks/${activeId}/state`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'x-user-id': user?.id || ''
+          },
           body: JSON.stringify({ state: newStatus })
         });
-      } catch(err) {
-        console.error('Failed to update task state:', err);
+        if (!res.ok) {
+           const errText = await res.text();
+           throw new Error(errText || 'Failed to move task');
+        }
+        success(`Task moved to ${newStatus.replace('_', ' ')}`);
+      } catch(err: any) {
+        toastError(err.message || 'Failed to move task');
         fetchTasks();
       }
     }
   };
 
-  const handleCreateTask = async (data: { title: string; description: string }) => {
+  const handleModalSubmit = async (data: { title: string; description: string; assigneeId?: string; projectId?: string; cycleId?: string }) => {
     if (!teamId) return;
 
     try {
-      let reporterId = 'user-sarah';
-      const membersRes = await fetch('http://localhost:3001/members');
-      if (membersRes.ok) {
-        const members = await membersRes.json();
-        if (members && members.length > 0 && members[0].id) {
-          reporterId = members[0].id;
-        }
-      }
+      const url = editingTask 
+        ? `http://localhost:3001/tasks/${editingTask.id}`
+        : `http://localhost:3001/tasks/teams/${teamId}/tasks`;
+      
+      const method = editingTask ? 'PATCH' : 'POST';
 
-      await fetch(`http://localhost:3001/tasks/teams/${teamId}/tasks`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          title: data.title, 
-          description: data.description,
-          reporterId, 
-          state: 'TODO' 
-        })
+      const body = editingTask 
+        ? JSON.stringify(data)
+        : JSON.stringify({ 
+            ...data,
+            reporterId: user?.id || '', 
+            state: 'TODO' 
+          });
+
+      const res = await fetch(url, {
+        method,
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-user-id': user?.id || ''
+        },
+        body
       });
+
+      if (!res.ok) throw new Error(await res.text());
+      
+      success(`Task ${editingTask ? 'updated' : 'created'} successfully`);
       fetchTasks();
       setIsModalOpen(false);
-    } catch(err) { console.error(err); }
+      setEditingTask(null);
+    } catch(err: any) { 
+      toastError(err.message || `Failed to ${editingTask ? 'update' : 'create'} task`);
+    }
   };
 
   return (
     <div className="flex-1 flex flex-col bg-background overflow-hidden h-full">
-      <CreateTaskModal 
+      <TaskModal 
         isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onSubmit={handleCreateTask} 
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingTask(null);
+        }} 
+        onSubmit={handleModalSubmit} 
+        members={members}
+        projects={projects}
+        cycles={cycles}
+        canAssign={isAdmin || isLead}
+        initialData={editingTask}
       />
       
       <ViewHeader 
@@ -220,12 +297,17 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
         Icon={CheckCircle2} 
         onMenuClick={onMenuClick || (() => {})}
       >
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="bg-secondary text-white px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1 hover:bg-secondary/90 transition-colors shadow-sm"
-        >
-          <Plus size={16} /> <span className="hidden sm:inline">New Task</span>
-        </button>
+        {(isAdmin || isLead) && (
+          <button 
+            onClick={() => {
+              setEditingTask(null);
+              setIsModalOpen(true);
+            }}
+            className="bg-secondary text-white px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1 hover:bg-secondary/90 transition-colors shadow-sm"
+          >
+            <Plus size={16} /> <span className="hidden sm:inline">New Task</span>
+          </button>
+        )}
       </ViewHeader>
 
       <div className="flex-1 overflow-x-auto p-4 md:p-6 custom-scrollbar">
@@ -241,6 +323,10 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
                 key={status} 
                 status={status} 
                 tasks={tasks.filter(t => t.state === status)} 
+                onTaskClick={(task) => {
+                  setEditingTask(task);
+                  setIsModalOpen(true);
+                }}
               />
             ))}
           </div>

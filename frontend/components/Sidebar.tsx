@@ -35,29 +35,30 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
   const { signOut, openUserProfile } = useClerk();
 
   useEffect(() => {
+    if (!user) return;
+    
     // Fetch teams the user belongs to
-    fetch('http://localhost:3001/members')
-      .then(res => res.json())
-      .then(() => {
-        // For now, we'll fetch all teams. In production, this would be scoped.
-        fetch('http://localhost:3001/teams')
-          .then(res => res.ok ? res.json() : [])
-          .then(data => {
-            setTeams(data);
-            // Auto-expand all teams
-            setExpandedTeams(new Set(data.map((t: Team) => t.id)));
-            // Fetch channels for each team
-            data.forEach((team: Team) => {
-              fetch(`http://localhost:3001/chat/teams/${team.id}/channels`)
-                .then(res => res.ok ? res.json() : [])
-                .then(chans => {
-                  setChannels(prev => [...prev.filter(c => c.teamId !== team.id), ...chans]);
-                });
-            });
+    fetch('http://localhost:3001/teams', {
+      headers: { 'x-user-id': user.id }
+    })
+      .then(res => res.ok ? res.json() : [])
+      .then(data => {
+        setTeams(data);
+        // Auto-expand all teams
+        setExpandedTeams(new Set(data.map((t: Team) => t.id)));
+        // Fetch channels for each team
+        data.forEach((team: Team) => {
+          fetch(`http://localhost:3001/chat/teams/${team.id}/channels`, {
+            headers: { 'x-user-id': user.id }
           })
-          .catch(() => setTeams([]));
-      });
-  }, []);
+            .then(res => res.ok ? res.json() : [])
+            .then(chans => {
+              setChannels(prev => [...prev.filter(c => c.teamId !== team.id), ...chans]);
+            });
+        });
+      })
+      .catch(() => setTeams([]));
+  }, [user]);
 
   const toggleTeam = (teamId: string) => {
     setExpandedTeams(prev => {
@@ -73,7 +74,10 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
     try {
       const res = await fetch(`http://localhost:3001/chat/teams/${teamId}/channels`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-user-id': user?.id || ''
+        },
         body: JSON.stringify({ name: newChannelName.trim() }),
       });
       if (res.ok) {

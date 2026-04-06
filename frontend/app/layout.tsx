@@ -20,6 +20,7 @@ export const metadata: Metadata = {
 
 import { ThemeProvider } from "@/components/ThemeProvider";
 import RealTimeProvider from "@/components/RealTimeProvider";
+import { ToastProvider } from "@/components/ToastProvider";
 
 export default function RootLayout({
   children,
@@ -33,9 +34,11 @@ export default function RootLayout({
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
           <RealTimeProvider>
-            <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-              {children}
-            </ThemeProvider>
+            <ToastProvider>
+              <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+                {children}
+              </ThemeProvider>
+            </ToastProvider>
           </RealTimeProvider>
         </body>
       </html>

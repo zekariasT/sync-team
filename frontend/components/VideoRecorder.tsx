@@ -95,6 +95,9 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
     try {
       const res = await fetch(`http://localhost:3001/video/teams/${teamId}/upload`, {
         method: 'POST',
+        headers: {
+          'x-user-id': user.id
+        },
         body: formData,
       });
 

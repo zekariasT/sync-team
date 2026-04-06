@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, ForbiddenException, Headers } from '@nestjs/common';
 import { PrismaService } from '../prisma.service.js';
 
 @Controller('teams')
@@ -6,14 +6,44 @@ export class TeamsController {
     constructor(private readonly prisma: PrismaService) {}
 
     @Get()
-    async findAll() {
+    async findAll(@Headers('x-user-id') requesterId?: string) {
+        if (!requesterId) return [];
+
+        const adminMembership = await this.prisma.teamMember.findFirst({
+            where: { userId: requesterId, role: 'ADMIN' }
+        });
+
+        if (adminMembership) {
+            return this.prisma.team.findMany({
+                include: { members: true, channels: true },
+            });
+        }
+
         return this.prisma.team.findMany({
+            where: {
+                members: {
+                    some: { userId: requesterId }
+                }
+            },
             include: { members: true, channels: true },
         });
     }
 
     @Get(':id')
-    async findOne(@Param('id') id: string) {
+    async findOne(@Param('id') id: string, @Headers('x-user-id') requesterId?: string) {
+        if (!requesterId) throw new ForbiddenException('Unauthorized');
+
+        const adminMembership = await this.prisma.teamMember.findFirst({
+            where: { userId: requesterId, role: 'ADMIN' }
+        });
+
+        if (!adminMembership) {
+            const member = await this.prisma.teamMember.findUnique({
+                where: { userId_teamId: { userId: requesterId, teamId: id } }
+            });
+            if (!member) throw new ForbiddenException('You do not belong to this team');
+        }
+
         return this.prisma.team.findUnique({
             where: { id },
             include: { members: { include: { user: true } }, channels: true },
@@ -21,7 +51,17 @@ export class TeamsController {
     }
 
     @Post()
-    async create(@Body() body: { name: string, description?: string }) {
+    async create(@Body() body: { name: string, description?: string }, @Headers('x-user-id') requesterId?: string) {
+        // Only Admins can create teams in this MVP? Or anybody?
+        // Let's assume only Admins for now to be safe.
+        if (!requesterId) throw new ForbiddenException('Unauthorized');
+        
+        const adminMembership = await this.prisma.teamMember.findFirst({
+            where: { userId: requesterId, role: 'ADMIN' }
+        });
+
+        if (!adminMembership) throw new ForbiddenException('Only administrators can create teams');
+
         return this.prisma.team.create({
             data: {
                 name: body.name,

@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { useUser } from '@clerk/nextjs';
 import { Upload, X, FileText, CheckCircle2 } from 'lucide-react';
+import { useToast } from './ToastProvider';
 
 interface DocumentUploaderProps {
   teamId: string;
@@ -9,6 +11,8 @@ interface DocumentUploaderProps {
 }
 
 export default function DocumentUploader({ teamId, onUploadSuccess }: DocumentUploaderProps) {
+  const { user } = useUser();
+  const { success, error: toastError } = useToast();
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,22 +32,13 @@ export default function DocumentUploader({ teamId, onUploadSuccess }: DocumentUp
     setError(null);
 
     try {
-      // Need a valid user ID, lets fetch the members to grab one for prototype purposes
-      let uploaderId = 'user-sarah';
-      const membersRes = await fetch('http://localhost:3001/members');
-      if (membersRes.ok) {
-        const members = await membersRes.json();
-        if (members && members.length > 0 && members[0].id) {
-          uploaderId = members[0].id;
-        }
-      }
-
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('uploaderId', uploaderId);
+      formData.append('uploaderId', user?.id || '');
 
       const res = await fetch(`http://localhost:3001/teams/${teamId}/kb/documents`, {
         method: 'POST',
+        headers: { 'x-user-id': user?.id || '' },
         body: formData,
       });
 
@@ -51,9 +46,10 @@ export default function DocumentUploader({ teamId, onUploadSuccess }: DocumentUp
          throw new Error(await res.text());
       }
       
+      success('Document embedded successfully');
       onUploadSuccess();
     } catch (err: any) {
-      console.error(err);
+      toastError(err.message || 'Upload failed');
       setError(err.message || 'Upload failed');
     } finally {
       setIsUploading(false);

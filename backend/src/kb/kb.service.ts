@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service.js';
 import { AiService } from '../ai/ai.service.js';
 import { Pinecone } from '@pinecone-database/pinecone';
@@ -24,6 +24,21 @@ export class KbService {
 
   get indexName() {
     return process.env.PINECONE_INDEX_NAME || 'syncpoint';
+  }
+
+  private async checkTeamPermission(teamId: string, requesterId: string, allowedRoles: string[]) {
+    if (!requesterId) throw new ForbiddenException('Unauthorized');
+    const member = await this.prisma.teamMember.findUnique({
+      where: { userId_teamId: { userId: requesterId, teamId } }
+    });
+    const anyAdmin = await this.prisma.teamMember.findFirst({
+      where: { userId: requesterId, role: 'ADMIN' }
+    });
+    
+    if (anyAdmin) return true;
+    if (!member) throw new ForbiddenException('You do not belong to this team');
+    if (!allowedRoles.includes(member.role)) throw new ForbiddenException('Insufficient permissions');
+    return true;
   }
 
   private async ensureIndex() {
@@ -63,8 +78,10 @@ export class KbService {
   async uploadDocument(
     teamId: string,
     uploaderId: string,
-    file: Express.Multer.File
+    file: Express.Multer.File,
+    requesterId: string
   ) {
+    await this.checkTeamPermission(teamId, requesterId, ['ADMIN', 'LEAD', 'MEMBER']);
     let text = '';
     
     // Parse depending on mime type, defaults to pdf
@@ -140,7 +157,8 @@ export class KbService {
     return document;
   }
 
-  async askKnowledgeBase(teamId: string, query: string): Promise<string> {
+  async askKnowledgeBase(teamId: string, query: string, requesterId: string): Promise<string> {
+     await this.checkTeamPermission(teamId, requesterId, ['ADMIN', 'LEAD', 'MEMBER']);
      if (!process.env.PINECONE_API_KEY) {
          return "Pinecone is not configured. Please set PINECONE_API_KEY to search the Knowledge Base.";
      }

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service.js';
 import { AiService } from '../ai/ai.service.js';
 import { v2 as cloudinary } from 'cloudinary';
@@ -18,7 +18,23 @@ export class VideoService {
     });
   }
 
-  async processVideo(teamId: string, senderId: string, fileBuffer: Buffer, mimetype: string, title?: string) {
+  private async checkTeamPermission(teamId: string, requesterId: string, allowedRoles: string[]) {
+    if (!requesterId) throw new ForbiddenException('Unauthorized');
+    const member = await this.prisma.teamMember.findUnique({
+      where: { userId_teamId: { userId: requesterId, teamId } }
+    });
+    const anyAdmin = await this.prisma.teamMember.findFirst({
+      where: { userId: requesterId, role: 'ADMIN' }
+    });
+    
+    if (anyAdmin) return true;
+    if (!member) throw new ForbiddenException('You do not belong to this team');
+    if (!allowedRoles.includes(member.role)) throw new ForbiddenException('Insufficient permissions');
+    return true;
+  }
+
+  async processVideo(teamId: string, senderId: string, fileBuffer: Buffer, mimetype: string, title?: string, requesterId?: string) {
+    if (requesterId) await this.checkTeamPermission(teamId, requesterId, ['ADMIN', 'LEAD', 'MEMBER']);
     // 1. Upload to Cloudinary
     return new Promise(async (resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
@@ -61,7 +77,8 @@ export class VideoService {
     });
   }
 
-  async getVideoMessages(teamId: string) {
+  async getVideoMessages(teamId: string, requesterId?: string) {
+    if (requesterId) await this.checkTeamPermission(teamId, requesterId, ['ADMIN', 'LEAD', 'MEMBER']);
     return this.prisma.videoMessage.findMany({
       where: { teamId },
       include: {
@@ -72,7 +89,12 @@ export class VideoService {
     });
   }
 
-  async addReaction(videoId: string, userId: string, timestamp: number, emoji?: string, comment?: string) {
+  async addReaction(videoId: string, userId: string, timestamp: number, emoji?: string, comment?: string, requesterId?: string) {
+    const video = await this.prisma.videoMessage.findUnique({ where: { id: videoId } });
+    if (!video) throw new Error('Video not found');
+    
+    if (requesterId) await this.checkTeamPermission(video.teamId, requesterId, ['ADMIN', 'LEAD', 'MEMBER']);
+
     return this.prisma.videoReaction.create({
       data: {
         videoId,

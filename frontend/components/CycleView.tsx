@@ -3,9 +3,15 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Plus } from 'lucide-react';
 import ViewHeader from './ViewHeader';
+import { useUser } from '@clerk/nextjs';
 import CreateCycleModal from './CreateCycleModal';
+import { useTeamRole } from '@/hooks/useTeamRole';
+import { useToast } from './ToastProvider';
 
 export default function CycleView({ teamId, onMenuClick }: { teamId?: string; onMenuClick?: () => void }) {
+  const { user } = useUser();
+  const { success, error: toastError } = useToast();
+  const { isAdmin, isLead } = useTeamRole(teamId);
   const [cycles, setCycles] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -14,8 +20,11 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
   }, [teamId]);
 
   const fetchCycles = async () => {
+    if (!teamId || !user) return;
     try {
-      const res = await fetch(`http://localhost:3001/tasks/teams/${teamId}/cycles`);
+      const res = await fetch(`http://localhost:3001/tasks/teams/${teamId}/cycles`, {
+        headers: { 'x-user-id': user.id }
+      });
       if (res.ok) setCycles(await res.json());
     } catch(err) { console.error(err); }
   };
@@ -24,19 +33,25 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
     if (!teamId) return;
 
     try {
-      await fetch(`http://localhost:3001/tasks/teams/${teamId}/cycles`, {
+      const res = await fetch(`http://localhost:3001/tasks/teams/${teamId}/cycles`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-user-id': user?.id || ''
+        },
         body: JSON.stringify({
           name: data.name,
           startDate: data.startDate,
           endDate: data.endDate
         })
       });
+      if (!res.ok) throw new Error(await res.text());
+      
+      success('Cycle created successfully');
       fetchCycles();
       setIsModalOpen(false);
-    } catch(err) {
-      console.error('Failed to create cycle:', err);
+    } catch(err: any) {
+      toastError(err.message || 'Failed to create cycle');
     }
   };
 
@@ -53,12 +68,14 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
         Icon={Calendar}
         onMenuClick={onMenuClick || (() => {})}
       >
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="bg-secondary text-white px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1 hover:bg-secondary/90 transition-colors shadow-sm"
-        >
-          <Plus size={16} /> <span className="hidden sm:inline">New Cycle</span>
-        </button>
+        {(isAdmin || isLead) && (
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="bg-secondary text-white px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1 hover:bg-secondary/90 transition-colors shadow-sm"
+          >
+            <Plus size={16} /> <span className="hidden sm:inline">New Cycle</span>
+          </button>
+        )}
       </ViewHeader>
 
       <div className="flex-1 overflow-y-auto p-4 md:p-6 w-full max-w-4xl mx-auto flex flex-col gap-6">
@@ -78,11 +95,25 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
                     {new Date(cycle.startDate).toLocaleDateString()} - {new Date(cycle.endDate).toLocaleDateString()}
                   </span>
                 </div>
-                <div className="text-sm font-semibold text-primary/50 mb-2">Tasks ({cycle.tasks?.length || 0})</div>
-                {/* Progress bar placeholder */}
-                <div className="w-full bg-background rounded-full h-1.5 overflow-hidden border border-primary/10">
-                  <div className="bg-secondary h-1.5 rounded-full w-1/4"></div>
-                </div>
+                {(() => {
+                  const totalTasks = cycle.tasks?.length || 0;
+                  const doneTasks = cycle.tasks?.filter((t: any) => t.state === 'DONE').length || 0;
+                  const percentage = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+                  return (
+                    <>
+                      <div className="text-sm font-semibold text-primary/50 mb-2 flex justify-between">
+                        <span>Tasks ({totalTasks})</span>
+                        <span className="text-secondary font-mono">{percentage}%</span>
+                      </div>
+                      <div className="w-full bg-background rounded-full h-1.5 overflow-hidden border border-primary/10">
+                        <div 
+                          className="bg-secondary h-1.5 rounded-full transition-all duration-500" 
+                          style={{ width: `${percentage}%` }}
+                        ></div>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             ))
           )}

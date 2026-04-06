@@ -48,13 +48,17 @@ export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAr
     setMessages([]);
 
     // Fetch existing messages
-    fetch(`http://localhost:3001/chat/channels/${channelId}/messages`)
-      .then(res => res.ok ? res.json() : [])
-      .then(data => {
-        setMessages(data);
-        setLoading(false);
+    if (user) {
+      fetch(`http://localhost:3001/chat/channels/${channelId}/messages`, {
+        headers: { 'x-user-id': user.id }
       })
-      .catch(() => setLoading(false));
+        .then(res => res.ok ? res.json() : [])
+        .then(data => {
+          setMessages(data);
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
+    }
 
     // Set up WebSocket for real-time messages
     const socket = io('http://localhost:3001');
@@ -71,7 +75,7 @@ export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAr
     return () => {
       socket.disconnect();
     };
-  }, [channelId]);
+  }, [channelId, user]); // Added user to the dependency array
 
   const handleSend = async () => {
     if (!newMessage.trim() || !user) return;
@@ -82,7 +86,10 @@ export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAr
     try {
       const res = await fetch(`http://localhost:3001/chat/channels/${channelId}/messages`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-user-id': user.id
+        },
         body: JSON.stringify({
           senderId: user.id,
           content,

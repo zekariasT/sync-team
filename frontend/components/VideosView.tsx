@@ -6,6 +6,8 @@ import { Video, Plus, MessageSquare, PlayCircle, FileText, X } from 'lucide-reac
 import ViewHeader from './ViewHeader';
 import VideoRecorder from './VideoRecorder';
 
+import { useToast } from './ToastProvider';
+
 interface VideoMessage {
   id: string;
   title: string;
@@ -21,6 +23,7 @@ interface VideoMessage {
 
 export default function VideosView({ teamId: initialTeamId, onMenuClick }: { teamId?: string; onMenuClick?: () => void }) {
   const { user } = useUser();
+  const { success, error: toastError } = useToast();
   const [teamId, setTeamId] = useState<string | null>(initialTeamId || null);
   const [videos, setVideos] = useState<VideoMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,12 +46,14 @@ export default function VideosView({ teamId: initialTeamId, onMenuClick }: { tea
     } else {
       fetchVideos();
     }
-  }, [teamId]);
+  }, [teamId, user]); // Added user to dependency array to ensure header is ready
 
   const fetchVideos = async () => {
-    if (!teamId) return;
+    if (!teamId || !user) return;
     try {
-      const res = await fetch(`http://localhost:3001/video/teams/${teamId}`);
+      const res = await fetch(`http://localhost:3001/video/teams/${teamId}`, {
+        headers: { 'x-user-id': user.id }
+      });
       if (res.ok) {
         setVideos(await res.json());
       }
@@ -150,7 +155,10 @@ export default function VideosView({ teamId: initialTeamId, onMenuClick }: { tea
                    try {
                      const res = await fetch(`http://localhost:3001/video/${selectedVideo.id}/reactions`, {
                        method: 'POST',
-                       headers: {'Content-Type': 'application/json'},
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'x-user-id': user.id
+                        },
                        body: JSON.stringify({ userId: user.id, timestamp, comment })
                      });
                      if (res.ok) {

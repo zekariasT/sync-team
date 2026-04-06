@@ -2,10 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { Route, Plus, FolderKanban } from 'lucide-react';
+import { useUser } from '@clerk/nextjs';
 import ViewHeader from './ViewHeader';
 import CreateProjectModal from './CreateProjectModal';
+import { useTeamRole } from '@/hooks/useTeamRole';
+import { useToast } from './ToastProvider';
 
 export default function RoadmapView({ teamId, onMenuClick }: { teamId?: string; onMenuClick?: () => void }) {
+  const { user } = useUser();
+  const { success, error: toastError } = useToast();
+  const { isAdmin, isLead } = useTeamRole(teamId);
   const [projects, setProjects] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -14,8 +20,11 @@ export default function RoadmapView({ teamId, onMenuClick }: { teamId?: string; 
   }, [teamId]);
 
   const fetchProjects = async () => {
+    if (!teamId || !user) return;
     try {
-      const res = await fetch(`http://localhost:3001/tasks/teams/${teamId}/projects`);
+      const res = await fetch(`http://localhost:3001/tasks/teams/${teamId}/projects`, {
+        headers: { 'x-user-id': user.id }
+      });
       if (res.ok) setProjects(await res.json());
     } catch(err) { console.error(err); }
   };
@@ -24,18 +33,24 @@ export default function RoadmapView({ teamId, onMenuClick }: { teamId?: string; 
     if (!teamId) return;
 
     try {
-      await fetch(`http://localhost:3001/tasks/teams/${teamId}/projects`, {
+      const res = await fetch(`http://localhost:3001/tasks/teams/${teamId}/projects`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-user-id': user?.id || ''
+        },
         body: JSON.stringify({ 
           name: data.name, 
           description: data.description 
         })
       });
+      if (!res.ok) throw new Error(await res.text());
+      
+      success('Project created successfully');
       fetchProjects();
       setIsModalOpen(false);
-    } catch(err) {
-      console.error('Failed to create project:', err);
+    } catch(err: any) {
+      toastError(err.message || 'Failed to create project');
     }
   };
 
@@ -52,12 +67,14 @@ export default function RoadmapView({ teamId, onMenuClick }: { teamId?: string; 
         Icon={Route}
         onMenuClick={onMenuClick || (() => {})}
       >
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="bg-secondary text-white px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1 hover:bg-secondary/90 transition-colors shadow-sm"
-        >
-          <Plus size={16} /> <span className="hidden sm:inline">New Project</span>
-        </button>
+        {(isAdmin || isLead) && (
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="bg-secondary text-white px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1 hover:bg-secondary/90 transition-colors shadow-sm"
+          >
+            <Plus size={16} /> <span className="hidden sm:inline">New Project</span>
+          </button>
+        )}
       </ViewHeader>
 
       <div className="flex-1 overflow-y-auto p-4 md:p-6 w-full max-w-5xl mx-auto flex flex-col gap-6">
@@ -76,21 +93,32 @@ export default function RoadmapView({ teamId, onMenuClick }: { teamId?: string; 
                    <FolderKanban size={24} />
                 </div>
                 <div className="flex-1">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-bold text-lg">{project.name}</h3>
-                    <span className="text-xs font-mono bg-background border border-primary/10 px-2 py-1 rounded text-primary/70 shadow-sm">
-                      {project.tasks?.length || 0} Tasks
-                    </span>
-                  </div>
-                  {project.description && (
-                    <p className="text-sm text-primary/60 mb-4 leading-relaxed">{project.description}</p>
-                  )}
-                  
-                  {/* Visual Progress Bar Placeholder */}
-                  <div className="w-full bg-background rounded-full h-2.5 mb-1 overflow-hidden border border-primary/10">
-                    <div className="bg-secondary h-2.5 rounded-full w-1/3"></div>
-                  </div>
-                  <div className="text-[10px] text-right font-bold text-secondary uppercase tracking-widest">33% Completed</div>
+                  {(() => {
+                    const totalTasks = project.tasks?.length || 0;
+                    const doneTasks = project.tasks?.filter((t: any) => t.state === 'DONE').length || 0;
+                    const percentage = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+                    return (
+                      <>
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="font-bold text-lg">{project.name}</h3>
+                          <span className="text-xs font-mono bg-background border border-primary/10 px-2 py-1 rounded text-primary/70 shadow-sm">
+                            {totalTasks} Tasks
+                          </span>
+                        </div>
+                        {project.description && (
+                          <p className="text-sm text-primary/60 mb-4 leading-relaxed">{project.description}</p>
+                        )}
+                        
+                        <div className="w-full bg-background rounded-full h-2.5 mb-1 overflow-hidden border border-primary/10">
+                          <div 
+                            className="bg-secondary h-2.5 rounded-full transition-all duration-500" 
+                            style={{ width: `${percentage}%` }}
+                          ></div>
+                        </div>
+                        <div className="text-[10px] text-right font-bold text-secondary uppercase tracking-widest">{percentage}% Completed</div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             ))

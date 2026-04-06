@@ -8,7 +8,12 @@ export default async function PulseView() {
   const user = await currentUser();
   let members: any[] = [];
   try {
-    const res = await fetch('http://localhost:3001/members', { cache: 'no-store' });
+    const res = await fetch('http://localhost:3001/members', { 
+      cache: 'no-store',
+      headers: {
+        'x-user-id': user?.id || '',
+      }
+    });
     members = await res.json();
   } catch {
     members = [];
@@ -16,6 +21,7 @@ export default async function PulseView() {
 
   const currentMember = members.find(m => m.id === user?.id);
   const isAdmin = currentMember?.teamMembers?.some((tm: any) => tm.role === 'ADMIN');
+  const leadTeamIds = currentMember?.teamMembers?.filter((tm: any) => tm.role === 'LEAD').map((tm: any) => tm.teamId) || [];
 
   return (
     <div className="flex-1 h-screen overflow-y-auto bg-background">
@@ -39,56 +45,61 @@ export default async function PulseView() {
       {/* Member Grid */}
       <div className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {members.map((member: any) => (
-            <div
-              key={member.id}
-              className="bg-primary/5 border border-primary/15 p-5 rounded-xl hover:border-primary/30 transition-all group flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-3">
-                    {member.avatar ? (
-                      <img src={member.avatar} alt="" className="w-9 h-9 rounded-lg object-cover" />
-                    ) : (
-                      <div className="w-9 h-9 rounded-lg bg-secondary/20 flex items-center justify-center text-secondary font-bold text-sm">
-                        {member.name?.charAt(0)?.toUpperCase() || '?'}
-                      </div>
-                    )}
-                    <h2 className="text-base font-bold">{member.name}</h2>
-                  </div>
-                  <span
-                    className={`w-2 h-2 rounded-full shadow-[0_0_8px] mt-2 ${
-                      member.status?.toLowerCase() === 'offline'
-                        ? 'bg-accent shadow-accent'
-                        : 'bg-green-500 shadow-green-500'
-                    }`}
-                  />
-                </div>
-                <p className="text-secondary mt-2 italic text-sm ml-12">"{member.status}"</p>
+          {members.map((member: any) => {
+            const isTargetMemberInLeadedTeam = member.teamMembers?.some((tm: any) => leadTeamIds.includes(tm.teamId));
+            const canUpdate = isAdmin || user?.id === member.id || isTargetMemberInLeadedTeam;
 
-                {(isAdmin || user?.id === member.id) && (
-                  <form action={updatePulse.bind(null, member.id)} className="mt-3 flex gap-2 ml-12">
-                    <input
-                      type="text"
-                      name="status"
-                      placeholder="Set custom status..."
-                      className="bg-background border border-primary/20 text-text rounded-lg px-3 py-1.5 text-sm w-full focus:outline-none focus:border-secondary placeholder:text-primary/30 transition-colors"
+            return (
+              <div
+                key={member.id}
+                className="bg-primary/5 border border-primary/15 p-5 rounded-xl hover:border-primary/30 transition-all group flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-3">
+                      {member.avatar ? (
+                        <img src={member.avatar} alt="" className="w-9 h-9 rounded-lg object-cover" />
+                      ) : (
+                        <div className="w-9 h-9 rounded-lg bg-secondary/20 flex items-center justify-center text-secondary font-bold text-sm">
+                          {member.name?.charAt(0)?.toUpperCase() || '?'}
+                        </div>
+                      )}
+                      <h2 className="text-base font-bold">{member.name}</h2>
+                    </div>
+                    <span
+                      className={`w-2 h-2 rounded-full shadow-[0_0_8px] mt-2 ${
+                        member.status?.toLowerCase() === 'offline'
+                          ? 'bg-accent shadow-accent'
+                          : 'bg-green-500 shadow-green-500'
+                      }`}
                     />
-                    <button
-                      type="submit"
-                      className="bg-secondary hover:bg-secondary/80 text-background px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors shrink-0"
-                    >
-                      Pulse
-                    </button>
-                  </form>
-                )}
+                  </div>
+                  <p className="text-secondary mt-2 italic text-sm ml-12">"{member.status}"</p>
+
+                  {canUpdate && (
+                    <form action={updatePulse.bind(null, member.id)} className="mt-3 flex gap-2 ml-12">
+                      <input
+                        type="text"
+                        name="status"
+                        placeholder="Set custom status..."
+                        className="bg-background border border-primary/20 text-text rounded-lg px-3 py-1.5 text-sm w-full focus:outline-none focus:border-secondary placeholder:text-primary/30 transition-colors"
+                      />
+                      <button
+                        type="submit"
+                        className="bg-secondary hover:bg-secondary/80 text-background px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors shrink-0"
+                      >
+                        Pulse
+                      </button>
+                    </form>
+                  )}
+                </div>
+                <div className="mt-4 pt-3 border-t flex justify-between items-center border-primary/10 text-[10px] font-mono text-primary/40 ml-12">
+                  TZ: {member.timezone}
+                  <MemberClock timezone={member.timezone} />
+                </div>
               </div>
-              <div className="mt-4 pt-3 border-t flex justify-between items-center border-primary/10 text-[10px] font-mono text-primary/40 ml-12">
-                TZ: {member.timezone}
-                <MemberClock timezone={member.timezone} />
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {members.length === 0 && (
