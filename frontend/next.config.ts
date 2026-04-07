@@ -1,24 +1,19 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
-  // 🛡️ Keep these for a smooth deployment
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
+  eslint: { ignoreDuringBuilds: true },
+  typescript: { ignoreBuildErrors: true },
 
-  // 🧭 This prevents Clerk's Node-only logic from leaking into the Edge middleware
-  serverExternalPackages: ["@clerk/nextjs", "@clerk/shared"],
-
-  // 🛡️ This manually maps the #crypto subpaths to Edge-safe versions
+  // 🛡️ DO NOT use serverExternalPackages here - it breaks Edge Middleware
+  
   webpack: (config, { isServer }) => {
     if (isServer) {
+      // 🗺️ Manually drawing the road map that Clerk is missing
       config.resolve.alias = {
         ...config.resolve.alias,
-        "#crypto": "@clerk/shared/crypto",
-        "#safe-node-apis": "@clerk/shared/safe-node-apis",
+        "#crypto": path.resolve(__dirname, "node_modules/@clerk/shared/dist/crypto/index.mjs"),
+        "#safe-node-apis": path.resolve(__dirname, "node_modules/@clerk/shared/dist/safe-node-apis/index.mjs"),
       };
     }
     return config;
