@@ -1,4 +1,4 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server/edge";
 
 const isPublicRoute = createRouteMatcher(['/sign-in(.*)', '/sign-up(.*)']);
 
@@ -14,5 +14,3 @@ export const config = {
     '/(api|trpc)(.*)',
   ],
 };
-
-export const runtime = "nodejs";
