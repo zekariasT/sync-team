@@ -1,13 +1,10 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  // 🛡️ Disable ESLint during the build so your deployment succeeds
-  eslint: {
-    ignoreDuringBuilds: true,
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  experimental: {
+    // @ts-expect-error - nodeMiddleware is available in Next.js 15.2+ but not yet typed
+    nodeMiddleware: true,
   },
-  // 🛡️ Disable TypeScript errors during build if needed
-  typescript: {
-    ignoreBuildErrors: true,
-  }
 };
 
 export default nextConfig;
