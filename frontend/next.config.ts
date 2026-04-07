@@ -5,8 +5,8 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   experimental: {
-    // @ts-expect-error - nodeMiddleware is available in Next.js 15.2+ but not yet typed
-    nodeMiddleware: true,
+    // This is the key fix for the "pathname" error with Clerk on Canary
+    nodeMiddleware: true, 
   },
 };
 
