@@ -60,3 +60,76 @@ export async function updateRole(userId: string, teamId: string, role: string) {
     return { error: error.message || 'An unexpected error occurred' };
   }
 }
+export async function addMember(teamId: string, email: string) {
+  const user = await currentUser();
+  if (!user) throw new Error('Unauthorized');
+
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams/${teamId}/members`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-user-id': user.id,
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      return { error: err.message || 'Failed to add member' };
+    }
+
+    revalidatePath('/');
+    return { success: true };
+  } catch (error: any) {
+    return { error: error.message || 'An unexpected error occurred' };
+  }
+}
+
+export async function removeMember(teamId: string, userId: string) {
+  const user = await currentUser();
+  if (!user) throw new Error('Unauthorized');
+
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams/${teamId}/members/${userId}`, {
+      method: 'DELETE',
+      headers: {
+        'x-user-id': user.id,
+      },
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      return { error: err.message || 'Failed to remove member' };
+    }
+
+    revalidatePath('/');
+    return { success: true };
+  } catch (error: any) {
+    return { error: error.message || 'An unexpected error occurred' };
+  }
+}
+
+export async function deleteUserSystem(userId: string) {
+  const user = await currentUser();
+  if (!user) throw new Error('Unauthorized');
+
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/members/${userId}`, {
+      method: 'DELETE',
+      headers: {
+        'x-user-id': user.id,
+      },
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      return { error: err.message || 'Failed to delete user' };
+    }
+
+    revalidatePath('/');
+    return { success: true };
+  } catch (error: any) {
+    return { error: error.message || 'An unexpected error occurred' };
+  }
+}

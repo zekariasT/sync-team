@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useUser, useClerk, useAuth } from '@clerk/nextjs';
-import { Hash, Radio, Plus, MessageSquare, Users, ChevronDown, ChevronRight, Video, Database, Settings, LogOut } from 'lucide-react';
+import { Hash, Radio, Plus, MessageSquare, Users, Shield, ChevronDown, ChevronRight, Video, Database, Settings, LogOut } from 'lucide-react';
 import AiSummaryPanel from './AiSummaryPanel';
+import { useTeamRole } from '@/hooks/useTeamRole';
 
 interface Channel {
   id: string;
@@ -18,14 +19,15 @@ interface Team {
 }
 
 interface SidebarProps {
-  activeView: 'pulse' | 'chat' | 'videos' | 'tasks' | 'cycles' | 'roadmap' | 'kb';
-  onViewChange: (view: any) => void;
+  activeView: 'pulse' | 'chat' | 'videos' | 'tasks' | 'cycles' | 'roadmap' | 'kb' | 'admin';
+  onViewChange: (view: 'pulse' | 'chat' | 'videos' | 'tasks' | 'cycles' | 'roadmap' | 'kb' | 'admin') => void;
   activeChannelId: string | null;
   onChannelSelect: (channelId: string, channelName: string) => void;
 }
 
 export default function Sidebar({ activeView, onViewChange, activeChannelId, onChannelSelect }: SidebarProps) {
   const { user } = useUser();
+  const { isAdmin } = useTeamRole();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set());
@@ -181,6 +183,18 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
         >
           <Database size={16} className="opacity-70" /> Knowledge Base
         </button>
+
+        {isAdmin && (
+          <button
+            onClick={() => onViewChange('admin')}
+            className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all
+              ${activeView === 'admin' 
+                ? 'bg-secondary/10 text-secondary' 
+                : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
+          >
+            <Shield size={16} className="text-secondary" /> User Management
+          </button>
+        )}
       </div>
 
       {/* Chat Channels List */}

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, ForbiddenException, Delete, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service.js';
 import { UserId } from '../auth/user-id.decorator.js';
 
@@ -91,6 +91,56 @@ export class TeamsController {
         return this.prisma.teamMember.update({
             where: { userId_teamId: { userId, teamId } },
             data: { role: body.role as any }
+        });
+    }
+
+    // Create: Add user to team
+    @Post(':teamId/members')
+    async addMember(
+        @Param('teamId') teamId: string,
+        @Body() body: { email: string, role?: string },
+        @UserId() requesterId: string
+    ) {
+        if (!requesterId) throw new ForbiddenException('Unauthorized');
+
+        const adminMembership = await this.prisma.teamMember.findFirst({
+            where: { userId: requesterId, role: 'ADMIN' }
+        });
+        if (!adminMembership) throw new ForbiddenException('Only administrators can add members');
+
+        const user = await this.prisma.user.findUnique({
+            where: { email: body.email }
+        });
+        if (!user) throw new NotFoundException('User with this email not found');
+
+        return this.prisma.teamMember.create({
+            data: {
+                userId: user.id,
+                teamId,
+                role: (body.role as any) || 'MEMBER'
+            }
+        });
+    }
+
+    // Delete: Remove user from team
+    @Delete(':teamId/members/:userId')
+    async removeMember(
+        @Param('teamId') teamId: string,
+        @Param('userId') userId: string,
+        @UserId() requesterId: string
+    ) {
+        if (!requesterId) throw new ForbiddenException('Unauthorized');
+
+        const adminMembership = await this.prisma.teamMember.findFirst({
+            where: { userId: requesterId, role: 'ADMIN' }
+        });
+
+        if (!adminMembership && requesterId !== userId) {
+            throw new ForbiddenException('Only administrators can remove other members');
+        }
+
+        return this.prisma.teamMember.delete({
+            where: { userId_teamId: { userId, teamId } }
         });
     }
 }

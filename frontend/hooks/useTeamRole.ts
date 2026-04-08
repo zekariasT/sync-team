@@ -1,17 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useUser } from '@clerk/nextjs';
+import { useUser, useAuth } from '@clerk/nextjs';
 
 export function useTeamRole(teamId?: string) {
   const { user } = useUser();
+  const { getToken } = useAuth();
   const [role, setRole] = useState<'ADMIN' | 'LEAD' | 'MEMBER' | null>(null);
   const [isGlobalAdmin, setIsGlobalAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function checkRole() {
-      if (!user || !teamId) {
+      if (!user) {
         setLoading(false);
         return;
       }
@@ -21,9 +22,13 @@ export function useTeamRole(teamId?: string) {
       setIsGlobalAdmin(false);
 
       try {
+        const token = await getToken();
         // Fetch all teams the user belongs to
         const teamsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams`, {
-          headers: { 'x-user-id': user.id }
+          headers: { 
+            'x-user-id': user.id,
+            'Authorization': `Bearer ${token}`
+          }
         });
         const teams = teamsRes.ok ? await teamsRes.json() : [];
         
@@ -42,9 +47,12 @@ export function useTeamRole(teamId?: string) {
               setRole(myMembership.role);
             }
           } else {
-            // If not found in user's team list, try direct fetch (maybe they are a global admin viewing a team they aren't part of)
+            // If not found in user's team list, try direct fetch
             const teamRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams/${teamId}`, {
-              headers: { 'x-user-id': user.id }
+              headers: { 
+                'x-user-id': user.id,
+                'Authorization': `Bearer ${token}`
+              }
             });
             if (teamRes.ok) {
               const team = await teamRes.json();
@@ -61,7 +69,7 @@ export function useTeamRole(teamId?: string) {
     }
 
     checkRole();
-  }, [teamId, user]);
+  }, [teamId, user, getToken]);
 
   const isAdmin = isGlobalAdmin || role === 'ADMIN';
   const isLead = role === 'LEAD';

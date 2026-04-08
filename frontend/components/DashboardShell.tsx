@@ -16,11 +16,12 @@ interface DashboardShellProps {
 }
 
 import { useUser, useAuth } from '@clerk/nextjs';
+import UserManagementView from '@/components/UserManagementView';
 
 export default function DashboardShell({ pulseContent }: DashboardShellProps) {
   const { user } = useUser();
   const { getToken } = useAuth();
-  const [activeView, setActiveView] = useState<'pulse' | 'chat' | 'videos' | 'tasks' | 'cycles' | 'roadmap' | 'kb'>('pulse');
+  const [activeView, setActiveView] = useState<'pulse' | 'chat' | 'videos' | 'tasks' | 'cycles' | 'roadmap' | 'kb' | 'admin'>('pulse');
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [activeChannelName, setActiveChannelName] = useState<string>('');
   const [isCmdkOpen, setIsCmdkOpen] = useState(false);
@@ -163,6 +164,8 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
             <RoadmapView onMenuClick={() => setIsSidebarOpen(true)} teamId={teamId} />
           ) : activeView === 'kb' ? (
             <KnowledgeBaseView onMenuClick={() => setIsSidebarOpen(true)} teamId={teamId} />
+          ) : activeView === 'admin' ? (
+            <UserManagementView />
           ) : activeView === 'chat' && activeChannelId ? (
             <ChatArea onMenuClick={() => setIsSidebarOpen(true)} channelId={activeChannelId} channelName={activeChannelName || undefined} />
           ) : activeView === 'chat' ? (

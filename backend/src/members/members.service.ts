@@ -115,4 +115,14 @@ export class MembersService {
       },
     });
   }
+
+  async delete(id: string, requesterId: string) {
+    if (!requesterId) throw new ForbiddenException('Unauthorized');
+    const requesterMemberships = await this.prisma.teamMember.findMany({
+      where: { userId: requesterId },
+    });
+    const isAdmin = requesterMemberships.some(rm => rm.role === 'ADMIN');
+    if (!isAdmin) throw new ForbiddenException('Only administrators can delete users');
+    return await this.prisma.user.delete({ where: { id } });
+  }
 }

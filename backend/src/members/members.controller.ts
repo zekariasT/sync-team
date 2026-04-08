@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Post, Body, Param } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Body, Param, Delete, ForbiddenException } from '@nestjs/common';
 import { MembersService } from './members.service.js';
 import { PulseGateway } from '../pulse/pulse.gateway.js';
 import { Member } from "./member.interface.js";
@@ -39,5 +39,11 @@ export class MembersController {
         });
 
         return updatedMember;
+    }
+
+    @Delete(':id')
+    async remove(@Param('id') id: string, @UserId() requesterId: string) {
+        if (!requesterId) throw new ForbiddenException('Unauthorized');
+        return this.membersService.delete(id, requesterId);
     }
 }
