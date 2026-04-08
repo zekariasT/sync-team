@@ -3,26 +3,32 @@
 import { useEffect } from 'react';
 import { io } from 'socket.io-client';
 import { useRouter } from 'next/navigation';
-import { useUser } from '@clerk/nextjs';
+import { useUser, useAuth } from '@clerk/nextjs';
 
 export default function RealTimeProvider({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const { user, isLoaded } = useUser();
+    const { getToken } = useAuth();
 
     useEffect(() => {
         if (isLoaded && user) {
-            const userId = user.id;
-            // Sync user details to backend
-            fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/members/sync`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    id: userId,
-                    email: user.primaryEmailAddress?.emailAddress,
-                    name: user.fullName || user.username || 'Unknown',
-                    avatar: user.imageUrl,
-                }),
-            }).catch(err => console.error('Failed to sync user:', err));
+            const syncUser = async () => {
+                const token = await getToken();
+                fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/members/sync`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        id: user.id,
+                        email: user.primaryEmailAddress?.emailAddress,
+                        name: user.fullName || user.username || 'Unknown',
+                        avatar: user.imageUrl,
+                    }),
+                }).catch(err => console.error('Failed to sync user:', err));
+            };
+            syncUser();
         }
     }, [user, isLoaded]);
 
