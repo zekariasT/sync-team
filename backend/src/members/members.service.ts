@@ -17,6 +17,20 @@ export class MembersService {
       }); 
     }
 
+    // Auto-create guest user if missing
+    if (requesterId === 'guest-demo-user') {
+      await this.prisma.user.upsert({
+        where: { id: 'guest-demo-user' },
+        update: {},
+        create: {
+          id: 'guest-demo-user',
+          name: 'Guest Demo User',
+          email: 'guest@demo.com',
+          status: 'Available'
+        }
+      });
+    }
+
     // Get the requester's teams and their roles
     const requesterMemberships = await this.prisma.teamMember.findMany({
       where: { userId: requesterId },
@@ -66,6 +80,20 @@ export class MembersService {
        if (!validation.isAppropriate) {
           throw new BadRequestException(validation.reason || 'Inappropriate content detected in status pulse.');
        }
+    }
+
+    // Auto-create guest user if missing
+    if (id === 'guest-demo-user') {
+      await this.prisma.user.upsert({
+        where: { id: 'guest-demo-user' },
+        update: {},
+        create: {
+          id: 'guest-demo-user',
+          name: 'Guest Demo User',
+          email: 'guest@demo.com',
+          status: 'Available'
+        }
+      });
     }
     if (requesterId && id !== requesterId) {
       // Check permissions: Is requester ADMIN in any team, or LEAD in a shared team?
