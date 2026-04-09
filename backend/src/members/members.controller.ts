@@ -3,6 +3,7 @@ import { MembersService } from './members.service.js';
 import { PulseGateway } from '../pulse/pulse.gateway.js';
 import { Member } from "./member.interface.js";
 import { UserId } from '../auth/user-id.decorator.js';
+import { SyncUserDto, UpdateMemberStatusDto } from '../dto/members.dto.js';
 
 @Controller('members')
 export class MembersController {
@@ -17,14 +18,14 @@ export class MembersController {
     }
 
     @Post('sync')
-    async syncUser(@Body() body: { id: string, email: string, name: string, avatar?: string | null }) {
+    async syncUser(@Body() body: SyncUserDto) {
         return this.membersService.syncUser(body);
     }
 
     @Patch(':id')
     async update(
         @Param('id') id: string, 
-        @Body() body: { status: string },
+        @Body() body: UpdateMemberStatusDto,
         @UserId() requesterId?: string
     ) {
         const updatedMember = await this.membersService.update(id, body.status, requesterId);

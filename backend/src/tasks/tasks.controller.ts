@@ -1,7 +1,10 @@
 import { Controller, Get, Post, Patch, Body, Param, UseGuards } from '@nestjs/common';
 import { TasksService } from './tasks.service.js';
-import { TaskState } from '@prisma/client';
 import { UserId } from '../auth/user-id.decorator.js';
+import { CreateTaskDto } from '../dto/create-task.dto.js';
+import { CreateProjectDto } from '../dto/create-project.dto.js';
+import { CreateCycleDto } from '../dto/create-cycle.dto.js';
+import { UpdateTaskDto, UpdateTaskStateDto, UpdateTaskAssigneeDto } from '../dto/update-task.dto.js';
 
 @Controller('tasks')
 export class TasksController {
@@ -15,7 +18,7 @@ export class TasksController {
   @Post('teams/:teamId/projects')
   createProject(
     @Param('teamId') teamId: string,
-    @Body() data: { name: string; description?: string },
+    @Body() data: CreateProjectDto,
     @UserId() requesterId: string
   ) {
     return this.tasksService.createProject(teamId, data, requesterId);
@@ -29,7 +32,7 @@ export class TasksController {
   @Post('teams/:teamId/cycles')
   createCycle(
     @Param('teamId') teamId: string, 
-    @Body() data: { name: string; startDate: string; endDate: string },
+    @Body() data: CreateCycleDto,
     @UserId() requesterId: string
   ) {
     return this.tasksService.createCycle(teamId, data, requesterId);
@@ -43,15 +46,7 @@ export class TasksController {
   @Post('teams/:teamId/tasks')
   createTask(
     @Param('teamId') teamId: string,
-    @Body() data: {
-      title: string;
-      description?: string;
-      state?: TaskState;
-      assigneeId?: string;
-      projectId?: string;
-      cycleId?: string;
-      reporterId?: string;
-    },
+    @Body() data: CreateTaskDto,
     @UserId() requesterId: string
   ) {
     const { reporterId, ...taskData } = data as any; 
@@ -61,25 +56,25 @@ export class TasksController {
   @Patch(':id/state')
   updateTaskState(
     @Param('id') id: string, 
-    @Body('state') state: TaskState,
+    @Body() data: UpdateTaskStateDto,
     @UserId() requesterId: string
   ) {
-    return this.tasksService.updateTaskState(id, state, requesterId);
+    return this.tasksService.updateTaskState(id, data.state, requesterId);
   }
 
   @Patch(':id/assignee')
   updateTaskAssignee(
     @Param('id') id: string, 
-    @Body('assigneeId') assigneeId: string | null,
+    @Body() data: UpdateTaskAssigneeDto,
     @UserId() requesterId: string
   ) {
-    return this.tasksService.updateTaskAssignee(id, assigneeId, requesterId);
+    return this.tasksService.updateTaskAssignee(id, data.assigneeId ?? null, requesterId);
   }
 
   @Patch(':id')
   updateTask(
     @Param('id') id: string,
-    @Body() data: any,
+    @Body() data: UpdateTaskDto,
     @UserId() requesterId: string
   ) {
     return this.tasksService.updateTask(id, data, requesterId);

@@ -1,4 +1,5 @@
 import { Module, Global } from '@nestjs/common';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { PrismaService } from './prisma.service.js';
@@ -17,7 +18,17 @@ import { KbModule } from './kb/kb.module.js';
 
 @Global()
 @Module({
-  imports: [ChatModule, AiModule, VideoModule, TasksModule, KbModule],
+  imports: [
+    // Rate limiting: 100 requests per 60 seconds per IP
+    ThrottlerModule.forRoot({
+      throttlers: [{ ttl: 60000, limit: 100 }],
+    }),
+    ChatModule,
+    AiModule,
+    VideoModule,
+    TasksModule,
+    KbModule,
+  ],
   controllers: [AppController, MembersController, TeamsController],
   providers: [
     AppService, 
@@ -31,7 +42,11 @@ import { KbModule } from './kb/kb.module.js';
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
-    }
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
   exports: [PrismaService],
 })

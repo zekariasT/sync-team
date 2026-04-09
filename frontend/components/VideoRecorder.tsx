@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useUser } from '@clerk/nextjs';
-import { Video, Mic, StopCircle, X, CheckSquare, RefreshCcw } from 'lucide-react';
+import { Video, Mic, StopCircle, X, CheckSquare, RefreshCcw, Camera, Monitor, AlertTriangle } from 'lucide-react';
 
 import { VideoMessage } from './VideosView';
 
@@ -12,6 +12,20 @@ interface VideoRecorderProps {
   onClose?: () => void;
 }
 
+/**
+ * Detect if the current device is likely a mobile/tablet.
+ * getDisplayMedia is unsupported on mobile browsers,
+ * so we fall back to camera recording.
+ */
+function isMobileDevice(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent
+  );
+}
+
+type RecordingMode = 'screen' | 'camera';
+
 export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: VideoRecorderProps) {
   const { user } = useUser();
   const [recording, setRecording] = useState(false);
@@ -20,9 +34,13 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
   const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
   const [previewStream, setPreviewStream] = useState<MediaStream | null>(null);
   const [title, setTitle] = useState('');
+  const [mode, setMode] = useState<RecordingMode>(isMobileDevice() ? 'camera' : 'screen');
+  const [error, setError] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  const isMobile = isMobileDevice();
 
   useEffect(() => {
     return () => {
@@ -40,40 +58,79 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
   }, [previewStream]);
 
   const startRecording = async () => {
+    setError(null);
     try {
-      const screenStream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: true // capture system auth if supported
-      });
+      let combinedStream: MediaStream;
 
-      const audioStream = await navigator.mediaDevices.getUserMedia({
-        audio: true
-      });
+      if (mode === 'screen') {
+        try {
+          const screenStream = await navigator.mediaDevices.getDisplayMedia({
+            video: true,
+            audio: true,
+          });
 
-      // Combine streams
-      const tracks = [...screenStream.getTracks(), ...audioStream.getAudioTracks()];
-      const combinedStream = new MediaStream(tracks);
+          // Also capture microphone audio
+          let audioTracks: MediaStreamTrack[] = [];
+          try {
+            const audioStream = await navigator.mediaDevices.getUserMedia({
+              audio: true,
+            });
+            audioTracks = audioStream.getAudioTracks();
+          } catch {
+            // Mic denied — proceed with screen audio only
+          }
+
+          const tracks = [...screenStream.getTracks(), ...audioTracks];
+          combinedStream = new MediaStream(tracks);
+        } catch (screenErr: any) {
+          // If screen sharing failed (e.g., mobile browser), auto-fallback to camera
+          if (screenErr.name === 'NotAllowedError') {
+            setError('Screen sharing permission denied. Try camera mode instead.');
+            return;
+          }
+          // Truly unsupported — switch to camera mode
+          setMode('camera');
+          setError('Screen sharing is not supported on this device. Switched to camera mode — tap start again.');
+          return;
+        }
+      } else {
+        // Camera mode — works on mobile
+        const cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' },
+          audio: true,
+        });
+        combinedStream = cameraStream;
+      }
+
       setPreviewStream(combinedStream);
 
-      mediaRecorderRef.current = new MediaRecorder(combinedStream, {
-        mimeType: 'video/webm'
-      });
+      // Choose a supported mime type
+      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+        ? 'video/webm;codecs=vp9'
+        : MediaRecorder.isTypeSupported('video/webm')
+          ? 'video/webm'
+          : 'video/mp4';
 
+      mediaRecorderRef.current = new MediaRecorder(combinedStream, { mimeType });
+
+      const chunks: Blob[] = [];
       mediaRecorderRef.current.ondataavailable = (e) => {
         if (e.data.size > 0) {
-          setRecordedChunks((prev) => [...prev, e.data]);
+          chunks.push(e.data);
         }
       };
 
       mediaRecorderRef.current.onstop = () => {
         combinedStream.getTracks().forEach((track) => track.stop());
         setPreviewStream(null);
+        setRecordedChunks(chunks);
       };
 
       mediaRecorderRef.current.start();
       setRecording(true);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error starting recording:', err);
+      setError(err.message || 'Could not start recording. Please check permissions.');
     }
   };
 
@@ -87,6 +144,7 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
   const uploadVideo = async () => {
     if (recordedChunks.length === 0 || !user) return;
     setUploading(true);
+    setError(null);
 
     const userId = user.id;
     const blob = new Blob(recordedChunks, { type: 'video/webm' });
@@ -108,9 +166,12 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
         const video = await res.json();
         setVideoUrl(video.videoUrl);
         if (onVideoUploaded) onVideoUploaded(video);
+      } else {
+        setError('Upload failed. Please try again.');
       }
     } catch (err) {
       console.error('Error uploading video:', err);
+      setError('Upload failed. Please check your connection.');
     } finally {
       setUploading(false);
     }
@@ -120,6 +181,7 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
     setRecordedChunks([]);
     setVideoUrl(null);
     setPreviewStream(null);
+    setError(null);
   };
 
   return (
@@ -128,17 +190,47 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
         <h3 className="font-bold text-text flex items-center gap-2">
           <Video size={16} /> Record Sync Point
         </h3>
-        {onClose && (
-          <button onClick={onClose} className="text-primary/50 hover:text-text transition-colors">
-            <X size={18} />
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {/* Mode toggle — only show when not recording and no recording captured */}
+          {!recording && recordedChunks.length === 0 && !videoUrl && (
+            <div className="flex items-center gap-1 bg-primary/5 border border-primary/15 rounded-lg p-0.5">
+              <button
+                onClick={() => { setMode('screen'); setError(null); }}
+                disabled={isMobile}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold transition-all ${
+                  mode === 'screen'
+                    ? 'bg-secondary text-background shadow-sm'
+                    : 'text-primary/50 hover:text-text'
+                } ${isMobile ? 'opacity-30 cursor-not-allowed' : ''}`}
+                title={isMobile ? 'Screen recording is not supported on this device' : 'Record your screen'}
+              >
+                <Monitor size={12} /> Screen
+              </button>
+              <button
+                onClick={() => { setMode('camera'); setError(null); }}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold transition-all ${
+                  mode === 'camera'
+                    ? 'bg-secondary text-background shadow-sm'
+                    : 'text-primary/50 hover:text-text'
+                }`}
+                title="Record from camera"
+              >
+                <Camera size={12} /> Camera
+              </button>
+            </div>
+          )}
+          {onClose && (
+            <button onClick={onClose} className="text-primary/50 hover:text-text transition-colors">
+              <X size={18} />
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="flex-1 bg-black relative min-h-[300px] flex items-center justify-center overflow-hidden">
+      <div className="flex-1 bg-black relative min-h-[220px] sm:min-h-[300px] flex items-center justify-center overflow-hidden">
         {/* Live Preview / Recording View */}
         {(recording || previewStream) && (
-          <video ref={videoRef} autoPlay muted className="w-full h-full object-contain" />
+          <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-contain" />
         )}
 
         {/* Playback View */}
@@ -146,15 +238,25 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
           <video
             src={URL.createObjectURL(new Blob(recordedChunks, { type: 'video/webm' }))}
             controls
+            playsInline
             className="w-full h-full object-contain bg-black"
           />
         )}
 
         {/* Initial View */}
         {!recording && recordedChunks.length === 0 && !previewStream && (
-          <div className="text-center text-primary">
-            <Video size={48} className="mx-auto mb-4 opacity-50" />
-            <p className="text-sm opacity-80">Click start to record your screen and microphone.</p>
+          <div className="text-center text-primary px-4">
+            {mode === 'camera' ? (
+              <>
+                <Camera size={48} className="mx-auto mb-4 opacity-50" />
+                <p className="text-sm opacity-80">Click start to record from your camera and microphone.</p>
+              </>
+            ) : (
+              <>
+                <Video size={48} className="mx-auto mb-4 opacity-50" />
+                <p className="text-sm opacity-80">Click start to record your screen and microphone.</p>
+              </>
+            )}
           </div>
         )}
 
@@ -167,6 +269,14 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
       </div>
 
       <div className="p-4 bg-primary/5 flex flex-col gap-3">
+        {/* Error message */}
+        {error && (
+          <div className="flex items-start gap-2 bg-accent/10 border border-accent/20 rounded-lg px-3 py-2 text-xs text-accent">
+            <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+            <span>{error}</span>
+          </div>
+        )}
+
         {recordedChunks.length > 0 && !recording && !videoUrl && (
           <input
             type="text"
@@ -177,7 +287,7 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
           />
         )}
 
-        <div className="flex justify-center gap-3">
+        <div className="flex justify-center gap-3 flex-wrap">
           {!recording && recordedChunks.length === 0 && !videoUrl && (
             <button
               onClick={startRecording}

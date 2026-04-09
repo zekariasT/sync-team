@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Param, UseGuards, UseInterceptors, Uploade
 import { FileInterceptor } from '@nestjs/platform-express';
 import { VideoService } from './video.service.js';
 import { UserId } from '../auth/user-id.decorator.js';
+import { AddReactionDto } from '../dto/video.dto.js';
 
 @Controller('video')
 export class VideoController {
@@ -34,7 +35,7 @@ export class VideoController {
     @Post(':videoId/reactions')
     async addReaction(
         @Param('videoId') videoId: string,
-        @Body() body: { userId: string; timestamp: number; emoji?: string; comment?: string },
+        @Body() body: AddReactionDto,
         @UserId() requesterId?: string
     ) {
         return this.videoService.addReaction(

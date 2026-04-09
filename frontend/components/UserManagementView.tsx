@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useUser, useAuth } from '@clerk/nextjs';
-import { Users, Shield, Star, User as UserIcon, Search, Mail, MapPin, Loader2, Plus, X, Trash2, ChevronDown } from 'lucide-react';
+import { Users, Shield, Star, User as UserIcon, Search, Mail, MapPin, Loader2, Plus, X, Trash2, ChevronDown, Menu } from 'lucide-react';
 import MemberRoleBadge from './MemberRoleBadge';
 import { addMember, removeMember, deleteUserSystem } from '@/app/actions';
 import { useToast } from './ToastProvider';
@@ -27,7 +27,11 @@ interface Team {
   name: string;
 }
 
-export default function UserManagementView() {
+interface UserManagementViewProps {
+  onMenuClick?: () => void;
+}
+
+export default function UserManagementView({ onMenuClick }: UserManagementViewProps) {
   const { user: currentUser } = useUser();
   const { getToken } = useAuth();
   const { success, error: toastError } = useToast();
@@ -138,7 +142,7 @@ export default function UserManagementView() {
   }
 
   return (
-    <div className="flex-1 h-screen overflow-y-auto bg-background p-8 relative">
+    <div className="flex-1 h-screen overflow-y-auto bg-background relative">
       {/* Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -189,116 +193,217 @@ export default function UserManagementView() {
         </div>
       )}
 
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl font-black tracking-tighter text-text mb-1 flex items-center gap-3">
-              <Users className="text-secondary" /> User Management
-            </h1>
-            <p className="text-sm text-primary/50 font-medium">Manage team members, roles, and access permissions.</p>
+      {/* Mobile Header */}
+      <header className="h-14 border-b border-primary/15 flex items-center px-4 md:hidden bg-background shrink-0 sticky top-0 z-10">
+        {onMenuClick && (
+          <button 
+            onClick={onMenuClick}
+            className="p-2 -ml-2 text-primary hover:text-text"
+          >
+            <Menu size={20} />
+          </button>
+        )}
+        <h1 className="ml-2 text-sm font-black tracking-tighter text-primary truncate">USER MANAGEMENT</h1>
+        <div className="ml-auto">
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="bg-secondary text-background p-2 rounded-lg"
+          >
+            <Plus size={16} />
+          </button>
+        </div>
+      </header>
+
+      <div className="p-4 md:p-8">
+        <div className="max-w-6xl mx-auto">
+          {/* Desktop Header */}
+          <div className="hidden md:flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <div>
+              <h1 className="text-3xl font-black tracking-tighter text-text mb-1 flex items-center gap-3">
+                <Users className="text-secondary" /> User Management
+              </h1>
+              <p className="text-sm text-primary/50 font-medium">Manage team members, roles, and access permissions.</p>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <div className="relative group">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/30 group-focus-within:text-secondary transition-colors" size={18} />
+                <input 
+                  type="text"
+                  placeholder="Search users..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-10 pr-4 py-2.5 bg-primary/5 border border-primary/15 rounded-xl text-sm focus:outline-none focus:border-secondary/50 focus:ring-1 focus:ring-secondary/50 transition-all w-full md:w-64"
+                />
+              </div>
+              <button 
+                onClick={() => setShowAddModal(true)}
+                className="bg-secondary text-background px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 hover:brightness-110 transition-all shadow-lg shadow-secondary/20"
+              >
+                <Plus size={18} /> Add Member
+              </button>
+            </div>
           </div>
-          
-          <div className="flex items-center gap-3">
+
+          {/* Mobile Search */}
+          <div className="md:hidden mb-4">
             <div className="relative group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/30 group-focus-within:text-secondary transition-colors" size={18} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/30 group-focus-within:text-secondary transition-colors" size={16} />
               <input 
                 type="text"
                 placeholder="Search users..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 pr-4 py-2.5 bg-primary/5 border border-primary/15 rounded-xl text-sm focus:outline-none focus:border-secondary/50 focus:ring-1 focus:ring-secondary/50 transition-all w-full md:w-64"
+                className="pl-9 pr-4 py-2.5 bg-primary/5 border border-primary/15 rounded-xl text-sm focus:outline-none focus:border-secondary/50 transition-all w-full"
               />
             </div>
-            <button 
-              onClick={() => setShowAddModal(true)}
-              className="bg-secondary text-background px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 hover:brightness-110 transition-all shadow-lg shadow-secondary/20"
-            >
-              <Plus size={18} /> <span className="hidden sm:inline">Add Member</span>
-            </button>
           </div>
-        </div>
 
-        {/* User Table Card */}
-        <div className="bg-primary/5 border border-primary/10 rounded-2xl overflow-hidden backdrop-blur-sm shadow-2xl">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-primary/10 bg-primary/5">
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-primary/40">User</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-primary/40">Teams & Roles</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-primary/40 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-primary/5">
-                {filteredUsers.map((u) => (
-                  <tr key={u.id} className="hover:bg-primary/5 transition-colors group">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center overflow-hidden shrink-0 group-hover:border-secondary/40 transition-colors">
-                          {u.avatar ? (
-                            <img src={u.avatar} alt="" className="w-full h-full object-cover" />
+          {/* ======= DESKTOP: Table View ======= */}
+          <div className="hidden md:block bg-primary/5 border border-primary/10 rounded-2xl overflow-hidden backdrop-blur-sm shadow-2xl">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-primary/10 bg-primary/5">
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-primary/40">User</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-primary/40">Teams & Roles</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-primary/40 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-primary/5">
+                  {filteredUsers.map((u) => (
+                    <tr key={u.id} className="hover:bg-primary/5 transition-colors group">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center overflow-hidden shrink-0 group-hover:border-secondary/40 transition-colors">
+                            {u.avatar ? (
+                              <img src={u.avatar} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <UserIcon className="text-secondary/50" size={20} />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold text-text truncate group-hover:text-secondary transition-colors">{u.name}</p>
+                            <p className="text-xs text-primary/40 flex items-center gap-1.5 truncate">
+                              <Mail size={12} className="opacity-50" /> {u.email}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-wrap gap-2">
+                          {u.teamMembers.length > 0 ? (
+                            u.teamMembers.map((tm) => (
+                              <div key={`${tm.teamId}-${u.id}`} className="flex items-center gap-1 bg-primary/5 border border-primary/10 rounded-full pl-2 pr-1 py-0.5">
+                                  <span className="text-[10px] font-bold text-primary/40 truncate max-w-[80px]">
+                                    {teams.find(t => t.id === tm.teamId)?.name || 'Unknown'}
+                                  </span>
+                                  <MemberRoleBadge 
+                                    memberId={u.id}
+                                    teamId={tm.teamId}
+                                    role={tm.role}
+                                    canEdit={true}
+                                  />
+                                  <button 
+                                    onClick={() => handleRemoveMember(tm.teamId, u.id)}
+                                    className="p-1 text-primary/20 hover:text-accent transition-colors rounded-full"
+                                    title="Remove from team"
+                                  >
+                                    <X size={10} strokeWidth={3} />
+                                  </button>
+                              </div>
+                            ))
                           ) : (
-                            <UserIcon className="text-secondary/50" size={20} />
+                            <span className="text-[10px] font-mono text-accent bg-accent/10 px-2 py-0.5 rounded-full">NO TEAMS</span>
                           )}
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-bold text-text truncate group-hover:text-secondary transition-colors">{u.name}</p>
-                          <p className="text-xs text-primary/40 flex items-center gap-1.5 truncate">
-                            <Mail size={12} className="opacity-50" /> {u.email}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-wrap gap-2">
-                        {u.teamMembers.length > 0 ? (
-                          u.teamMembers.map((tm) => (
-                            <div key={`${tm.teamId}-${u.id}`} className="flex items-center gap-1 bg-primary/5 border border-primary/10 rounded-full pl-2 pr-1 py-0.5">
-                                <span className="text-[10px] font-bold text-primary/40 truncate max-w-[80px]">
-                                  {teams.find(t => t.id === tm.teamId)?.name || 'Unknown'}
-                                </span>
-                                <MemberRoleBadge 
-                                  memberId={u.id}
-                                  teamId={tm.teamId}
-                                  role={tm.role}
-                                  canEdit={true}
-                                />
-                                <button 
-                                  onClick={() => handleRemoveMember(tm.teamId, u.id)}
-                                  className="p-1 text-primary/20 hover:text-accent transition-colors rounded-full"
-                                  title="Remove from team"
-                                >
-                                  <X size={10} strokeWidth={3} />
-                                </button>
-                            </div>
-                          ))
-                        ) : (
-                          <span className="text-[10px] font-mono text-accent bg-accent/10 px-2 py-0.5 rounded-full">NO TEAMS</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <button 
-                        onClick={() => handleDeleteUser(u.id)}
-                        className="p-2 text-primary/20 hover:text-accent transition-all hover:bg-accent/10 rounded-lg"
-                        title="Delete User from System"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          
-          {filteredUsers.length === 0 && (
-            <div className="py-20 text-center">
-              <Users size={48} className="mx-auto text-primary/10 mb-4" />
-              <p className="text-primary/40 font-medium">No users found matching your search.</p>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <button 
+                          onClick={() => handleDeleteUser(u.id)}
+                          className="p-2 text-primary/20 hover:text-accent transition-all hover:bg-accent/10 rounded-lg"
+                          title="Delete User from System"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          )}
+            
+            {filteredUsers.length === 0 && (
+              <div className="py-20 text-center">
+                <Users size={48} className="mx-auto text-primary/10 mb-4" />
+                <p className="text-primary/40 font-medium">No users found matching your search.</p>
+              </div>
+            )}
+          </div>
+
+          {/* ======= MOBILE: Card View ======= */}
+          <div className="md:hidden space-y-3">
+            {filteredUsers.map((u) => (
+              <div key={u.id} className="bg-primary/5 border border-primary/10 rounded-xl p-4 space-y-3">
+                {/* User row */}
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center overflow-hidden shrink-0">
+                    {u.avatar ? (
+                      <img src={u.avatar} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <UserIcon className="text-secondary/50" size={20} />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-text truncate">{u.name}</p>
+                    <p className="text-xs text-primary/40 truncate">{u.email}</p>
+                  </div>
+                  <button 
+                    onClick={() => handleDeleteUser(u.id)}
+                    className="p-2 text-primary/20 hover:text-accent transition-all hover:bg-accent/10 rounded-lg shrink-0"
+                    title="Delete User from System"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+
+                {/* Teams & Roles */}
+                <div className="flex flex-wrap gap-1.5">
+                  {u.teamMembers.length > 0 ? (
+                    u.teamMembers.map((tm) => (
+                      <div key={`${tm.teamId}-${u.id}`} className="flex items-center gap-1 bg-background border border-primary/10 rounded-full pl-2 pr-1 py-0.5">
+                        <span className="text-[10px] font-bold text-primary/40 truncate max-w-[70px]">
+                          {teams.find(t => t.id === tm.teamId)?.name || 'Unknown'}
+                        </span>
+                        <MemberRoleBadge 
+                          memberId={u.id}
+                          teamId={tm.teamId}
+                          role={tm.role}
+                          canEdit={true}
+                        />
+                        <button 
+                          onClick={() => handleRemoveMember(tm.teamId, u.id)}
+                          className="p-1 text-primary/20 hover:text-accent transition-colors rounded-full"
+                          title="Remove from team"
+                        >
+                          <X size={10} strokeWidth={3} />
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <span className="text-[10px] font-mono text-accent bg-accent/10 px-2 py-0.5 rounded-full">NO TEAMS</span>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {filteredUsers.length === 0 && (
+              <div className="py-16 text-center">
+                <Users size={40} className="mx-auto text-primary/10 mb-4" />
+                <p className="text-primary/40 font-medium text-sm">No users found.</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

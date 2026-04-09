@@ -165,7 +165,7 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
           ) : activeView === 'kb' ? (
             <KnowledgeBaseView onMenuClick={() => setIsSidebarOpen(true)} teamId={teamId} />
           ) : activeView === 'admin' ? (
-            <UserManagementView />
+            <UserManagementView onMenuClick={() => setIsSidebarOpen(true)} />
           ) : activeView === 'chat' && activeChannelId ? (
             <ChatArea onMenuClick={() => setIsSidebarOpen(true)} channelId={activeChannelId} channelName={activeChannelName || undefined} />
           ) : activeView === 'chat' ? (

@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { ChatService } from './chat.service.js';
 import { UserId } from '../auth/user-id.decorator.js';
+import { CreateMessageDto, CreateChannelDto } from '../dto/chat.dto.js';
 
 @Controller('chat')
 export class ChatController {
@@ -19,7 +20,7 @@ export class ChatController {
     @Post('channels/:channelId/messages')
     async createMessage(
         @Param('channelId') channelId: string,
-        @Body() body: { senderId: string, content: string },
+        @Body() body: CreateMessageDto,
         @UserId() requesterId?: string
     ) {
         return this.chatService.createMessage(channelId, body.senderId, body.content, requesterId);
@@ -28,7 +29,7 @@ export class ChatController {
     @Post('teams/:teamId/channels')
     async createChannel(
         @Param('teamId') teamId: string,
-        @Body() body: { name: string },
+        @Body() body: CreateChannelDto,
         @UserId() requesterId?: string
     ) {
         return this.chatService.createChannel(teamId, body.name, requesterId);

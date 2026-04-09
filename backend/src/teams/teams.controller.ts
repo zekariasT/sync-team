@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Param, ForbiddenException, Delete, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service.js';
 import { UserId } from '../auth/user-id.decorator.js';
+import { CreateTeamDto, UpdateRoleDto, AddMemberDto } from '../dto/teams.dto.js';
 
 @Controller('teams')
 export class TeamsController {
@@ -52,9 +53,7 @@ export class TeamsController {
     }
 
     @Post()
-    async create(@Body() body: { name: string, description?: string }, @UserId() requesterId?: string) {
-        // Only Admins can create teams in this MVP? Or anybody?
-        // Let's assume only Admins for now to be safe.
+    async create(@Body() body: CreateTeamDto, @UserId() requesterId?: string) {
         if (!requesterId) throw new ForbiddenException('Unauthorized');
         
         const adminMembership = await this.prisma.teamMember.findFirst({
@@ -75,30 +74,27 @@ export class TeamsController {
     async updateRole(
         @Param('teamId') teamId: string,
         @Param('userId') userId: string,
-        @Body() body: { role: string },
+        @Body() body: UpdateRoleDto,
         @UserId() requesterId: string
     ) {
         if (!requesterId) throw new ForbiddenException('Unauthorized');
 
-        // Check if requester is ADMIN
         const adminMembership = await this.prisma.teamMember.findFirst({
             where: { userId: requesterId, role: 'ADMIN' }
         });
 
         if (!adminMembership) throw new ForbiddenException('Only administrators can change roles');
 
-        // Update role
         return this.prisma.teamMember.update({
             where: { userId_teamId: { userId, teamId } },
             data: { role: body.role as any }
         });
     }
 
-    // Create: Add user to team
     @Post(':teamId/members')
     async addMember(
         @Param('teamId') teamId: string,
-        @Body() body: { email: string, role?: string },
+        @Body() body: AddMemberDto,
         @UserId() requesterId: string
     ) {
         if (!requesterId) throw new ForbiddenException('Unauthorized');
@@ -122,7 +118,6 @@ export class TeamsController {
         });
     }
 
-    // Delete: Remove user from team
     @Delete(':teamId/members/:userId')
     async removeMember(
         @Param('teamId') teamId: string,
