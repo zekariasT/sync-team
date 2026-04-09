@@ -7,6 +7,7 @@ import MemberRoleBadge from './MemberRoleBadge';
 
 export default async function PulseView() {
   const user = await currentUser();
+  const activeUserId = user?.id || 'guest-demo-user';
   let members: any[] = [];
   try {
     const { getToken } = await auth();
@@ -28,7 +29,7 @@ export default async function PulseView() {
     members = [];
   }
 
-  const currentMember = members.find(m => m.id === user?.id);
+  const currentMember = members.find(m => m.id === activeUserId);
   const isAdmin = currentMember?.teamMembers?.some((tm: any) => tm.role === 'ADMIN');
   const leadTeamIds = currentMember?.teamMembers?.filter((tm: any) => tm.role === 'LEAD').map((tm: any) => tm.teamId) || [];
 
@@ -56,7 +57,7 @@ export default async function PulseView() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {members.map((member: any) => {
             const isTargetMemberInLeadedTeam = member.teamMembers?.some((tm: any) => leadTeamIds.includes(tm.teamId));
-            const canUpdate = isAdmin || user?.id === member.id || isTargetMemberInLeadedTeam;
+            const canUpdate = isAdmin || activeUserId === member.id || isTargetMemberInLeadedTeam;
 
             return (
               <div
