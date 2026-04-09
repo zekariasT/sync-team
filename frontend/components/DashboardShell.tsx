@@ -208,7 +208,7 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
       {/* Technical Overview Modal */}
       {isOverviewOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-background border border-primary/20 rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden relative">
+          <div className="bg-background border border-primary/20 rounded-2xl w-full max-w-3xl max-h-[90vh] shadow-2xl overflow-hidden relative flex flex-col mx-auto">
             <div className="p-6 border-b border-primary/10 flex justify-between items-center bg-primary/5">
               <h2 className="text-xl font-black tracking-tighter text-text">TECHNICAL OVERVIEW</h2>
               <button onClick={() => setIsOverviewOpen(false)} className="text-primary/50 hover:text-text transition-colors">
@@ -216,7 +216,7 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
               </button>
             </div>
             
-            <div className="p-6 md:p-10 bg-linear-to-b from-background to-primary/5">
+            <div className="p-6 md:p-10 bg-linear-to-b from-background to-primary/5 overflow-y-auto flex-1">
               <div className="text-center mb-10">
                 <p className="text-primary/70 text-sm max-w-xl mx-auto">
                   SyncPoint OS uses a modern microservices architecture designed for real-time collaboration, security, and AI enrichment.
@@ -265,10 +265,10 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
 
               </div>
             </div>
-            <div className="p-4 bg-background border-t border-primary/10 flex justify-between items-center text-[10px] uppercase font-bold tracking-widest text-primary/30">
+            <div className="p-4 bg-background border-t border-primary/10 flex flex-col md:flex-row justify-between items-center gap-2 text-[10px] uppercase font-bold tracking-widest text-primary/30 text-center md:text-left">
               <span>Frontend: Vercel (Next.js)</span>
               <span>Backend: Render (NestJS)</span>
-              <span>DB: Aiven (MariaDB)</span>
+              <span>DB: Aiven (MySQL)</span>
             </div>
           </div>
         </div>
