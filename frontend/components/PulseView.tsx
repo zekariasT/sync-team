@@ -11,7 +11,7 @@ export default async function PulseView() {
   try {
     const { getToken } = await auth();
     const token = await getToken();
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/members`, { 
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/members`, { 
       cache: 'no-store',
       headers: {
         'x-user-id': user?.id || '',

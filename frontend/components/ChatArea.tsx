@@ -53,7 +53,7 @@ export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAr
       const userId = user.id;
       const getMsgs = async () => {
         const token = await getToken();
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/chat/channels/${channelId}/messages`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/chat/channels/${channelId}/messages`, {
           headers: { 
             'x-user-id': userId,
             'Authorization': `Bearer ${token}`
@@ -67,7 +67,7 @@ export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAr
     }
 
     // Set up WebSocket for real-time messages
-    const socket = io(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}`);
+    const socket = io(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}`);
     socketRef.current = socket;
 
     socket.emit('joinChannel', channelId);
@@ -91,7 +91,7 @@ export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAr
 
     const userId = user.id;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/chat/channels/${channelId}/messages`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/chat/channels/${channelId}/messages`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

@@ -53,12 +53,12 @@ export default function UserManagementView({ onMenuClick }: UserManagementViewPr
       const token = await getToken();
       
       // Fetch users
-      const usersRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/members`, {
+      const usersRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://syncpoint-backend.onrender.com'}/members`, {
         headers: { 'x-user-id': currentUser.id, 'Authorization': `Bearer ${token}` }
       });
       
       // Fetch teams
-      const teamsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/teams`, {
+      const teamsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://syncpoint-backend.onrender.com'}/teams`, {
         headers: { 'x-user-id': currentUser.id, 'Authorization': `Bearer ${token}` }
       });
 

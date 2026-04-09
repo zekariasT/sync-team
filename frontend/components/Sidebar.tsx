@@ -46,7 +46,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
       const token = await getToken();
       
       // Fetch teams the user belongs to
-      const teamsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams`, {
+      const teamsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/teams`, {
         headers: { 
           'x-user-id': userId,
           'Authorization': `Bearer ${token}`
@@ -60,7 +60,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
       
       // Fetch channels for each team
       data.forEach(async (team: Team) => {
-        const chanRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/chat/teams/${team.id}/channels`, {
+        const chanRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/chat/teams/${team.id}/channels`, {
           headers: { 
             'x-user-id': userId,
             'Authorization': `Bearer ${token}`
@@ -86,7 +86,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
   const handleCreateChannel = async (teamId: string) => {
     if (!newChannelName.trim()) return;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/chat/teams/${teamId}/channels`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/chat/teams/${teamId}/channels`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

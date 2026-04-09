@@ -14,7 +14,7 @@ export default function RealTimeProvider({ children }: { children: React.ReactNo
         if (isLoaded && user) {
             const syncUser = async () => {
                 const token = await getToken();
-                fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/members/sync`, {
+                fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/members/sync`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -34,7 +34,7 @@ export default function RealTimeProvider({ children }: { children: React.ReactNo
 
     useEffect(() => {
         // Connect to your NestJS backend on port 3001
-        const socket = io(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}`);
+        const socket = io(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}`);
 
         // Listen for the "statusChanged" event from the backend
         socket.on('statusChanged', (data) => {

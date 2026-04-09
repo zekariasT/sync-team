@@ -82,6 +82,12 @@ export class KbService {
     requesterId: string
   ) {
     await this.checkTeamPermission(teamId, requesterId, ['ADMIN', 'LEAD', 'MEMBER']);
+
+    const docCount = await this.prisma.document.count({ where: { teamId } });
+    if (docCount >= 3) {
+       throw new ForbiddenException('For the free demo, each team is limited to a maximum of 3 indexed documents.');
+    }
+
     let text = '';
     
     // Parse depending on mime type, defaults to pdf

@@ -36,7 +36,7 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
     const userId = user.id;
     try {
       const token = await getToken();
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/tasks/teams/${teamId}/projects`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/teams/${teamId}/projects`, {
         headers: { 
           'x-user-id': userId,
           'Authorization': `Bearer ${token}`
@@ -50,7 +50,7 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
     if (!teamId || !user) return;
     const userId = user.id;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams/${teamId}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/teams/${teamId}`, {
         headers: { 'x-user-id': userId }
       });
       if (res.ok) {
@@ -64,7 +64,7 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
     if (!teamId || !user) return;
     const userId = user.id;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/tasks/teams/${teamId}/cycles`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/teams/${teamId}/cycles`, {
         headers: { 'x-user-id': userId }
       });
       if (res.ok) setCycles(await res.json());
@@ -75,7 +75,7 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
     if (!teamId) return;
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/tasks/teams/${teamId}/cycles`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/teams/${teamId}/cycles`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -87,7 +87,10 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
           endDate: data.endDate
         })
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: 'Failed to create cycle' }));
+        throw new Error(errorData.message || 'Failed to create cycle');
+      }
       
       success('Cycle created successfully');
       fetchCycles();
@@ -102,7 +105,7 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
     const userId = user.id;
     try {
       const token = await getToken();
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/tasks/${editingTask.id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/${editingTask.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -111,7 +114,10 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
         },
         body: JSON.stringify(data)
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: 'Failed to update task' }));
+        throw new Error(errorData.message || 'Failed to update task');
+      }
       success('Task updated successfully');
       fetchCycles();
       setIsTaskModalOpen(false);

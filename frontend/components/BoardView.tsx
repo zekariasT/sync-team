@@ -152,7 +152,7 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
     const userId = user.id;
     try {
       const token = await getToken();
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/tasks/teams/${teamId}/projects`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/teams/${teamId}/projects`, {
         headers: { 
           'x-user-id': userId,
           'Authorization': `Bearer ${token}`
@@ -166,7 +166,7 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
     if (!teamId || !user) return;
     const userId = user.id;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/tasks/teams/${teamId}/cycles`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/teams/${teamId}/cycles`, {
         headers: { 'x-user-id': userId }
       });
       if (res.ok) setCycles(await res.json());
@@ -177,7 +177,7 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
     if (!teamId || !user) return;
     const userId = user.id;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams/${teamId}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/teams/${teamId}`, {
         headers: { 'x-user-id': userId }
       });
       if (res.ok) {
@@ -191,7 +191,7 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
     if (!teamId || !user) return;
     const userId = user.id;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/tasks/teams/${teamId}/tasks`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/teams/${teamId}/tasks`, {
         headers: { 'x-user-id': userId }
       });
       if (res.ok) setTasks(await res.json());
@@ -229,7 +229,7 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
       setTasks(prev => prev.map(t => t.id === activeId ? { ...t, state: newStatus } : t));
       const userId = user?.id || '';
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/tasks/${activeId}/state`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/${activeId}/state`, {
           method: 'PATCH',
           headers: { 
             'Content-Type': 'application/json',
@@ -238,8 +238,8 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
           body: JSON.stringify({ state: newStatus })
         });
         if (!res.ok) {
-           const errText = await res.text();
-           throw new Error(errText || 'Failed to move task');
+           const errorData = await res.json().catch(() => ({ message: 'Failed to move task' }));
+           throw new Error(errorData.message || 'Failed to move task');
         }
         success(`Task moved to ${newStatus.replace('_', ' ')}`);
       } catch(err: any) {
@@ -254,8 +254,8 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
 
     try {
       const url = editingTask 
-        ? `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/tasks/${editingTask.id}`
-        : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/tasks/teams/${teamId}/tasks`;
+        ? `${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/${editingTask.id}`
+        : `${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/teams/${teamId}/tasks`;
       
       const method = editingTask ? 'PATCH' : 'POST';
 
@@ -277,7 +277,10 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
         body
       });
 
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: `Failed to ${editingTask ? 'update' : 'create'} task` }));
+        throw new Error(errorData.message || `Failed to ${editingTask ? 'update' : 'create'} task`);
+      }
       
       success(`Task ${editingTask ? 'updated' : 'created'} successfully`);
       fetchTasks();

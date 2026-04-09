@@ -44,7 +44,7 @@ export default function VideosView({ teamId: initialTeamId, onMenuClick }: { tea
   useEffect(() => {
     if (!teamId) {
       // Fetch teams first
-      fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams`)
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/teams`)
         .then(res => res.json())
         .then(data => {
           if (data && data.length > 0) {
@@ -64,7 +64,7 @@ export default function VideosView({ teamId: initialTeamId, onMenuClick }: { tea
     const userId = user.id;
     try {
       const token = await getToken();
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/video/teams/${teamId}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/video/teams/${teamId}`, {
         headers: { 
           'x-user-id': userId,
           'Authorization': `Bearer ${token}`
@@ -169,7 +169,7 @@ export default function VideosView({ teamId: initialTeamId, onMenuClick }: { tea
                    const timestamp = videoEl ? videoEl.currentTime : 0;
                    const userId = user.id;
                    try {
-                     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/video/${selectedVideo.id}/reactions`, {
+                     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/video/${selectedVideo.id}/reactions`, {
                        method: 'POST',
                         headers: {
                           'Content-Type': 'application/json',

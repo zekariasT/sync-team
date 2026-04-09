@@ -45,6 +45,7 @@ export class MembersController {
     @Delete(':id')
     async remove(@Param('id') id: string, @UserId() requesterId: string) {
         if (!requesterId) throw new ForbiddenException('Unauthorized');
+        if (requesterId === 'guest-demo-user') throw new ForbiddenException('Action disabled in public demo');
         return this.membersService.delete(id, requesterId);
     }
 }

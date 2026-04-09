@@ -10,10 +10,9 @@ export class ClerkAuthGuard implements CanActivate {
     const authHeader = request.headers['authorization'];
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-       // Check if there is an x-user-id fallback for dev/testing if needed, 
-       // but for production, we strictly require the token.
        const requesterId = request.headers['x-user-id'];
-       if (process.env.NODE_ENV !== 'production' && requesterId) {
+       // For development AND public demos, allow guest-demo-user
+       if (requesterId && (process.env.NODE_ENV !== 'production' || requesterId === 'guest-demo-user')) {
          request['user'] = { clerkId: requesterId };
          return true;
        }

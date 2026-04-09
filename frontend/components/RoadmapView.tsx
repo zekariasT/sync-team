@@ -36,7 +36,7 @@ export default function RoadmapView({ teamId, onMenuClick }: { teamId?: string; 
     const userId = user.id;
     try {
       const token = await getToken();
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/tasks/teams/${teamId}/cycles`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/teams/${teamId}/cycles`, {
         headers: { 
           'x-user-id': userId,
           'Authorization': `Bearer ${token}`
@@ -50,7 +50,7 @@ export default function RoadmapView({ teamId, onMenuClick }: { teamId?: string; 
     if (!teamId || !user) return;
     const userId = user.id;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams/${teamId}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/teams/${teamId}`, {
         headers: { 'x-user-id': userId }
       });
       if (res.ok) {
@@ -64,7 +64,7 @@ export default function RoadmapView({ teamId, onMenuClick }: { teamId?: string; 
     if (!teamId || !user) return;
     const userId = user.id;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/tasks/teams/${teamId}/projects`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/teams/${teamId}/projects`, {
         headers: { 'x-user-id': userId }
       });
       if (res.ok) setProjects(await res.json());
@@ -75,7 +75,7 @@ export default function RoadmapView({ teamId, onMenuClick }: { teamId?: string; 
     if (!teamId) return;
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/tasks/teams/${teamId}/projects`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/teams/${teamId}/projects`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -86,7 +86,10 @@ export default function RoadmapView({ teamId, onMenuClick }: { teamId?: string; 
           description: data.description 
         })
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: 'Failed to create project' }));
+        throw new Error(errorData.message || 'Failed to create project');
+      }
       
       success('Project created successfully');
       fetchProjects();
@@ -99,7 +102,7 @@ export default function RoadmapView({ teamId, onMenuClick }: { teamId?: string; 
   const handleTaskSubmit = async (data: any) => {
     if (!editingTask) return;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/tasks/${editingTask.id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/${editingTask.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -107,7 +110,10 @@ export default function RoadmapView({ teamId, onMenuClick }: { teamId?: string; 
         },
         body: JSON.stringify(data)
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: 'Failed to update task' }));
+        throw new Error(errorData.message || 'Failed to update task');
+      }
       success('Task updated successfully');
       fetchProjects();
       setIsTaskModalOpen(false);

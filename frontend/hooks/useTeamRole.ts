@@ -24,7 +24,7 @@ export function useTeamRole(teamId?: string) {
       try {
         const token = await getToken();
         // Fetch all teams the user belongs to
-        const teamsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams`, {
+        const teamsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/teams`, {
           headers: { 
             'x-user-id': user.id,
             'Authorization': `Bearer ${token}`
@@ -48,7 +48,7 @@ export function useTeamRole(teamId?: string) {
             }
           } else {
             // If not found in user's team list, try direct fetch
-            const teamRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams/${teamId}`, {
+            const teamRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/teams/${teamId}`, {
               headers: { 
                 'x-user-id': user.id,
                 'Authorization': `Bearer ${token}`

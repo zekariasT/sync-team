@@ -154,7 +154,7 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
     formData.append('title', title || 'Screen Recording');
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/video/teams/${teamId}/upload`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/video/teams/${teamId}/upload`, {
         method: 'POST',
         headers: {
           'x-user-id': userId

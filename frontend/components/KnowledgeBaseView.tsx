@@ -24,7 +24,7 @@ export default function KnowledgeBaseView({ teamId, onMenuClick }: { teamId?: st
 
     try {
       const token = await getToken();
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams/${teamId}/kb/query`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/teams/${teamId}/kb/query`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -37,9 +37,9 @@ export default function KnowledgeBaseView({ teamId, onMenuClick }: { teamId?: st
          const data = await res.json();
          setAnswer(data.answer);
       } else {
-         const errText = await res.text();
-         toastError(errText || 'Failed to get answer');
-         setAnswer('❌ Failed to get answer from Knowledge Base.');
+         const errorData = await res.json().catch(() => ({ message: 'Failed to get answer' }));
+         toastError(errorData.message || 'Failed to get answer');
+         setAnswer(`❌ ${errorData.message || 'Failed to get answer from Knowledge Base.'}`);
       }
     } catch (err: any) {
         toastError(err.message || 'Error connecting to RAG service');
@@ -62,7 +62,7 @@ export default function KnowledgeBaseView({ teamId, onMenuClick }: { teamId?: st
           <div className="flex flex-col gap-4">
             {teamId ? (
               <DocumentUploader teamId={teamId} onUploadSuccess={() => {
-                  alert('Document successfully embedded into Pinecone!');
+                  // Notification handled internally or via secondary hook
               }} />
             ) : (
               <div className="p-4 border border-primary/20 bg-primary/5 rounded-xl text-center text-sm text-primary/50">
@@ -89,9 +89,21 @@ export default function KnowledgeBaseView({ teamId, onMenuClick }: { teamId?: st
                       {answer}
                     </div>
                 ) : (
-                    <div className="h-full flex flex-col items-center justify-center text-center opacity-50">
-                      <Search size={32} className="mb-2 text-primary/40" />
-                      <p className="max-w-[200px]">Ask a question and the AI will consult your uploaded documents to find the answer.</p>
+                    <div className="h-full flex flex-col items-center justify-center text-center p-6">
+                      <Search size={32} className="mb-4 text-primary/30" />
+                      <p className="max-w-[250px] mb-6 text-primary/50">Ask a question and the AI will consult your uploaded documents to find the answer.</p>
+                      
+                      <div className="flex flex-col gap-2 w-full max-w-sm">
+                        <button onClick={() => setQuery("What is our vacation policy?")} className="px-3 py-2 text-xs font-bold border border-primary/20 text-primary/70 hover:text-secondary hover:border-secondary/50 rounded-lg text-left transition-colors flex items-center gap-2 pr-6 relative group overflow-hidden">
+                           <Bot size={14} className="opacity-50" /> What is our vacation policy?
+                        </button>
+                        <button onClick={() => setQuery("What are our Q3 marketing goals?")} className="px-3 py-2 text-xs font-bold border border-primary/20 text-primary/70 hover:text-secondary hover:border-secondary/50 rounded-lg text-left transition-colors flex items-center gap-2 pr-6 relative group overflow-hidden">
+                           <Bot size={14} className="opacity-50" /> What are our Q3 marketing goals?
+                        </button>
+                        <button onClick={() => setQuery("How do I connect to the VPN?")} className="px-3 py-2 text-xs font-bold border border-primary/20 text-primary/70 hover:text-secondary hover:border-secondary/50 rounded-lg text-left transition-colors flex items-center gap-2 pr-6 relative group overflow-hidden">
+                           <Bot size={14} className="opacity-50" /> How do I connect to the VPN?
+                        </button>
+                      </div>
                     </div>
                 )}
             </div>

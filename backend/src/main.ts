@@ -17,7 +17,9 @@ if (process.env.SENTRY_DSN) {
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
-    logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+    logger: process.env.NODE_ENV === 'production' 
+       ? ['error', 'warn', 'log'] 
+       : ['error', 'warn', 'log', 'debug', 'verbose'],
   });
 
   // Global validation pipe — sanitizes and validates all incoming DTOs.

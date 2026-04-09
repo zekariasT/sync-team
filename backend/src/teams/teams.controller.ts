@@ -78,6 +78,7 @@ export class TeamsController {
         @UserId() requesterId: string
     ) {
         if (!requesterId) throw new ForbiddenException('Unauthorized');
+        if (requesterId === 'guest-demo-user') throw new ForbiddenException('Action disabled in public demo');
 
         const adminMembership = await this.prisma.teamMember.findFirst({
             where: { userId: requesterId, role: 'ADMIN' }
@@ -125,6 +126,7 @@ export class TeamsController {
         @UserId() requesterId: string
     ) {
         if (!requesterId) throw new ForbiddenException('Unauthorized');
+        if (requesterId === 'guest-demo-user') throw new ForbiddenException('Action disabled in public demo');
 
         const adminMembership = await this.prisma.teamMember.findFirst({
             where: { userId: requesterId, role: 'ADMIN' }

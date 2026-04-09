@@ -3,20 +3,25 @@
 import { revalidatePath } from 'next/cache';
 import { currentUser } from '@clerk/nextjs/server';
 
-export async function updatePulse(id: string, formData: FormData) {
-  const user = await currentUser();
-  if (!user) throw new Error('Unauthorized');
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com";
 
+// Helper to get active user ID or fallback to guest for demo purposes
+async function getUserId() {
+  const user = await currentUser();
+  return user?.id || 'guest-demo-user';
+}
+
+export async function updatePulse(id: string, formData: FormData) {
+  const userId = await getUserId();
   const status = formData.get('status') as string;
   if (!status) return;
 
   try {
-    // Redundant role check removed - backend handles this securely.
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/members/${id}`, {
+    const response = await fetch(`${API_URL}/members/${id}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        'x-user-id': user.id,
+        'x-user-id': userId,
       },
       body: JSON.stringify({ status }),
     });
@@ -34,16 +39,15 @@ export async function updatePulse(id: string, formData: FormData) {
   }
 }
 
-export async function updateRole(userId: string, teamId: string, role: string) {
-  const user = await currentUser();
-  if (!user) throw new Error('Unauthorized');
+export async function updateRole(targetUserId: string, teamId: string, role: string) {
+  const userId = await getUserId();
 
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams/${teamId}/members/${userId}/role`, {
-      method: 'POST', // Backend currently uses @Post (should have been PATCH, but keep consistent)
+    const response = await fetch(`${API_URL}/teams/${teamId}/members/${targetUserId}/role`, {
+      method: 'POST', 
       headers: {
         'Content-Type': 'application/json',
-        'x-user-id': user.id,
+        'x-user-id': userId,
       },
       body: JSON.stringify({ role }),
     });
@@ -61,15 +65,14 @@ export async function updateRole(userId: string, teamId: string, role: string) {
   }
 }
 export async function addMember(teamId: string, email: string) {
-  const user = await currentUser();
-  if (!user) throw new Error('Unauthorized');
+  const userId = await getUserId();
 
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams/${teamId}/members`, {
+    const response = await fetch(`${API_URL}/teams/${teamId}/members`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-user-id': user.id,
+        'x-user-id': userId,
       },
       body: JSON.stringify({ email }),
     });
@@ -86,15 +89,14 @@ export async function addMember(teamId: string, email: string) {
   }
 }
 
-export async function removeMember(teamId: string, userId: string) {
-  const user = await currentUser();
-  if (!user) throw new Error('Unauthorized');
+export async function removeMember(teamId: string, targetUserId: string) {
+  const userId = await getUserId();
 
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/teams/${teamId}/members/${userId}`, {
+    const response = await fetch(`${API_URL}/teams/${teamId}/members/${targetUserId}`, {
       method: 'DELETE',
       headers: {
-        'x-user-id': user.id,
+        'x-user-id': userId,
       },
     });
 
@@ -110,15 +112,14 @@ export async function removeMember(teamId: string, userId: string) {
   }
 }
 
-export async function deleteUserSystem(userId: string) {
-  const user = await currentUser();
-  if (!user) throw new Error('Unauthorized');
+export async function deleteUserSystem(targetUserId: string) {
+  const userId = await getUserId();
 
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/members/${userId}`, {
+    const response = await fetch(`${API_URL}/members/${targetUserId}`, {
       method: 'DELETE',
       headers: {
-        'x-user-id': user.id,
+        'x-user-id': userId,
       },
     });
 
