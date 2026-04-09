@@ -38,9 +38,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
   const { getToken } = useAuth();
 
   useEffect(() => {
-    if (!user) return;
-    
-    const userId = user.id;
+    const userId = user?.id || 'guest-demo-user';
     
     async function loadInitialData() {
       const token = await getToken();
