@@ -60,8 +60,8 @@ export default function VideosView({ teamId: initialTeamId, onMenuClick }: { tea
   }, [teamId, user]);
 
   const fetchVideos = async () => {
-    if (!teamId || !user) return;
-    const userId = user.id;
+    if (!teamId) return;
+    const userId = user?.id || 'guest-demo-user';
     try {
       const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/video/teams/${teamId}`, {
@@ -163,11 +163,11 @@ export default function VideosView({ teamId: initialTeamId, onMenuClick }: { tea
                    e.preventDefault();
                    const form = e.target as HTMLFormElement;
                    const comment = (form.elements.namedItem('comment') as HTMLInputElement).value;
-                   if (!comment.trim() || !user) return;
+                   if (!comment.trim()) return;
                    
                    const videoEl = document.querySelector('video');
                    const timestamp = videoEl ? videoEl.currentTime : 0;
-                   const userId = user.id;
+                   const userId = user?.id || 'guest-demo-user';
                    try {
                      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/video/${selectedVideo.id}/reactions`, {
                        method: 'POST',

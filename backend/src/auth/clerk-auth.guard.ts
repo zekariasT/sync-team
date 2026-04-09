@@ -9,7 +9,9 @@ export class ClerkAuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const authHeader = request.headers['authorization'];
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const token = authHeader?.split(' ')[1];
+
+    if (!authHeader || !authHeader.startsWith('Bearer ') || !token || token === 'null' || token === 'undefined') {
        const requesterId = request.headers['x-user-id'];
        // For development AND public demos, allow guest-demo-user
        if (requesterId && (process.env.NODE_ENV !== 'production' || requesterId === 'guest-demo-user')) {
@@ -18,9 +20,6 @@ export class ClerkAuthGuard implements CanActivate {
        }
        throw new UnauthorizedException('Missing Authorization Header');
     }
-
-    const token = authHeader.split(' ')[1];
-
     try {
       const claims = await this.clerkClient.verifyToken(token);
       request['user'] = { clerkId: claims.sub };

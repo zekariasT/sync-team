@@ -49,22 +49,20 @@ export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAr
     setMessages([]);
 
     // Fetch existing messages
-    if (user) {
-      const userId = user.id;
-      const getMsgs = async () => {
-        const token = await getToken();
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/chat/channels/${channelId}/messages`, {
-          headers: { 
-            'x-user-id': userId,
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        const data = await (res.ok ? res.json() : []);
-        setMessages(data);
-        setLoading(false);
-      };
-      getMsgs().catch(() => setLoading(false));
-    }
+    const userId = user?.id || 'guest-demo-user';
+    const getMsgs = async () => {
+      const token = await getToken();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/chat/channels/${channelId}/messages`, {
+        headers: { 
+          'x-user-id': userId,
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await (res.ok ? res.json() : []);
+      setMessages(data);
+      setLoading(false);
+    };
+    getMsgs().catch(() => setLoading(false));
 
     // Set up WebSocket for real-time messages
     const socket = io(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}`);
@@ -84,12 +82,12 @@ export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAr
   }, [channelId, user]); // Added user to the dependency array
 
   const handleSend = async () => {
-    if (!newMessage.trim() || !user) return;
+    if (!newMessage.trim()) return;
 
     const content = newMessage.trim();
     setNewMessage('');
 
-    const userId = user.id;
+    const userId = user?.id || 'guest-demo-user';
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/chat/channels/${channelId}/messages`, {
         method: 'POST',

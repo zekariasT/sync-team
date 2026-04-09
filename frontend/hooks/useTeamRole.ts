@@ -12,11 +12,8 @@ export function useTeamRole(teamId?: string) {
 
   useEffect(() => {
     async function checkRole() {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
+      const userId = user?.id || 'guest-demo-user';
+      
       setLoading(true);
       setRole(null);
       setIsGlobalAdmin(false);
@@ -26,7 +23,7 @@ export function useTeamRole(teamId?: string) {
         // Fetch all teams the user belongs to
         const teamsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/teams`, {
           headers: { 
-            'x-user-id': user.id,
+            'x-user-id': userId,
             'Authorization': `Bearer ${token}`
           }
         });
@@ -34,7 +31,7 @@ export function useTeamRole(teamId?: string) {
         
         // 1. Check for global ADMIN role (any team where user is ADMIN)
         const anyAdmin = teams.some((t: any) => 
-          t.members?.some((m: any) => m.userId === user.id && m.role === 'ADMIN')
+          t.members?.some((m: any) => m.userId === userId && m.role === 'ADMIN')
         );
         setIsGlobalAdmin(anyAdmin);
 
@@ -42,7 +39,7 @@ export function useTeamRole(teamId?: string) {
         if (teamId) {
           const currentTeam = teams.find((t: any) => t.id === teamId);
           if (currentTeam) {
-            const myMembership = currentTeam.members?.find((m: any) => m.userId === user.id);
+            const myMembership = currentTeam.members?.find((m: any) => m.userId === userId);
             if (myMembership) {
               setRole(myMembership.role);
             }
@@ -50,13 +47,13 @@ export function useTeamRole(teamId?: string) {
             // If not found in user's team list, try direct fetch
             const teamRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/teams/${teamId}`, {
               headers: { 
-                'x-user-id': user.id,
+                'x-user-id': userId,
                 'Authorization': `Bearer ${token}`
               }
             });
             if (teamRes.ok) {
               const team = await teamRes.json();
-              const myMembership = team?.members?.find((m: any) => m.userId === user.id);
+              const myMembership = team?.members?.find((m: any) => m.userId === userId);
               if (myMembership) setRole(myMembership.role);
             }
           }

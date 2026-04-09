@@ -18,7 +18,12 @@ export default async function PulseView() {
         'Authorization': `Bearer ${token}`
       }
     });
-    members = await res.json();
+    if (!res.ok) {
+       members = [];
+    } else {
+       members = await res.json();
+       if (!Array.isArray(members)) members = [];
+    }
   } catch {
     members = [];
   }

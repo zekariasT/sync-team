@@ -32,8 +32,8 @@ export default function RoadmapView({ teamId, onMenuClick }: { teamId?: string; 
   }, [teamId]);
 
   const fetchCycles = async () => {
-    if (!teamId || !user) return;
-    const userId = user.id;
+    if (!teamId) return;
+    const userId = user?.id || 'guest-demo-user';
     try {
       const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/teams/${teamId}/cycles`, {
@@ -47,8 +47,8 @@ export default function RoadmapView({ teamId, onMenuClick }: { teamId?: string; 
   };
 
   const fetchMembers = async () => {
-    if (!teamId || !user) return;
-    const userId = user.id;
+    if (!teamId) return;
+    const userId = user?.id || 'guest-demo-user';
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/teams/${teamId}`, {
         headers: { 'x-user-id': userId }
@@ -61,8 +61,8 @@ export default function RoadmapView({ teamId, onMenuClick }: { teamId?: string; 
   };
 
   const fetchProjects = async () => {
-    if (!teamId || !user) return;
-    const userId = user.id;
+    if (!teamId) return;
+    const userId = user?.id || 'guest-demo-user';
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/teams/${teamId}/projects`, {
         headers: { 'x-user-id': userId }
@@ -79,7 +79,7 @@ export default function RoadmapView({ teamId, onMenuClick }: { teamId?: string; 
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'x-user-id': user?.id || ''
+          'x-user-id': user?.id || 'guest-demo-user'
         },
         body: JSON.stringify({ 
           name: data.name, 

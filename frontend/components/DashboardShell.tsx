@@ -9,7 +9,7 @@ import CycleView from '@/components/CycleView';
 import RoadmapView from '@/components/RoadmapView';
 import KnowledgeBaseView from '@/components/KnowledgeBaseView';
 import CommandPalette from '@/components/CommandPalette';
-import { Hash, Menu, X, Info, ArrowRight, ShieldCheck, Zap, Bot } from 'lucide-react';
+import { Hash, Menu, X, Info, ArrowRight, ShieldCheck, Zap, Bot, Shield } from 'lucide-react';
 
 interface DashboardShellProps {
   pulseContent: React.ReactNode;
@@ -54,9 +54,7 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
   }, [activeView, activeChannelId, activeChannelName, isInitialized]);
 
   useEffect(() => {
-    if (!user) return;
-    
-    const userId = user.id;
+    const userId = user?.id || 'guest-demo-user';
     
     async function loadTeams() {
       const token = await getToken();
@@ -166,7 +164,10 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
           ) : activeView === 'kb' ? (
             <KnowledgeBaseView onMenuClick={() => setIsSidebarOpen(true)} teamId={teamId} />
           ) : activeView === 'admin' ? (
-            <UserManagementView onMenuClick={() => setIsSidebarOpen(true)} />
+            <div className="flex-1 flex flex-col items-center justify-center h-full bg-background text-primary/40 p-6">
+               <Shield size={48} className="mb-4 opacity-20" />
+               <p className="text-sm font-mono uppercase tracking-widest">ACCESS_RESTRICTED_FOR_DEMO</p>
+            </div>
           ) : activeView === 'chat' && activeChannelId ? (
             <ChatArea onMenuClick={() => setIsSidebarOpen(true)} channelId={activeChannelId} channelName={activeChannelName || undefined} />
           ) : activeView === 'chat' ? (

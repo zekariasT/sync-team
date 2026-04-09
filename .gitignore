@@ -9,3 +9,4 @@ dist/
 # Database
 prisma/dev.db (if using sqlite)
 *.log
+backend/scripts/seed-*.ts

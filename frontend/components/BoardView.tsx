@@ -148,8 +148,8 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
   }, [teamId]);
 
   const fetchProjects = async () => {
-    if (!teamId || !user) return;
-    const userId = user.id;
+    if (!teamId) return;
+    const userId = user?.id || 'guest-demo-user';
     try {
       const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/teams/${teamId}/projects`, {
@@ -163,8 +163,8 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
   };
 
   const fetchCycles = async () => {
-    if (!teamId || !user) return;
-    const userId = user.id;
+    if (!teamId) return;
+    const userId = user?.id || 'guest-demo-user';
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/teams/${teamId}/cycles`, {
         headers: { 'x-user-id': userId }
@@ -174,8 +174,8 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
   };
 
   const fetchMembers = async () => {
-    if (!teamId || !user) return;
-    const userId = user.id;
+    if (!teamId) return;
+    const userId = user?.id || 'guest-demo-user';
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/teams/${teamId}`, {
         headers: { 'x-user-id': userId }
@@ -188,8 +188,8 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
   };
 
   const fetchTasks = async () => {
-    if (!teamId || !user) return;
-    const userId = user.id;
+    if (!teamId) return;
+    const userId = user?.id || 'guest-demo-user';
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/teams/${teamId}/tasks`, {
         headers: { 'x-user-id': userId }
@@ -227,7 +227,7 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
 
     if (activeTask.state !== newStatus) {
       setTasks(prev => prev.map(t => t.id === activeId ? { ...t, state: newStatus } : t));
-      const userId = user?.id || '';
+      const userId = user?.id || 'guest-demo-user';
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/${activeId}/state`, {
           method: 'PATCH',
@@ -259,7 +259,7 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
       
       const method = editingTask ? 'PATCH' : 'POST';
 
-      const userId = user?.id || '';
+      const userId = user?.id || 'guest-demo-user';
       const body = editingTask 
         ? JSON.stringify(data)
         : JSON.stringify({ 

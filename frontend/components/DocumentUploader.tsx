@@ -34,11 +34,11 @@ export default function DocumentUploader({ teamId, onUploadSuccess }: DocumentUp
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('uploaderId', user?.id || '');
+      formData.append('uploaderId', user?.id || 'guest-demo-user');
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/teams/${teamId}/kb/documents`, {
         method: 'POST',
-        headers: { 'x-user-id': user?.id || '' },
+        headers: { 'x-user-id': user?.id || 'guest-demo-user' },
         body: formData,
       });
 
