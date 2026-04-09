@@ -122,7 +122,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
         <div className="text-xs font-bold text-primary/50 uppercase tracking-wider px-2 py-2">Workspace</div>
         <button
           onClick={() => onViewChange('pulse')}
-          className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all
+          className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all cursor-pointer
             ${activeView === 'pulse' 
               ? 'bg-secondary/10 text-secondary' 
               : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
@@ -131,7 +131,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
         </button>
         <button
           onClick={() => onViewChange('chat')}
-          className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all
+          className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all cursor-pointer
             ${activeView === 'chat' 
               ? 'bg-secondary/10 text-secondary' 
               : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
@@ -140,7 +140,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
         </button>
         <button
           onClick={() => onViewChange('videos')}
-          className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all
+          className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all cursor-pointer
             ${activeView === 'videos' 
               ? 'bg-secondary/10 text-secondary' 
               : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
@@ -153,7 +153,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
         <div className="text-xs font-bold text-primary/50 uppercase tracking-wider px-2 py-2">Task Management</div>
         <button
           onClick={() => onViewChange('tasks')}
-          className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all
+          className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all cursor-pointer
             ${activeView === 'tasks' 
               ? 'bg-secondary/10 text-secondary' 
               : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
@@ -162,7 +162,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
         </button>
         <button
           onClick={() => onViewChange('cycles')}
-          className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all
+          className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all cursor-pointer
             ${activeView === 'cycles' 
               ? 'bg-secondary/10 text-secondary' 
               : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
@@ -171,7 +171,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
         </button>
         <button
           onClick={() => onViewChange('roadmap')}
-          className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all
+          className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all cursor-pointer
             ${activeView === 'roadmap' 
               ? 'bg-secondary/10 text-secondary' 
               : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
@@ -180,7 +180,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
         </button>
         <button
           onClick={() => onViewChange('kb')}
-          className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all
+          className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all cursor-pointer
             ${activeView === 'kb' 
               ? 'bg-secondary/10 text-secondary' 
               : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
@@ -206,7 +206,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
                 {/* Team Header */}
                 <button
                   onClick={() => toggleTeam(team.id)}
-                  className="w-full flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-primary/70 hover:text-primary uppercase tracking-wider transition-colors"
+                  className="w-full flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-primary/70 hover:text-primary uppercase tracking-wider transition-colors cursor-pointer"
                 >
                   {expandedTeams.has(team.id) ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                   <Users size={12} />
@@ -222,7 +222,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
                         <button
                           key={channel.id}
                           onClick={() => onChannelSelect(channel.id, channel.name)}
-                          className={`w-full flex items-center gap-2 px-4 py-1.5 text-sm transition-all rounded-r-lg
+                          className={`w-full flex items-center gap-2 px-4 py-1.5 text-sm transition-all rounded-r-lg cursor-pointer
                             ${activeChannelId === channel.id
                               ? 'text-text bg-secondary/15 border-l-2 border-secondary font-semibold'
                               : 'text-primary/60 hover:text-text hover:bg-primary/5 border-l-2 border-transparent'}`}
@@ -252,7 +252,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
                     ) : (
                       <button
                         onClick={() => setShowNewChannel(team.id)}
-                        className="w-full flex items-center gap-2 px-4 py-1.5 text-xs text-primary/40 hover:text-secondary transition-colors"
+                        className="w-full flex items-center gap-2 px-4 py-1.5 text-xs text-primary/40 hover:text-secondary transition-colors cursor-pointer"
                       >
                         <Plus size={12} />
                         Add Channel
@@ -289,14 +289,14 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
             <div className="absolute top-full left-2 right-2 bg-background border border-primary/15 rounded-xl shadow-2xl p-1 z-50 overflow-hidden backdrop-blur-md">
               <button 
                 onClick={() => { setShowUserMenu(false); openUserProfile(); }}
-                className="w-full flex items-center gap-3 px-3 py-2 text-xs font-semibold text-text hover:bg-primary/5 rounded-lg transition-colors"
+                className="w-full flex items-center gap-3 px-3 py-2 text-xs font-semibold text-text hover:bg-primary/5 rounded-lg transition-colors cursor-pointer"
               >
                 <Settings size={14} className="text-primary/50" />
                 Manage Account
               </button>
               <button 
                 onClick={() => { setShowUserMenu(false); signOut(); }}
-                className="w-full flex items-center gap-3 px-3 py-2 text-xs font-semibold text-accent hover:bg-accent/5 rounded-lg transition-colors"
+                className="w-full flex items-center gap-3 px-3 py-2 text-xs font-semibold text-accent hover:bg-accent/5 rounded-lg transition-colors cursor-pointer"
               >
                 <LogOut size={14} className="text-accent/50" />
                 Sign Out
@@ -306,7 +306,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
           
           <button 
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className="w-full flex items-center gap-2 p-1.5 hover:bg-primary/5 rounded-xl transition-all group"
+            className="w-full flex items-center gap-2 p-1.5 hover:bg-primary/5 rounded-xl transition-all group cursor-pointer"
           >
             <div className="w-8 h-8 rounded-lg bg-secondary/20 overflow-hidden shrink-0 border border-secondary/20 group-hover:border-secondary/40 transition-colors">
               {user.imageUrl && <img src={user.imageUrl} alt="" className="w-full h-full object-cover" />}

@@ -180,7 +180,7 @@ export default function AiSummaryPanel({ teamId, teamName }: AiSummaryPanelProps
                   </p>
                   <button
                     onClick={handleSummarize}
-                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg text-xs font-bold hover:bg-violet-700 transition-all shadow-lg shadow-violet-600/20"
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg text-xs font-bold hover:bg-violet-700 transition-all shadow-lg shadow-violet-600/20 cursor-pointer"
                   >
                     <Sparkles size={14} />
                     Regenerate Summary

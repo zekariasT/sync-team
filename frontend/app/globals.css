@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --text: #0f172a;       /* Deep Slate for high contrast */
   --background: #f8fafc; /* Clean Slate background */
