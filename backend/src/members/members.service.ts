@@ -10,7 +10,9 @@ export class MembersService {
     if (!requesterId) {
       return await this.prisma.user.findMany({
         include: {
-          teamMembers: true,
+          teamMembers: {
+            include: { team: true }
+          },
         },
       }); 
     }
@@ -27,7 +29,9 @@ export class MembersService {
       // Admins see everyone!
       return await this.prisma.user.findMany({
         include: {
-          teamMembers: true,
+          teamMembers: {
+            include: { team: true }
+          },
         },
       });
     }
@@ -49,7 +53,9 @@ export class MembersService {
         ]
       },
       include: {
-        teamMembers: true,
+        teamMembers: {
+          include: { team: true }
+        },
       },
     });
   }
@@ -91,7 +97,11 @@ export class MembersService {
       return await this.prisma.user.update({
         where: { id },
         data: { status },
-        include: { teamMembers: true }
+        include: {
+          teamMembers: {
+            include: { team: true }
+          }
+        }
       });
     } catch (error) {
        throw new NotFoundException(`User with ID ${id} not found`);

@@ -74,15 +74,20 @@ export default async function PulseView() {
                         </div>
                       )}
                       <div>
-                        <h2 className="text-base font-bold">{member.name}</h2>
-                        {member.teamMembers?.[0] && (
-                          <MemberRoleBadge 
-                             memberId={member.id} 
-                             teamId={member.teamMembers[0].teamId} 
-                             role={member.teamMembers[0].role}
-                             canEdit={isAdmin} 
-                          />
-                        )}
+                        <h2 className="text-base font-bold text-text">{member.name}</h2>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {member.teamMembers?.map((tm: any) => (
+                            <div key={`${member.id}-${tm.teamId}`} className="flex items-center gap-1 bg-secondary/10 px-2 py-0.5 rounded-full text-[10px] font-bold text-secondary">
+                              <span className="opacity-70 truncate max-w-[60px]">{tm.team?.name}</span>
+                              <MemberRoleBadge 
+                                memberId={member.id} 
+                                teamId={tm.teamId} 
+                                role={tm.role}
+                                canEdit={isAdmin} 
+                              />
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                     <span
@@ -93,7 +98,9 @@ export default async function PulseView() {
                       }`}
                     />
                   </div>
-                  <p className="text-secondary mt-2 italic text-sm ml-12">"{member.status}"</p>
+                  <p className="text-primary mt-3 italic text-sm font-medium ml-12 border-l-2 border-primary/20 pl-4 py-1">
+                    "{member.status}"
+                  </p>
 
                   {canUpdate && <PulseForm memberId={member.id} />}
                 </div>

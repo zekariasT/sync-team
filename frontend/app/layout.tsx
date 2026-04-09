@@ -35,7 +35,7 @@ export default function RootLayout({
         >
           <RealTimeProvider>
             <ToastProvider>
-              <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+              <ThemeProvider attribute="class" defaultTheme="light">
                 {children}
               </ThemeProvider>
             </ToastProvider>

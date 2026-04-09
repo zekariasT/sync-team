@@ -30,6 +30,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
   const { isAdmin } = useTeamRole();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [loadingTeams, setLoadingTeams] = useState(true);
   const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set());
   const [showNewChannel, setShowNewChannel] = useState<string | null>(null);
   const [newChannelName, setNewChannelName] = useState('');
@@ -41,6 +42,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
     const userId = user?.id || 'guest-demo-user';
     
     async function loadInitialData() {
+      setLoadingTeams(true);
       const token = await getToken();
       
       // Fetch teams the user belongs to
@@ -53,6 +55,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
       const data = await (teamsRes.ok ? teamsRes.json() : []);
       
       setTeams(data);
+      setLoadingTeams(false);
       // Auto-expand all teams
       setExpandedTeams(new Set(data.map((t: Team) => t.id)));
       
@@ -69,7 +72,10 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
       });
     }
 
-    loadInitialData().catch(() => setTeams([]));
+    loadInitialData().catch(() => {
+      setTeams([]);
+      setLoadingTeams(false);
+    });
   }, [user, getToken]);
 
   const toggleTeam = (teamId: string) => {
@@ -144,7 +150,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
       </div>
 
       <div className="flex flex-col p-2 gap-1 border-b border-primary/15">
-        <div className="text-xs font-bold text-primary/50 uppercase tracking-wider px-2 py-2">Linear Tasks</div>
+        <div className="text-xs font-bold text-primary/50 uppercase tracking-wider px-2 py-2">Task Management</div>
         <button
           onClick={() => onViewChange('tasks')}
           className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all
@@ -261,7 +267,13 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
       )}
 
       {/* AI Summary Section */}
-      {teams.length > 0 && (
+      {loadingTeams ? (
+        <div className="px-3 py-3 border-t border-primary/15 space-y-2">
+          <div className="h-9 w-full bg-primary/5 animate-pulse rounded-xl border border-primary/10" />
+          <div className="h-9 w-full bg-primary/5 animate-pulse rounded-xl border border-primary/10" />
+          <div className="h-9 w-full bg-primary/5 animate-pulse rounded-xl border border-primary/10" />
+        </div>
+      ) : teams.length > 0 && (
         <div className="px-3 py-2 border-t border-primary/15">
           {teams.map(team => (
             <AiSummaryPanel key={team.id} teamId={team.id} teamName={team.name} />

@@ -198,7 +198,7 @@ export default function AiSummaryPanel({ teamId, teamName }: AiSummaryPanelProps
     <>
       <button
         onClick={() => { setIsOpen(true); handleSummarize(); }}
-        className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-violet-600/20 to-indigo-600/20 border border-violet-500/20 hover:border-violet-500/40 rounded-xl text-xs font-semibold text-violet-300 hover:text-violet-200 transition-all group w-full mb-1 shadow-sm"
+        className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 dark:bg-violet-600/20 border border-violet-500/20 hover:bg-violet-700 dark:hover:border-violet-500/40 rounded-xl text-xs font-semibold text-white dark:text-violet-300 transition-all group w-full mb-1 shadow-sm cursor-pointer"
       >
         <Sparkles size={14} className="group-hover:animate-pulse shrink-0" />
         <span className="truncate">Global Sync: {teamName}</span>
