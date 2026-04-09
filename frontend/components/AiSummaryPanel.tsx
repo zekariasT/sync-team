@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Sparkles, X, Loader2, Brain, AlertTriangle } from 'lucide-react';
-import { useAuth } from '@clerk/nextjs';
+import { useAuth, useUser } from '@clerk/nextjs';
 
 interface AiSummaryPanelProps {
   teamId: string;
@@ -17,6 +17,7 @@ export default function AiSummaryPanel({ teamId, teamName }: AiSummaryPanelProps
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const { user } = useUser();
   const { getToken } = useAuth();
 
   useEffect(() => {
@@ -29,10 +30,12 @@ export default function AiSummaryPanel({ teamId, teamName }: AiSummaryPanelProps
     setSummary(null);
 
     try {
+      const userId = user?.id || 'guest-demo-user';
       const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/ai/teams/${teamId}/summarize`, {
         method: 'POST',
         headers: {
+          'x-user-id': userId,
           'Authorization': `Bearer ${token}`
         }
       });

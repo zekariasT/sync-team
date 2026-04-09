@@ -14,7 +14,7 @@ export default async function PulseView() {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/members`, { 
       cache: 'no-store',
       headers: {
-        'x-user-id': user?.id || '',
+        'x-user-id': user?.id || 'guest-demo-user',
         'Authorization': `Bearer ${token}`
       }
     });

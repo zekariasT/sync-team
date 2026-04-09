@@ -106,7 +106,7 @@ export default function RoadmapView({ teamId, onMenuClick }: { teamId?: string; 
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': user?.id || ''
+          'x-user-id': user?.id || 'guest-demo-user'
         },
         body: JSON.stringify(data)
       });

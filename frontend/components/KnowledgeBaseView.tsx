@@ -28,7 +28,7 @@ export default function KnowledgeBaseView({ teamId, onMenuClick }: { teamId?: st
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'x-user-id': user?.id || '',
+          'x-user-id': user?.id || 'guest-demo-user',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ query }),
