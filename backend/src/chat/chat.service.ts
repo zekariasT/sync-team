@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service.js';
 
 @Injectable()
@@ -29,7 +29,7 @@ export class ChatService {
 
     async getChannelMessages(channelId: string, requesterId?: string) {
         const channel = await this.prisma.channel.findUnique({ where: { id: channelId } });
-        if (!channel) throw new Error('Channel not found');
+        if (!channel) throw new NotFoundException('Channel not found');
         
         if (requesterId) await this.checkTeamPermission(channel.teamId, requesterId, ['ADMIN', 'LEAD', 'MEMBER']);
 
@@ -42,7 +42,7 @@ export class ChatService {
 
     async createMessage(channelId: string, senderId: string, content: string, requesterId?: string) {
         const channel = await this.prisma.channel.findUnique({ where: { id: channelId } });
-        if (!channel) throw new Error('Channel not found');
+        if (!channel) throw new NotFoundException('Channel not found');
         
         if (requesterId) await this.checkTeamPermission(channel.teamId, requesterId, ['ADMIN', 'LEAD', 'MEMBER']);
 
