@@ -1,165 +1,205 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Role, TaskState, ChannelType } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Seeding dummy data...');
+  console.log('Starting comprehensive demo seed...');
 
-  // 1. Create a "SyncPoint Core" Team if it doesn't exist
-  const team = await prisma.team.upsert({
-    where: { id: 'seed-team-id' },
-    update: {},
-    create: {
-      id: 'seed-team-id',
-      name: 'SyncPoint Core',
-      description: 'The primary development and operations team for SyncPoint OS.',
-    },
+  // 1. Clean up existing data (Safe for demo/dev, be careful in prod)
+  // We'll delete in reverse order of dependencies
+  await prisma.videoReaction.deleteMany({});
+  await prisma.videoMessage.deleteMany({});
+  await prisma.message.deleteMany({});
+  await prisma.task.deleteMany({});
+  await prisma.document.deleteMany({});
+  await prisma.project.deleteMany({});
+  await prisma.cycle.deleteMany({});
+  await prisma.channel.deleteMany({});
+  await prisma.teamMember.deleteMany({});
+  await prisma.team.deleteMany({});
+  
+  // 2. Create Users
+  const users = [
+    { id: 'guest-demo-user', name: 'Guest Recruiter', email: 'guest@example.com', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Guest' },
+    { id: 'user-jamal', name: 'Jamal Williams', email: 'jamal@syncpoint.dev', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jamal' },
+    { id: 'user-sarah', name: 'Sarah Chen', email: 'sarah@syncpoint.dev', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah' },
+    { id: 'user-marcus', name: 'Marcus Thorne', email: 'marcus@syncpoint.dev', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Marcus' },
+    { id: 'user-elena', name: 'Elena Rodriguez', email: 'elena@syncpoint.dev', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Elena' },
+    { id: 'user-alex', name: 'Alex Kim', email: 'alex@syncpoint.dev', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex' },
+  ];
+
+  for (const u of users) {
+    await prisma.user.upsert({
+      where: { id: u.id },
+      update: u,
+      create: u,
+    });
+  }
+
+  // 3. Create Teams
+  const teams = [
+    { id: 'seed-team-id', name: 'SyncPoint Core', description: 'Main product development and strategy' },
+    { id: 'team-eng', name: 'Engineering', description: 'Frontend, Backend, and Infrastructure' },
+    { id: 'team-design', name: 'Product Design', description: 'UX/UI and Brand Identity' },
+  ];
+
+  for (const t of teams) {
+    await prisma.team.create({ data: t });
+  }
+
+  // 4. Add Members to Teams
+  // Everyone in SyncPoint Core
+  for (const u of users) {
+    await prisma.teamMember.create({
+      data: {
+        userId: u.id,
+        teamId: 'seed-team-id',
+        role: u.id === 'user-jamal' || u.id === 'guest-demo-user' ? Role.ADMIN : Role.MEMBER
+      }
+    });
+  }
+
+  // Eng Team
+  const engMembers = ['user-jamal', 'user-sarah', 'user-marcus', 'user-alex', 'guest-demo-user'];
+  for (const uid of engMembers) {
+    await prisma.teamMember.create({
+      data: {
+        userId: uid,
+        teamId: 'team-eng',
+        role: uid === 'user-jamal' || uid === 'guest-demo-user' ? Role.ADMIN : Role.MEMBER
+      }
+    });
+  }
+
+  // Design Team
+  const designMembers = ['user-elena', 'user-sarah', 'guest-demo-user'];
+  for (const uid of designMembers) {
+    await prisma.teamMember.create({
+      data: {
+        userId: uid,
+        teamId: 'team-design',
+        role: uid === 'user-elena' || uid === 'guest-demo-user' ? Role.ADMIN : Role.MEMBER
+      }
+    });
+  }
+
+  // 5. Create Channels
+  const channels = [
+    { teamId: 'seed-team-id', name: 'announcements', type: ChannelType.ANNOUNCEMENT },
+    { teamId: 'seed-team-id', name: 'general', type: ChannelType.GENERAL },
+    { teamId: 'team-eng', name: 'engineering-talk', type: ChannelType.TOPIC },
+    { teamId: 'team-eng', name: 'infrastructure-alerts', type: ChannelType.TOPIC },
+    { teamId: 'team-design', name: 'design-critique', type: ChannelType.TOPIC },
+  ];
+
+  for (const c of channels) {
+    await prisma.channel.create({ data: c });
+  }
+
+  // 6. Create Cycles
+  const now = new Date();
+  const cycle14Start = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+  const cycle14End = new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000);
+  const cycle15Start = new Date(now.getTime());
+  const cycle15End = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+
+  const cycle14 = await prisma.cycle.create({
+    data: {
+      teamId: 'seed-team-id',
+      name: 'Cycle 14',
+      startDate: cycle14Start,
+      endDate: cycle14End,
+    }
   });
 
-  // 2. Create some dummy Users
-  const users = [
-    {
-      id: 'user-sarah',
-      email: 'sarah@example.com',
-      name: 'Sarah Chen',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop',
-      status: 'In Deep Work 🧘',
-      timezone: 'America/Los_Angeles',
+  const cycle15 = await prisma.cycle.create({
+    data: {
+      teamId: 'seed-team-id',
+      name: 'Cycle 15 (Active)',
+      startDate: cycle15Start,
+      endDate: cycle15End,
+    }
+  });
+
+  // 7. Create Projects
+  const project1 = await prisma.project.create({
+    data: {
+      teamId: 'seed-team-id',
+      name: 'V2 Dashboard UI Refresh',
+      description: 'Overhauling the main workspace UI for better performance and glassmorphism aesthetics.',
+    }
+  });
+
+  const project2 = await prisma.project.create({
+    data: {
+      teamId: 'seed-team-id',
+      name: 'AI Knowledge Base (RAG)',
+      description: 'Integrating vector search to allow users to ask questions about uploaded documentation.',
+    }
+  });
+
+  // 8. Create Tasks
+  const tasks = [
+    { 
+        teamId: 'seed-team-id', title: 'Implement glassmorphism sidebar', state: TaskState.DONE, 
+        assigneeId: 'user-sarah', reporterId: 'user-jamal', projectId: project1.id, cycleId: cycle14.id 
     },
-    {
-      id: 'user-marcus',
-      email: 'marcus@example.com',
-      name: 'Marcus Miller',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop',
-      status: 'Reviewing PRs 💻',
-      timezone: 'Europe/London',
+    { 
+        teamId: 'seed-team-id', title: 'Optimize Prisma query performance', state: TaskState.DONE, 
+        assigneeId: 'user-jamal', reporterId: 'user-jamal', cycleId: cycle14.id 
     },
-    {
-      id: 'user-elena',
-      email: 'elena@example.com',
-      name: 'Elena Rodriguez',
-      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop',
-      status: 'On a Coffee Break ☕',
-      timezone: 'Europe/Madrid',
+    { 
+        teamId: 'seed-team-id', title: 'Setup Aiven MySQL production instance', state: TaskState.DONE, 
+        assigneeId: 'user-marcus', reporterId: 'user-jamal', cycleId: cycle14.id 
     },
-    {
-      id: 'user-jamal',
-      email: 'jamal@example.com',
-      name: 'Jamal Washington',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop',
-      status: 'Available',
-      timezone: 'Asia/Dubai',
+    { 
+        teamId: 'seed-team-id', title: 'Refactor AuthGuard for Demo mode', state: TaskState.IN_PROGRESS, 
+        assigneeId: 'user-jamal', reporterId: 'user-jamal', cycleId: cycle15.id 
+    },
+    { 
+        teamId: 'seed-team-id', title: 'Design new "Pulse" status indicators', state: TaskState.IN_PROGRESS, 
+        assigneeId: 'user-elena', reporterId: 'user-sarah', projectId: project1.id, cycleId: cycle15.id 
+    },
+    { 
+        teamId: 'seed-team-id', title: 'Configure Pinecone vector index', state: TaskState.TODO, 
+        assigneeId: 'user-marcus', reporterId: 'user-alex', projectId: project2.id, cycleId: cycle15.id 
+    },
+    { 
+        teamId: 'seed-team-id', title: 'Draft API documentation for RAG endpoints', state: TaskState.TODO, 
+        assigneeId: 'user-alex', reporterId: 'user-jamal', projectId: project2.id, cycleId: cycle15.id 
+    },
+    { 
+        teamId: 'seed-team-id', title: 'Fix mobile responsiveness on Board view', state: TaskState.IN_REVIEW, 
+        assigneeId: 'user-sarah', reporterId: 'user-jamal', cycleId: cycle15.id 
+    },
+    { 
+        teamId: 'seed-team-id', title: 'Add dark mode support to chart components', state: TaskState.TODO, 
+        assigneeId: 'user-elena', reporterId: 'user-sarah', projectId: project1.id, cycleId: cycle15.id 
+    },
+    { 
+        teamId: 'seed-team-id', title: 'Implement user session timeout logic', state: TaskState.TODO, 
+        assigneeId: 'user-alex', reporterId: 'user-marcus', cycleId: cycle15.id 
     },
   ];
 
-  for (const userData of users) {
-    const user = await prisma.user.upsert({
-      where: { id: userData.id },
-      update: userData,
-      create: userData,
-    });
-
-    // Add user to team
-    await prisma.teamMember.upsert({
-      where: { userId_teamId: { userId: user.id, teamId: team.id } },
-      update: {},
-      create: {
-        userId: user.id,
-        teamId: team.id,
-        role: 'MEMBER',
-      },
-    });
+  for (const t of tasks) {
+    await prisma.task.create({ data: t });
   }
 
-  // 3. Create Channels
-  const channelNames = ['development', 'design-ops', 'announcements'];
-  const channels: any[] = [];
-
-  for (const name of channelNames) {
-    const channel = await prisma.channel.create({
-      data: {
-        name,
-        teamId: team.id,
-      },
-    });
-    channels.push(channel);
-  }
-
-  // 4. Create dummy Messages to test AI summarization
-  const devChannel = channels.find(c => c.name === 'development');
-  if (devChannel) {
-    const messages = [
-      { senderId: 'user-marcus', content: 'Hey everyone, I just found a critical bug in the WebSocket logic.' },
-      { senderId: 'user-sarah', content: 'Oh no, what happened? I thought we tested that yesterday.' },
-      { senderId: 'user-marcus', content: 'The rooms are not being cleaned up properly on disconnect. Might cause a leak.' },
-      { senderId: 'user-jamal', content: 'I can help fix that. I worked on something similar before.' },
-      { senderId: 'user-marcus', content: 'Great, I will assign the ticket to you Jamal. Let me know if you need any context.' },
-      { senderId: 'user-sarah', content: 'I will finish the current feature and then review the fix.' },
-    ];
-
-    for (const msg of messages) {
-       await prisma.message.create({
-         data: {
-           channelId: devChannel.id,
-           senderId: msg.senderId,
-           content: msg.content,
-         }
-       });
-    }
-  }
-
-  const designChannel = channels.find(c => c.name === 'design-ops');
-  if (designChannel) {
-    const messages = [
-      { senderId: 'user-elena', content: 'The new color palette is ready for review in Figma.' },
-      { senderId: 'user-sarah', content: 'Looking good! I love the new primary blue.' },
-      { senderId: 'user-elena', content: 'I also updated the button components with smoother borders.' },
-    ];
-
-    for (const msg of messages) {
-       await prisma.message.create({
-         data: {
-           channelId: designChannel.id,
-           senderId: msg.senderId,
-           content: msg.content,
-         }
-       });
-    }
-  }
-
-  // 5. Create dummy Tasks across all board states
-  const dummyTasks = [
-    // TODO
-    { title: 'Design onboarding flow wireframes', state: 'TODO', assigneeId: 'user-elena', reporterId: 'user-sarah' },
-    { title: 'Set up error monitoring with Sentry', state: 'TODO', assigneeId: 'user-marcus', reporterId: 'user-sarah' },
-    { title: 'Write API docs for /members endpoint', state: 'TODO', reporterId: 'user-jamal' },
-    // IN_PROGRESS
-    { title: 'Implement Kanban drag-and-drop board', state: 'IN_PROGRESS', assigneeId: 'user-marcus', reporterId: 'user-sarah' },
-    { title: 'Build async video transcription pipeline', state: 'IN_PROGRESS', assigneeId: 'user-sarah', reporterId: 'user-sarah' },
-    { title: 'Migrate DB to use Prisma migrations', state: 'IN_PROGRESS', assigneeId: 'user-jamal', reporterId: 'user-marcus' },
-    // IN_REVIEW
-    { title: 'Add timestamped video reactions', state: 'IN_REVIEW', assigneeId: 'user-sarah', reporterId: 'user-marcus' },
-    { title: 'Fix WebSocket room cleanup on disconnect', state: 'IN_REVIEW', assigneeId: 'user-jamal', reporterId: 'user-marcus' },
-    // DONE
-    { title: 'Scaffold NestJS backend with Prisma', state: 'DONE', assigneeId: 'user-marcus', reporterId: 'user-sarah' },
-    { title: 'Deploy Prisma schema to MariaDB', state: 'DONE', assigneeId: 'user-sarah', reporterId: 'user-sarah' },
-    { title: 'Set up Clerk auth integration', state: 'DONE', assigneeId: 'user-elena', reporterId: 'user-marcus' },
-  ];
-
-  for (const task of dummyTasks) {
-    await prisma.task.create({
-      data: {
-        teamId: team.id,
-        title: task.title,
-        state: task.state as any,
-        assigneeId: (task as any).assigneeId || null,
-        reporterId: task.reporterId,
-      },
+  // 9. Add some messages
+  const generalChannel = await prisma.channel.findFirst({ where: { name: 'general', teamId: 'seed-team-id' } });
+  if (generalChannel) {
+    await prisma.message.createMany({
+        data: [
+            { channelId: generalChannel.id, senderId: 'user-jamal', content: 'Welcome to the SyncPoint OS team workspace!' },
+            { channelId: generalChannel.id, senderId: 'user-sarah', content: 'Excited to start Cycle 15! The new dashboard looks amazing.' },
+            { channelId: generalChannel.id, senderId: 'user-elena', content: 'Agreed! I am finishing up the Design specs for the Pulse component today.' },
+            { channelId: generalChannel.id, senderId: 'guest-demo-user', content: 'Hello team! Just dropping in to check the project progress.' },
+        ]
     });
   }
 
   console.log('Seed completed successfully!');
-
 }
 
 main()
