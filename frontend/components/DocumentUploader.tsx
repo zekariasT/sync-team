@@ -8,9 +8,11 @@ import { useToast } from './ToastProvider';
 interface DocumentUploaderProps {
   teamId: string;
   onUploadSuccess: () => void;
+  editingDocId?: string | null;
+  onCancelEdit?: () => void;
 }
 
-export default function DocumentUploader({ teamId, onUploadSuccess }: DocumentUploaderProps) {
+export default function DocumentUploader({ teamId, onUploadSuccess, editingDocId, onCancelEdit }: DocumentUploaderProps) {
   const { user } = useUser();
   const { success, error: toastError } = useToast();
   const [isUploading, setIsUploading] = useState(false);
@@ -36,8 +38,12 @@ export default function DocumentUploader({ teamId, onUploadSuccess }: DocumentUp
       formData.append('file', file);
       formData.append('uploaderId', user?.id || 'guest-demo-user');
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/teams/${teamId}/kb/documents`, {
-        method: 'POST',
+      const url = editingDocId 
+        ? `${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/teams/${teamId}/kb/documents/${editingDocId}`
+        : `${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/teams/${teamId}/kb/documents`;
+
+      const res = await fetch(url, {
+        method: editingDocId ? 'PATCH' : 'POST',
         headers: { 'x-user-id': user?.id || 'guest-demo-user' },
         body: formData,
       });
@@ -47,7 +53,8 @@ export default function DocumentUploader({ teamId, onUploadSuccess }: DocumentUp
          throw new Error(errorData.message || 'Upload failed');
       }
       
-      success('Document embedded successfully');
+      success(editingDocId ? 'Document updated successfully' : 'Document embedded successfully');
+      if (onCancelEdit) onCancelEdit();
       onUploadSuccess();
     } catch (err: any) {
       toastError(err.message || 'Upload failed');
@@ -81,25 +88,37 @@ export default function DocumentUploader({ teamId, onUploadSuccess }: DocumentUp
           )}
         </div>
         <h3 className="text-lg font-bold text-text mb-1 flex items-center justify-center gap-2">
-          Drag & Drop Document Here
+          {editingDocId ? 'Drop to Re-upload & Update' : 'Drag & Drop Document Here'}
         </h3>
         <p className="text-sm text-primary/50 mb-6 max-w-sm">
-          Upload PDFs or Text files to the Knowledge Base. The AI will chunk, embed, and index them automatically.
+          {editingDocId 
+            ? 'Upload a new version. The AI will instantly replace the knowledge vector.'
+            : 'Upload PDFs or Text files. The AI will embed and atomically index the single document.'}
         </p>
 
-        <label className="cursor-pointer bg-secondary text-white px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-secondary/90 transition-colors">
-          Browse Files
-          <input 
-            type="file" 
-            className="hidden" 
-            accept=".pdf,.txt"
-            onChange={(e) => {
-               if (e.target.files && e.target.files[0]) {
-                 handleFile(e.target.files[0]);
-               }
-            }}
-          />
-        </label>
+        <div className="flex gap-2">
+          <label className="cursor-pointer bg-secondary text-white px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-secondary/90 transition-colors">
+            Browse Files
+            <input 
+              type="file" 
+              className="hidden" 
+              accept=".pdf,.txt"
+              onChange={(e) => {
+                 if (e.target.files && e.target.files[0]) {
+                   handleFile(e.target.files[0]);
+                 }
+              }}
+            />
+          </label>
+          {editingDocId && onCancelEdit && (
+            <button 
+              onClick={onCancelEdit}
+              className="bg-primary/10 text-text px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-primary/20 transition-colors"
+            >
+              Cancel Update
+            </button>
+          )}
+        </div>
 
         {error && (
           <div className="mt-4 text-red-500 text-sm font-semibold flex items-center gap-1 bg-red-500/10 px-3 py-1.5 rounded-full">

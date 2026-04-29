@@ -1,4 +1,5 @@
 import { Module, Global } from '@nestjs/common';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
@@ -28,6 +29,7 @@ import { KbModule } from './kb/kb.module.js';
     VideoModule,
     TasksModule,
     KbModule,
+    EventEmitterModule.forRoot(),
   ],
   controllers: [AppController, MembersController, TeamsController],
   providers: [

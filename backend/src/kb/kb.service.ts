@@ -1,8 +1,9 @@
-import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service.js';
 import { AiService } from '../ai/ai.service.js';
 import { Pinecone } from '@pinecone-database/pinecone';
 import { PDFParse } from 'pdf-parse';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 
 @Injectable()
 export class KbService {
@@ -12,6 +13,7 @@ export class KbService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiService: AiService,
+    private readonly eventEmitter: EventEmitter2,
   ) {
     if (process.env.PINECONE_API_KEY) {
       this.pinecone = new Pinecone({
@@ -75,6 +77,62 @@ export class KbService {
     }
   }
 
+  private async extractText(file: Express.Multer.File): Promise<string> {
+    let text = '';
+    if (file.mimetype === 'application/pdf') {
+      const pdf = new PDFParse({ data: file.buffer });
+      const result = await pdf.getText();
+      text = result.text;
+      await pdf.destroy();
+    } else {
+      text = file.buffer.toString('utf-8');
+    }
+    // Return full text, chunking will handle the rest
+    return text;
+  }
+
+  async getDocuments(teamId: string, requesterId: string) {
+    await this.checkTeamPermission(teamId, requesterId, ['ADMIN', 'LEAD', 'MEMBER']);
+    return this.prisma.document.findMany({
+      where: { teamId },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
+  async deleteDocument(teamId: string, documentId: string, requesterId: string) {
+    await this.checkTeamPermission(teamId, requesterId, ['ADMIN', 'LEAD']);
+    
+    const doc = await this.prisma.document.findUnique({ where: { id: documentId } });
+    if (!doc || doc.teamId !== teamId) throw new NotFoundException('Document not found');
+
+    await this.prisma.document.delete({ where: { id: documentId } });
+    
+    this.logger.log(`Document ${documentId} deleted from relational DB. Emitting sync event.`);
+    this.eventEmitter.emit('document.deleted', { documentId, teamId });
+    return { success: true };
+  }
+
+  async updateDocument(teamId: string, documentId: string, file: Express.Multer.File, requesterId: string) {
+    await this.checkTeamPermission(teamId, requesterId, ['ADMIN', 'LEAD']);
+    
+    const doc = await this.prisma.document.findUnique({ where: { id: documentId } });
+    if (!doc || doc.teamId !== teamId) throw new NotFoundException('Document not found');
+
+    const updatedDoc = await this.prisma.document.update({
+      where: { id: documentId },
+      data: {
+        title: file.originalname,
+        fileUrl: `/uploads/${file.originalname}`,
+      }
+    });
+
+    const text = await this.extractText(file);
+
+    this.logger.log(`Document ${documentId} updated in relational DB. Emitting sync event.`);
+    this.eventEmitter.emit('document.updated', { document: updatedDoc, text });
+    return updatedDoc;
+  }
+
   async uploadDocument(
     teamId: string,
     uploaderId: string,
@@ -84,83 +142,101 @@ export class KbService {
     await this.checkTeamPermission(teamId, requesterId, ['ADMIN', 'LEAD', 'MEMBER']);
 
     const docCount = await this.prisma.document.count({ where: { teamId } });
-    if (docCount >= 3) {
-       throw new ForbiddenException('For the free demo, each team is limited to a maximum of 3 indexed documents.');
+    if (docCount >= 5) {
+       throw new ForbiddenException('For the free demo, each team is limited to a maximum of 5 indexed documents.');
     }
 
-    let text = '';
-    
-    // Parse depending on mime type, defaults to pdf
-    if (file.mimetype === 'application/pdf') {
-      const pdf = new PDFParse({ data: file.buffer });
-      const result = await pdf.getText();
-      text = result.text;
-      await pdf.destroy();
-    } else {
-      text = file.buffer.toString('utf-8');
-    }
+    const text = await this.extractText(file);
 
-    // Save to database
     const document = await this.prisma.document.create({
       data: {
         teamId,
         uploaderId,
         title: file.originalname,
-        fileUrl: `/uploads/${file.originalname}`, // Placeholder for actual S3/Cloudinary url
+        fileUrl: `/uploads/${file.originalname}`,
       },
     });
 
-    // Chunk text (approx 512 tokens -> ~2000 chars)
-    const chunks = this.chunkText(text, 2000);
-    this.logger.log(`Parsed ${file.originalname} into ${chunks.length} chunks`);
+    this.logger.log(`Document ${document.id} saved to relational DB. Emitting sync event.`);
+    
+    // Asynchronous background task constraint
+    this.eventEmitter.emit('document.updated', { document, text });
 
-    if (!process.env.PINECONE_API_KEY) {
-        this.logger.warn('No PINECONE_API_KEY. Skipping embedding upsert.');
-        return document;
-    }
+    return document;
+  }
 
-    const index = this.pinecone.index(this.indexName);
-    const vectors: any[] = [];
+  @OnEvent('document.updated', { async: true })
+  async handleDocumentSync(payload: { document: any, text: string }) {
+    const { document, text } = payload;
+    if (!process.env.PINECONE_API_KEY) return;
 
-    // Process in batches
-    for (let i = 0; i < chunks.length; i++) {
+    this.logger.log(`Background Sync: Embedding and chunking document ${document.id}...`);
+    try {
+      const index = this.pinecone.index(this.indexName);
+      
+      // Atomic Sync step 1: Extinguish any existing ghost chunks for this document
+      try {
+         await index.deleteMany({ filter: { documentId: document.id } } as any);
+      } catch (e) {
+         this.logger.log(`No existing chunks found or metadata deletion skipped: ${e}`);
+      }
+
+      // Chunk text (approx 512 tokens -> ~2000 chars)
+      const chunks = this.chunkText(text, 2000);
+      const vectors: any[] = [];
+
+      for (let i = 0; i < chunks.length; i++) {
         const chunkContent = chunks[i];
         
         try {
-            // @ts-ignore - reaching into the google gemini instance
-            const embeddingResponse = await this.aiService['ai'].models.embedContent({
-               model: 'gemini-embedding-001',
-               contents: chunkContent,
-            });
-            
-            const values = embeddingResponse.embeddings?.[0]?.values;
-            if (values) {
-                vectors.push({
-                   id: `${document.id}#${i}`,
-                   values,
-                   metadata: {
-                       teamId,
-                       documentId: document.id,
-                       title: document.title,
-                       text: chunkContent
-                   }
-               });
-            }
+          // @ts-ignore
+          const embeddingResponse = await this.aiService['ai'].models.embedContent({
+             model: 'gemini-embedding-001',
+             contents: chunkContent,
+          });
+          
+          const values = embeddingResponse.embeddings?.[0]?.values;
+          if (values) {
+              vectors.push({
+                 id: `${document.id}#${i}`,
+                 values,
+                 metadata: {
+                     teamId: document.teamId,
+                     documentId: document.id,
+                     title: document.title,
+                     text: chunkContent
+                 }
+              });
+          }
         } catch (e: any) {
-            this.logger.error(`Failed to embed chunk ${i}: ${e.message}`);
+          this.logger.error(`Failed to embed chunk ${i}: ${e.message}`);
         }
-    }
+      }
 
-    this.logger.log(`Final vectors to upsert: ${vectors.length}`);
-    if (vectors.length > 0) {
-        // Updated to use records object format for modern Pinecone SDK
-        await index.upsert({
-            records: vectors
-        });
-        this.logger.log(`Upserted ${vectors.length} vectors for document ${document.id}`);
+      if (vectors.length > 0) {
+          await index.upsert({
+              records: vectors
+          });
+          this.logger.log(`Background Sync: Successfully locked ${vectors.length} chunks for ${document.id}`);
+      }
+    } catch (e: any) {
+        this.logger.error(`Background Sync Error: Failed to embed/upsert vector for ${document.id}: ${e.message}`);
     }
+  }
 
-    return document;
+  @OnEvent('document.deleted', { async: true })
+  async handleDocumentDelete(payload: { documentId: string, teamId: string }) {
+    const { documentId } = payload;
+    if (!process.env.PINECONE_API_KEY) return;
+
+    this.logger.log(`Background Sync: Extinguishing all chunks for vector ${documentId}...`);
+    try {
+        const index = this.pinecone.index(this.indexName);
+        await index.deleteMany({ filter: { documentId } } as any);
+        this.logger.log(`Background Sync: Successfully destroyed all chunks for vector ${documentId}`);
+    } catch (e: any) {
+        this.logger.error(`Background Sync Error: Failed to drop chunks for vector ${documentId}: ${e.message}`);
+    }
   }
 
   async askKnowledgeBase(teamId: string, query: string, requesterId: string): Promise<string> {
@@ -170,7 +246,6 @@ export class KbService {
      }
 
      try {
-         // 1. Embed query
          // @ts-ignore
          const embeddingResponse = await this.aiService['ai'].models.embedContent({
              model: 'gemini-embedding-001',
@@ -179,14 +254,13 @@ export class KbService {
          const queryEmbedding = embeddingResponse.embeddings?.[0]?.values;
          if (!queryEmbedding) throw new Error("Failed to embed query.");
 
-         // 2. Search Pinecone
          const index = this.pinecone.index(this.indexName);
          const searchResults = await index.query({
              vector: queryEmbedding,
              topK: 10,
              includeMetadata: true,
              filter: {
-                 teamId: { $eq: teamId } // Ensure we only search within the specific team's documents
+                 teamId: { $eq: teamId }
              }
          });
 
@@ -194,13 +268,11 @@ export class KbService {
              return "I couldn't find any relevant information in your team's Knowledge Base to answer that.";
          }
 
-         // 3. Construct context
          const contextChunks = searchResults.matches.map(m => {
              const meta = m.metadata as any;
              return `Source Document: ${meta.title}\nContent: ${meta.text}`;
-         }).join('\\n\\n');
+         }).join('\n\n');
 
-         // 4. Generate answer using Gemini
         const prompt = `You are an AI assistant for a team. Answer the user's question using the provided Knowledge Base context.
         
         ## Context
@@ -230,40 +302,16 @@ export class KbService {
      }
   }
 
-  // private chunkText(text: string, chunkSize: number): string[] {
-  //   const chunks: string[] = [];
-  //   let cur = 0;
-  //   while (cur < text.length) {
-  //       chunks.push(text.slice(cur, cur + chunkSize));
-  //       cur += chunkSize;
-  //   }
-  //   return chunks;
-  // }
-
   private chunkText(text: string, chunkSize: number, chunkOverlap: number = 200): string[] {
-  const chunks: string[] = [];
-  let cur = 0;
-
-  // We loop until we hit the end of the text
-  while (cur < text.length) {
-    // 1. Grab the chunk
-    const chunk = text.slice(cur, cur + chunkSize);
-    chunks.push(chunk);
-
-    // 2. MOVE THE CURSOR: 
-    // Instead of jumping by the full chunkSize, we jump by (chunkSize - overlap).
-    // This ensures the next chunk "re-reads" the last 200 characters of the current one.
-    cur += (chunkSize - chunkOverlap);
-
-    // Safety check: if the overlap is bigger than the chunk, we'd loop forever.
-    if (chunkSize <= chunkOverlap) break; 
-    
-    // If the remaining text is smaller than our overlap, we're done.
-    if (cur + chunkOverlap >= text.length) break;
+    const chunks: string[] = [];
+    let cur = 0;
+    while (cur < text.length) {
+      const chunk = text.slice(cur, cur + chunkSize);
+      chunks.push(chunk);
+      cur += (chunkSize - chunkOverlap);
+      if (chunkSize <= chunkOverlap) break; 
+      if (cur + chunkOverlap >= text.length) break;
+    }
+    return chunks;
   }
-
-  return chunks;
 }
-
-}
-
