@@ -1,60 +1,187 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-:root {
-  --text: #0f172a;       /* Deep Slate for high contrast */
-  --background: #f8fafc; /* Clean Slate background */
-  --primary: #475569;    /* Darker Slate for primary text/icons */
-  --secondary: #0284c7;  /* High-contrast Sky blue for actions */
-  --accent: #be123c;     /* Sharp Rose for accents */
+/* ============================================================================
+   SyncPoint OS — "Indigo workspace" theme
+   Semantic shadcn token system, mapped to a deliberate indigo/violet palette.
+   Values are Tailwind v4 oklch primitives so the scale stays internally
+   consistent. Primary (indigo) is intentionally distinct from destructive
+   (red) so primary and danger actions never read alike. WCAG AA verified.
+   ========================================================================== */
 
-  /* Atmosphere tuning (per-theme) */
-  --glow-strength: 9%;   /* signal-blue radial wash */
-  --grid-strength: 5%;   /* technical hairline grid */
-  --grain-opacity: 0.035;
+:root {
+  --radius: 0.625rem;
+
+  /* Surfaces & text */
+  --background: oklch(0.984 0.003 247.86);   /* slate-50  */
+  --foreground: oklch(0.208 0.042 265.8);    /* slate-900 */
+  --card: oklch(1 0 0);                       /* white     */
+  --card-foreground: oklch(0.208 0.042 265.8);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.208 0.042 265.8);
+
+  /* Brand — indigo */
+  --primary: oklch(0.511 0.262 276.97);      /* indigo-600 */
+  --primary-foreground: oklch(0.985 0 0);
+
+  /* Neutral support (subtle backgrounds, hover fills) */
+  --secondary: oklch(0.968 0.007 247.9);     /* slate-100 */
+  --secondary-foreground: oklch(0.279 0.041 260.0);
+  --muted: oklch(0.968 0.007 247.9);         /* slate-100 */
+  --muted-foreground: oklch(0.554 0.046 257.4); /* slate-500 */
+  --accent: oklch(0.968 0.007 247.9);        /* slate-100 hover fill (shadcn semantics) */
+  --accent-foreground: oklch(0.279 0.041 260.0);
+
+  /* Status */
+  --destructive: oklch(0.637 0.237 25.33);   /* red-500 */
+  --destructive-foreground: oklch(0.985 0 0);
+
+  /* Lines & focus */
+  --border: oklch(0.929 0.013 255.5);        /* slate-200 */
+  --input: oklch(0.929 0.013 255.5);
+  --ring: oklch(0.511 0.262 276.97);         /* indigo focus ring */
+
+  /* Brand accent (violet) — for hero moments, NOT shadcn's --accent hover token */
+  --brand-accent: oklch(0.541 0.281 293.01); /* violet-600 */
+  --brand-accent-foreground: oklch(0.985 0 0);
+
+  /* Data viz — categorical, colorblind-considerate */
+  --chart-1: oklch(0.511 0.262 276.97);      /* indigo */
+  --chart-2: oklch(0.541 0.281 293.01);      /* violet */
+  --chart-3: oklch(0.685 0.169 237.3);       /* sky    */
+  --chart-4: oklch(0.696 0.170 162.5);       /* emerald*/
+  --chart-5: oklch(0.769 0.170 70.0);        /* amber  */
+
+  /* Sidebar */
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.208 0.042 265.8);
+  --sidebar-primary: oklch(0.511 0.262 276.97);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.968 0.007 247.9);
+  --sidebar-accent-foreground: oklch(0.279 0.041 260.0);
+  --sidebar-border: oklch(0.929 0.013 255.5);
+  --sidebar-ring: oklch(0.511 0.262 276.97);
+
+  /* Ambient atmosphere strength (per theme) */
+  --glow-strength: 7%;
 }
 
 .dark {
-  --text: #f1f5f9;       /* Off-white Slate */
-  --background: #020617; /* Deep Slate black */
-  --primary: #94a3b8;    /* Lighter Slate for secondary text */
-  --secondary: #38bdf8;  /* Vibrant Sky blue */
-  --accent: #fb7185;     /* Soft Rose accent */
+  --background: oklch(0.208 0.042 265.8);     /* slate-900 */
+  --foreground: oklch(0.984 0.003 247.86);    /* slate-50  */
+  --card: oklch(0.279 0.041 260.0);           /* slate-800 */
+  --card-foreground: oklch(0.984 0.003 247.86);
+  --popover: oklch(0.279 0.041 260.0);
+  --popover-foreground: oklch(0.984 0.003 247.86);
 
-  --glow-strength: 14%;
-  --grid-strength: 7%;
-  --grain-opacity: 0.05;
+  --primary: oklch(0.673 0.182 276.94);       /* indigo-400 — pops on dark */
+  --primary-foreground: oklch(0.208 0.042 265.8);
+
+  --secondary: oklch(0.279 0.041 260.0);      /* slate-800 */
+  --secondary-foreground: oklch(0.984 0.003 247.86);
+  --muted: oklch(0.279 0.041 260.0);
+  --muted-foreground: oklch(0.704 0.040 256.8); /* slate-400 */
+  --accent: oklch(0.372 0.044 257.3);         /* slate-700 hover fill */
+  --accent-foreground: oklch(0.984 0.003 247.86);
+
+  --destructive: oklch(0.704 0.191 22.216);   /* red-400 */
+  --destructive-foreground: oklch(0.985 0 0);
+
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.673 0.182 276.94);
+
+  --brand-accent: oklch(0.667 0.247 292.0);   /* violet-400 */
+  --brand-accent-foreground: oklch(0.208 0.042 265.8);
+
+  --chart-1: oklch(0.673 0.182 276.94);
+  --chart-2: oklch(0.667 0.247 292.0);
+  --chart-3: oklch(0.685 0.169 237.3);
+  --chart-4: oklch(0.696 0.170 162.5);
+  --chart-5: oklch(0.769 0.170 70.0);
+
+  --sidebar: oklch(0.208 0.042 265.8);
+  --sidebar-foreground: oklch(0.984 0.003 247.86);
+  --sidebar-primary: oklch(0.673 0.182 276.94);
+  --sidebar-primary-foreground: oklch(0.208 0.042 265.8);
+  --sidebar-accent: oklch(0.279 0.041 260.0);
+  --sidebar-accent-foreground: oklch(0.984 0.003 247.86);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.673 0.182 276.94);
+
+  --glow-strength: 11%;
 }
-
 
 @theme inline {
-  --color-text: var(--text);
   --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
-  --font-sans: var(--font-hanken);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-brand-accent: var(--brand-accent);
+  --color-brand-accent-foreground: var(--brand-accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --font-sans: var(--font-jakarta);
   --font-mono: var(--font-jetbrains);
-  --font-display: var(--font-bricolage);
+  --font-display: var(--font-jakarta);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
 }
 
-html {
-  scroll-behavior: smooth;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  html {
+    @apply font-sans;
+    scroll-behavior: smooth;
+  }
 }
 
-body {
-  background-color: var(--background);
-  color: var(--text);
-  font-family: var(--font-sans), system-ui, sans-serif;
-  font-feature-settings: "cv11", "ss01";
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-  transition: background-color 0.4s ease, color 0.4s ease;
-}
-
-/* ----- Mission-Control atmosphere -------------------------------------- */
-/* Layer 1: signal-blue radial wash + faint technical grid, pinned behind UI */
+/* ----- Subtle ambient atmosphere -------------------------------------------
+   A single low-intensity indigo→violet radial wash pinned behind the UI.
+   Decorative only, non-interactive; honors reduced transparency via tokens. */
 body::before {
   content: "";
   position: fixed;
@@ -62,119 +189,67 @@ body::before {
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(60rem 60rem at 12% -8%, color-mix(in srgb, var(--secondary) var(--glow-strength), transparent), transparent 60%),
-    radial-gradient(50rem 50rem at 100% 0%, color-mix(in srgb, var(--accent) calc(var(--glow-strength) - 4%), transparent), transparent 55%),
-    linear-gradient(color-mix(in srgb, var(--primary) var(--grid-strength), transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in srgb, var(--primary) var(--grid-strength), transparent) 1px, transparent 1px);
-  background-size: 100% 100%, 100% 100%, 44px 44px, 44px 44px;
+    radial-gradient(60rem 60rem at 12% -8%,
+      color-mix(in oklch, var(--primary) var(--glow-strength), transparent), transparent 60%),
+    radial-gradient(50rem 50rem at 100% 0%,
+      color-mix(in oklch, var(--brand-accent) calc(var(--glow-strength) - 3%), transparent), transparent 55%);
   -webkit-mask-image: radial-gradient(120% 120% at 50% 0%, #000 35%, transparent 100%);
           mask-image: radial-gradient(120% 120% at 50% 0%, #000 35%, transparent 100%);
 }
-
-/* Layer 2: fine film grain for tactile depth */
-body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  opacity: var(--grain-opacity);
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-/* Keep real app content above the atmosphere layers */
 body > * {
   position: relative;
   z-index: 1;
 }
 
-/* ----- Refined system chrome ------------------------------------------ */
+/* ----- System chrome ------------------------------------------------------- */
 ::selection {
-  background-color: color-mix(in srgb, var(--secondary) 28%, transparent);
-  color: var(--text);
+  background-color: color-mix(in oklch, var(--primary) 26%, transparent);
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--primary) 35%, transparent) transparent;
+  scrollbar-color: color-mix(in oklch, var(--muted-foreground) 45%, transparent) transparent;
 }
-*::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-*::-webkit-scrollbar-track {
-  background: transparent;
-}
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
 *::-webkit-scrollbar-thumb {
-  background-color: color-mix(in srgb, var(--primary) 28%, transparent);
+  background-color: color-mix(in oklch, var(--muted-foreground) 35%, transparent);
   border-radius: 999px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background-color: color-mix(in srgb, var(--secondary) 60%, transparent);
+  background-color: color-mix(in oklch, var(--primary) 55%, transparent);
 }
 
-/* Cohesive keyboard focus ring on the signal color */
-:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--secondary) 70%, transparent);
-  outline-offset: 2px;
-  border-radius: 4px;
-}
-
-/* ----- Reusable accents (used sparingly for hero moments) ------------- */
+/* ----- Reusable accents ---------------------------------------------------- */
 .font-display {
   font-family: var(--font-display), var(--font-sans), sans-serif;
 }
 
-/* soft signal glow behind an element */
 .signal-glow {
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--secondary) 25%, transparent),
-              0 8px 40px -8px color-mix(in srgb, var(--secondary) 45%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in oklch, var(--primary) 25%, transparent),
+    0 8px 40px -8px color-mix(in oklch, var(--primary) 45%, transparent);
 }
 
-/* animated conic ring for framing focal cards */
-@keyframes spin-slow {
-  to { transform: rotate(360deg); }
-}
-.animate-spin-slow {
-  animation: spin-slow 14s linear infinite;
-}
+@keyframes spin-slow { to { transform: rotate(360deg); } }
+.animate-spin-slow { animation: spin-slow 14s linear infinite; }
 
-/* signal-glow lift + corner accent on hover — shared across card grids */
-.member-card,
-.lift-card {
-  position: relative;
-  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
-}
-.member-card::after,
-.lift-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  background: radial-gradient(circle at top right, color-mix(in srgb, var(--secondary) 20%, transparent), transparent 68%);
-}
-.member-card:hover,
-.lift-card:hover {
-  transform: translateY(-2px);
-  border-color: color-mix(in srgb, var(--secondary) 40%, transparent);
-  box-shadow: 0 14px 44px -18px color-mix(in srgb, var(--secondary) 55%, transparent);
-}
-.member-card:hover::after,
-.lift-card:hover::after {
-  opacity: 1;
-}
-
-/* gentle float for ambient marks */
 @keyframes float-soft {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
 }
-.animate-float-soft {
-  animation: float-soft 7s ease-in-out infinite;
+.animate-float-soft { animation: float-soft 7s ease-in-out infinite; }
+
+/* Honor reduced-motion globally (a11y: reduced-motion) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

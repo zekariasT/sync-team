@@ -1,26 +1,19 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from '@clerk/nextjs';
-import { Hanken_Grotesk, JetBrains_Mono, Bricolage_Grotesque } from "next/font/google";
+import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-// Mission-Control type system:
-//  - Hanken Grotesk: refined grotesque workhorse for UI/body
-//  - JetBrains Mono: technical OS micro-labels (the SYNCPOINT_OS voice)
-//  - Bricolage Grotesque: characterful display for wordmark + headlines
-const sans = Hanken_Grotesk({
-  variable: "--font-hanken",
+// Indigo-workspace type system:
+//  - Plus Jakarta Sans: modern geometric SaaS workhorse for UI/body + display
+//  - JetBrains Mono: tabular/technical figures (data, timers, code labels)
+const sans = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
   subsets: ["latin"],
   display: "swap",
 });
 
 const mono = JetBrains_Mono({
   variable: "--font-jetbrains",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const display = Bricolage_Grotesque({
-  variable: "--font-bricolage",
   subsets: ["latin"],
   display: "swap",
 });
@@ -33,6 +26,10 @@ export const metadata: Metadata = {
 import { ThemeProvider } from "@/components/ThemeProvider";
 import RealTimeProvider from "@/components/RealTimeProvider";
 import { ToastProvider } from "@/components/ToastProvider";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/sonner";
+import { cn } from "@/lib/utils";
+
 
 export default function RootLayout({
   children,
@@ -50,14 +47,15 @@ export default function RootLayout({
       signUpUrl="/sign-up"
       afterSignOutUrl="/sign-in"
     >
-      <html lang="en" suppressHydrationWarning>
-        <body
-          className={`${sans.variable} ${mono.variable} ${display.variable} antialiased`}
-        >
+      <html lang="en" suppressHydrationWarning className={cn("font-sans", sans.variable, mono.variable)}>
+        <body className="antialiased">
           <RealTimeProvider>
             <ToastProvider>
               <ThemeProvider attribute="class" defaultTheme="light">
-                {children}
+                <TooltipProvider delayDuration={200}>
+                  {children}
+                </TooltipProvider>
+                <Toaster richColors position="bottom-right" />
               </ThemeProvider>
             </ToastProvider>
           </RealTimeProvider>
