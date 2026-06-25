@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useUser, useClerk, useAuth } from '@clerk/nextjs';
-import { Hash, Radio, Plus, MessageSquare, Users, Shield, ChevronDown, ChevronRight, Video, Database, Settings, LogOut } from 'lucide-react';
+import { Hash, Radio, Plus, MessageSquare, Users, Shield, ChevronDown, ChevronRight, Video, Database, Settings, LogOut, Check } from 'lucide-react';
 import AiSummaryPanel from './AiSummaryPanel';
 import { useTeamRole } from '@/hooks/useTeamRole';
 
@@ -23,9 +23,11 @@ interface SidebarProps {
   onViewChange: (view: 'pulse' | 'chat' | 'videos' | 'tasks' | 'cycles' | 'roadmap' | 'kb' | 'admin') => void;
   activeChannelId: string | null;
   onChannelSelect: (channelId: string, channelName: string) => void;
+  activeTeamId?: string;
+  onTeamChange?: (teamId: string) => void;
 }
 
-export default function Sidebar({ activeView, onViewChange, activeChannelId, onChannelSelect }: SidebarProps) {
+export default function Sidebar({ activeView, onViewChange, activeChannelId, onChannelSelect, activeTeamId, onTeamChange }: SidebarProps) {
   const { user } = useUser();
   const { isAdmin } = useTeamRole();
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -35,6 +37,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
   const [showNewChannel, setShowNewChannel] = useState<string | null>(null);
   const [newChannelName, setNewChannelName] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showTeamSwitcher, setShowTeamSwitcher] = useState(false);
   const { signOut, openUserProfile } = useClerk();
   const { getToken } = useAuth();
 
@@ -90,11 +93,13 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
   const handleCreateChannel = async (teamId: string) => {
     if (!newChannelName.trim()) return;
     try {
+      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/chat/teams/${teamId}/channels`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'x-user-id': user?.id || ''
+          'x-user-id': user?.id || '',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ name: newChannelName.trim() }),
       });
@@ -113,9 +118,54 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
     <aside className="w-64 bg-background border-r border-primary/15 flex flex-col h-screen shadow-[4px_0_24px_rgba(33,35,40,0.5)] z-20 relative">
       {/* Logo */}
       <div className="p-4 border-b border-primary/15">
-        <h1 className="text-lg font-black tracking-tighter text-primary">SYNCPOINT_OS</h1>
-        <div className="text-[10px] font-mono text-secondary mt-0.5 tracking-wider">TEAM OPERATING SYSTEM</div>
+        <h1 className="font-display text-xl font-extrabold tracking-tight text-text">
+          SYNCPOINT<span className="text-secondary">_OS</span>
+        </h1>
+        <div className="text-[10px] font-mono text-primary/50 mt-1 tracking-[0.25em] uppercase flex items-center gap-1.5">
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px] shadow-emerald-500" />
+          Team Operating System
+        </div>
       </div>
+
+      {/* Team Switcher — controls the active team for Board/Cycles/Roadmap/KB/Videos */}
+      {onTeamChange && (
+        <div className="p-2 border-b border-primary/15 relative">
+          {loadingTeams ? (
+            <div className="h-9 w-full bg-primary/5 animate-pulse rounded-lg border border-primary/10" />
+          ) : teams.length > 0 ? (
+            <>
+              <button
+                onClick={() => setShowTeamSwitcher(!showTeamSwitcher)}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/15 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer"
+              >
+                <Users size={14} className="text-secondary shrink-0" />
+                <span className="flex-1 text-left text-sm font-semibold text-text truncate">
+                  {teams.find(t => t.id === activeTeamId)?.name || 'Select Team'}
+                </span>
+                <ChevronDown size={14} className={`text-primary/50 shrink-0 transition-transform ${showTeamSwitcher ? 'rotate-180' : ''}`} />
+              </button>
+
+              {showTeamSwitcher && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowTeamSwitcher(false)} />
+                  <div className="absolute top-full left-2 right-2 mt-1 bg-background border border-primary/15 rounded-xl shadow-2xl p-1 z-50 overflow-hidden backdrop-blur-md">
+                    {teams.map(team => (
+                      <button
+                        key={team.id}
+                        onClick={() => { onTeamChange(team.id); setShowTeamSwitcher(false); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm font-semibold text-text hover:bg-primary/5 rounded-lg transition-colors cursor-pointer"
+                      >
+                        <span className="flex-1 text-left truncate">{team.name}</span>
+                        {team.id === activeTeamId && <Check size={14} className="text-secondary shrink-0" />}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          ) : null}
+        </div>
+      )}
 
       {/* Nav Tabs */}
       <div className="flex flex-col p-2 gap-1 border-b border-primary/15">
@@ -188,7 +238,17 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
           <Database size={16} className="opacity-70" /> Knowledge Base
         </button>
 
-        {/* User Management hidden for portfolio demo */}
+        {isAdmin && (
+          <button
+            onClick={() => onViewChange('admin')}
+            className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all
+              ${activeView === 'admin'
+                ? 'bg-secondary/10 text-secondary'
+                : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
+          >
+            <Shield size={16} className="text-secondary" /> User Management
+          </button>
+        )}
       </div>
 
       {/* Chat Channels List */}
@@ -295,7 +355,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
                 Manage Account
               </button>
               <button 
-                onClick={() => { setShowUserMenu(false); signOut(); }}
+                onClick={() => { setShowUserMenu(false); signOut({ redirectUrl: '/sign-in' }); }}
                 className="w-full flex items-center gap-3 px-3 py-2 text-xs font-semibold text-accent hover:bg-accent/5 rounded-lg transition-colors cursor-pointer"
               >
                 <LogOut size={14} className="text-accent/50" />

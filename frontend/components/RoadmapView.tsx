@@ -48,10 +48,11 @@ export default function RoadmapView({ teamId, onMenuClick }: { teamId?: string; 
 
   const fetchMembers = async () => {
     if (!teamId) return;
-    const userId = user?.id || 'guest-demo-user';
+    const userId = user?.id || '';
+    const token = await getToken();
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/teams/${teamId}`, {
-        headers: { 'x-user-id': userId }
+        headers: { 'x-user-id': userId, 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
         const team = await res.json();
@@ -62,10 +63,11 @@ export default function RoadmapView({ teamId, onMenuClick }: { teamId?: string; 
 
   const fetchProjects = async () => {
     if (!teamId) return;
-    const userId = user?.id || 'guest-demo-user';
+    const userId = user?.id || '';
+    const token = await getToken();
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/teams/${teamId}/projects`, {
-        headers: { 'x-user-id': userId }
+        headers: { 'x-user-id': userId, 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) setProjects(await res.json());
     } catch(err) { console.error(err); }
@@ -75,11 +77,13 @@ export default function RoadmapView({ teamId, onMenuClick }: { teamId?: string; 
     if (!teamId) return;
 
     try {
+      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/teams/${teamId}/projects`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'x-user-id': user?.id || 'guest-demo-user'
+          'x-user-id': user?.id || '',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ 
           name: data.name, 
@@ -102,11 +106,13 @@ export default function RoadmapView({ teamId, onMenuClick }: { teamId?: string; 
   const handleTaskSubmit = async (data: any) => {
     if (!editingTask) return;
     try {
+      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/${editingTask.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': user?.id || 'guest-demo-user'
+          'x-user-id': user?.id || '',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(data)
       });

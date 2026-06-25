@@ -1,16 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { io } from 'socket.io-client';
 import { useUser, useAuth } from '@clerk/nextjs';
 import { Database, Search, Bot, FileText, Trash2, Edit2, Loader2 } from 'lucide-react';
 import { useToast } from './ToastProvider';
 import ViewHeader from './ViewHeader';
 import DocumentUploader from './DocumentUploader';
+import { useTeamRole } from '../hooks/useTeamRole';
 
 export default function KnowledgeBaseView({ teamId, onMenuClick }: { teamId?: string; onMenuClick?: () => void }) {
   const { user } = useUser();
   const { getToken } = useAuth();
   const { success, error: toastError } = useToast();
+  const { isAdmin } = useTeamRole(teamId);
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [answer, setAnswer] = useState<string | null>(null);
@@ -35,6 +38,35 @@ export default function KnowledgeBaseView({ teamId, onMenuClick }: { teamId?: st
   };
 
   useEffect(() => { fetchDocuments(); }, [teamId]);
+
+  // Realtime: join this team's socket room so we hear when the ai-worker finishes
+  // indexing (core-api relays it: RabbitMQ → worker → Redis → WebSocket → here).
+  useEffect(() => {
+    if (!teamId) return;
+    let socket: ReturnType<typeof io> | undefined;
+    let active = true;
+
+    (async () => {
+      // The backend verifies this token and only lets members join the team room.
+      const token = await getToken().catch(() => null);
+      if (!active) return;
+
+      socket = io(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}`, {
+        auth: { token },
+      });
+      socket.emit('joinTeam', teamId);
+
+      socket.on('kb:indexed', (data: { documentId: string; title?: string; chunks?: number }) => {
+        console.log('KB indexed (live):', data);
+        success(`"${data.title ?? 'Document'}" is now searchable — ${data.chunks ?? 0} chunks indexed`);
+        fetchDocuments();
+      });
+
+      socket.on('document.removed', () => fetchDocuments());
+    })();
+
+    return () => { active = false; socket?.disconnect(); };
+  }, [teamId]);
 
   const handleDeleteDocument = async (id: string) => {
     if (!confirm('Delete this document? The AI will instantly forget its contents.')) return;
@@ -102,15 +134,21 @@ export default function KnowledgeBaseView({ teamId, onMenuClick }: { teamId?: st
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
           <div className="flex flex-col gap-4">
             {teamId ? (
-              <DocumentUploader 
-                teamId={teamId} 
-                editingDocId={editingDocId}
-                onCancelEdit={() => setEditingDocId(null)}
-                onUploadSuccess={() => {
-                  fetchDocuments();
-                  setEditingDocId(null);
-                }} 
-              />
+              isAdmin ? (
+                <DocumentUploader
+                  teamId={teamId}
+                  editingDocId={editingDocId}
+                  onCancelEdit={() => setEditingDocId(null)}
+                  onUploadSuccess={() => {
+                    fetchDocuments();
+                    setEditingDocId(null);
+                  }}
+                />
+              ) : (
+                <div className="p-4 border border-primary/20 bg-primary/5 rounded-xl text-center text-sm text-primary/50">
+                    Only team admins can add or manage documents. You can still ask questions below.
+                </div>
+              )
             ) : (
               <div className="p-4 border border-primary/20 bg-primary/5 rounded-xl text-center text-sm text-primary/50">
                   Waiting for team context...
@@ -127,27 +165,29 @@ export default function KnowledgeBaseView({ teamId, onMenuClick }: { teamId?: st
                 ) : documents.length > 0 ? (
                   <div className="flex flex-col gap-2 mt-4 relative z-10">
                     {documents.map(doc => (
-                      <div key={doc.id} className="flex items-center justify-between bg-background border border-primary/10 rounded-lg p-3 hover:border-primary/30 transition-colors">
+                      <div key={doc.id} className="lift-card flex items-center justify-between bg-background border border-primary/10 rounded-lg p-3">
                         <div className="flex flex-col truncate min-w-0 pr-4">
                           <span className="text-sm font-bold truncate text-text">{doc.title}</span>
                           <span className="text-[10px] text-primary/40 uppercase tracking-widest">{new Date(doc.createdAt).toLocaleDateString()}</span>
                         </div>
-                        <div className="flex gap-1 shrink-0">
-                          <button 
-                            onClick={() => setEditingDocId(doc.id)}
-                            className="p-1.5 text-primary/40 hover:text-secondary hover:bg-secondary/10 rounded-md transition-all"
-                            title="Update Document"
-                          >
-                            <Edit2 size={14} />
-                          </button>
-                          <button 
-                            onClick={() => handleDeleteDocument(doc.id)}
-                            className="p-1.5 text-primary/40 hover:text-accent hover:bg-accent/10 rounded-md transition-all"
-                            title="Atomic Delete"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
+                        {isAdmin && (
+                          <div className="flex gap-1 shrink-0">
+                            <button
+                              onClick={() => setEditingDocId(doc.id)}
+                              className="p-1.5 text-primary/40 hover:text-secondary hover:bg-secondary/10 rounded-md transition-all"
+                              title="Update Document"
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteDocument(doc.id)}
+                              className="p-1.5 text-primary/40 hover:text-accent hover:bg-accent/10 rounded-md transition-all"
+                              title="Atomic Delete"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

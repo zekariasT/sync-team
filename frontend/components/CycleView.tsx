@@ -48,10 +48,11 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
 
   const fetchMembers = async () => {
     if (!teamId) return;
-    const userId = user?.id || 'guest-demo-user';
+    const userId = user?.id || '';
+    const token = await getToken();
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/teams/${teamId}`, {
-        headers: { 'x-user-id': userId }
+        headers: { 'x-user-id': userId, 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
         const team = await res.json();
@@ -62,10 +63,11 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
 
   const fetchCycles = async () => {
     if (!teamId) return;
-    const userId = user?.id || 'guest-demo-user';
+    const userId = user?.id || '';
+    const token = await getToken();
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/teams/${teamId}/cycles`, {
-        headers: { 'x-user-id': userId }
+        headers: { 'x-user-id': userId, 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) setCycles(await res.json());
     } catch(err) { console.error(err); }
@@ -75,11 +77,13 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
     if (!teamId) return;
 
     try {
+      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/teams/${teamId}/cycles`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'x-user-id': user?.id || 'guest-demo-user'
+          'x-user-id': user?.id || '',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           name: data.name,

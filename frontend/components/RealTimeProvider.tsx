@@ -3,50 +3,50 @@
 import { useEffect } from 'react';
 import { io } from 'socket.io-client';
 import { useRouter } from 'next/navigation';
-import { useUser, useAuth } from '@clerk/nextjs';
+import { useAuth } from '@clerk/nextjs';
 
 export default function RealTimeProvider({ children }: { children: React.ReactNode }) {
     const router = useRouter();
-    const { user, isLoaded } = useUser();
-    const { getToken } = useAuth();
+    const { getToken, isSignedIn, isLoaded } = useAuth();
+
+    // NOTE: user sync + team auto-enroll happens in DashboardShell's init effect
+    // (awaited before loading teams). It used to run here too, but two concurrent
+    // /members/sync calls raced on the same teamMember insert (P2002 500s), so it
+    // was consolidated into the single deterministic call in DashboardShell.
 
     useEffect(() => {
-        if (isLoaded && user) {
-            const syncUser = async () => {
-                const token = await getToken();
-                fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/members/sync`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`,
-                    },
-                    body: JSON.stringify({
-                        id: user.id,
-                        email: user.primaryEmailAddress?.emailAddress,
-                        name: user.fullName || user.username || 'Unknown',
-                        avatar: user.imageUrl,
-                    }),
-                }).catch(err => console.error('Failed to sync user:', err));
-            };
-            syncUser();
-        }
-    }, [user, isLoaded]);
+        // Don't open a socket until Clerk has settled on a signed-in session.
+        // Connecting during the sign-out transition (or before auth loads) fires
+        // the handshake with a null/expired token and logs console errors.
+        if (!isLoaded || !isSignedIn) return;
 
-    useEffect(() => {
-        // Connect to your NestJS backend on port 3001
-        const socket = io(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}`);
+        let socket: ReturnType<typeof io> | undefined;
+        let active = true;
 
-        // Listen for the "statusChanged" event from the backend
-        socket.on('statusChanged', (data) => {
-            console.log('Pulse update received!', data);
-            // This tells Next.js to re-fetch the data without a full page reload.
-            router.refresh();
-        });
+        (async () => {
+            // The backend authenticates the socket handshake with this token.
+            const token = await getToken().catch(() => null);
+            if (!active) return;
+
+            socket = io(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}`, {
+                auth: { token },
+            });
+
+            // Listen for the "statusChanged" event from the backend
+            socket.on('statusChanged', (data) => {
+                console.log('Pulse update received!', data);
+                // This tells Next.js to re-fetch the data without a full page reload.
+                router.refresh();
+            });
+            // NOTE: KB "kb:indexed" events are handled in KnowledgeBaseView, which
+            // joins the team room (socket.emit('joinTeam', teamId)) to receive them.
+        })();
 
         return () => {
-            socket.disconnect();
+            active = false;
+            socket?.disconnect();
         };
-    }, [router]);
+    }, [router, getToken, isSignedIn, isLoaded]);
 
     return <>{children}</>;
 }

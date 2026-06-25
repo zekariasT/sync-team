@@ -50,10 +50,12 @@ export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAr
 
     // Fetch existing messages
     const userId = user?.id || 'guest-demo-user';
-    const getMsgs = async () => {
+    let socket: Socket | null = null;
+
+    const init = async () => {
       const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/chat/channels/${channelId}/messages`, {
-        headers: { 
+        headers: {
           'x-user-id': userId,
           'Authorization': `Bearer ${token}`
         }
@@ -61,23 +63,26 @@ export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAr
       const data = await (res.ok ? res.json() : []);
       setMessages(data);
       setLoading(false);
+
+      // Set up WebSocket for real-time messages — pass the Clerk token so the
+      // gateway resolves the real identity (joinChannel is membership-checked).
+      socket = io(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}`, {
+        auth: { token },
+      });
+      socketRef.current = socket;
+
+      socket.emit('joinChannel', channelId);
+
+      socket.on('newMessage', (data: Message) => {
+        if (data.channelId === channelId) {
+          setMessages(prev => [...prev, data]);
+        }
+      });
     };
-    getMsgs().catch(() => setLoading(false));
-
-    // Set up WebSocket for real-time messages
-    const socket = io(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}`);
-    socketRef.current = socket;
-
-    socket.emit('joinChannel', channelId);
-
-    socket.on('newMessage', (data: Message) => {
-      if (data.channelId === channelId) {
-        setMessages(prev => [...prev, data]);
-      }
-    });
+    init().catch(() => setLoading(false));
 
     return () => {
-      socket.disconnect();
+      socket?.disconnect();
     };
   }, [channelId, user]); // Added user to the dependency array
 
@@ -87,13 +92,15 @@ export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAr
     const content = newMessage.trim();
     setNewMessage('');
 
-    const userId = user?.id || 'guest-demo-user';
+    const userId = user?.id || '';
+    const token = await getToken();
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/chat/channels/${channelId}/messages`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'x-user-id': userId
+          'x-user-id': userId,
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           senderId: userId,

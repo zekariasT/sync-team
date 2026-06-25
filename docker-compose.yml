@@ -1,3 +1,16 @@
+# SyncPoint OS — microservice stack.
+#
+#   browser ──HTTP/WS──► core-api ──RabbitMQ──► ai-worker ──► Pinecone
+#                            ▲                       │
+#                            └──────Redis pub/sub────┘   (live "indexed" signal)
+#
+# Bring it all up with:  docker compose up --build
+# RabbitMQ dashboard:    http://localhost:15672  (guest / guest)
+#
+# Secrets (GEMINI_API_KEY, PINECONE_API_KEY, CLERK keys, …) are read from
+# ./backend/.env via env_file. Infra URLs below intentionally OVERRIDE any
+# localhost values in that file so containers talk over the compose network.
+
 services:
   db:
     image: mariadb:11.4
@@ -6,9 +19,87 @@ services:
       MARIADB_ROOT_PASSWORD: root
       MARIADB_DATABASE: sync_team
     ports:
-      - "3307:3306" # Mapped to 3307 to avoid conflict with potential local MySQL/MariaDB
+      - "3307:3306" # Mapped to 3307 to avoid conflict with a local MySQL/MariaDB
     volumes:
       - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    restart: always
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  core-api:
+    build: ./backend
+    restart: no
+    env_file:
+      - ./backend/.env
+    environment:
+      # Override infra endpoints to use the compose network service names.
+      DATABASE_URL: "mysql://root:root@db:3306/sync_team"
+      RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672"
+      RABBITMQ_QUEUE: "kb_indexing_queue"
+      REDIS_URL: "redis://redis:6379"
+      ALLOWED_ORIGINS: "http://localhost:3000"
+      PORT: "3001"
+      NODE_ENV: "development"
+    # Apply migrations before booting the API. The migrations folder was
+    # re-baselined (2026-06-20) into a single `20260101000000_baseline`, so
+    # `migrate deploy` works: a fresh DB gets the baseline applied; an existing
+    # DB already has it resolved-as-applied (no-op). NOTE: if you point this at a
+    # legacy non-empty DB built by the old `db push` (no `_prisma_migrations`
+    # rows), `migrate deploy` will P3005 — run
+    # `npx prisma migrate resolve --applied 20260101000000_baseline` once first.
+    command: sh -c "npx prisma migrate deploy && node dist/src/main.js"
+    ports:
+      - "3001:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  ai-worker:
+    build: ./ai-worker
+    restart: no
+    # Reuses backend/.env for the shared GEMINI_API_KEY / PINECONE_API_KEY.
+    env_file:
+      - ./backend/.env
+    environment:
+      RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672"
+      RABBITMQ_QUEUE: "kb_indexing_queue"
+      REDIS_URL: "redis://redis:6379"
+      # PINECONE_INDEX_NAME intentionally NOT set here — inherited from
+      # ./backend/.env so the worker (write) and core-api (read) share ONE index.
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
 volumes:
   db_data:

@@ -10,10 +10,14 @@ export class ChatService {
         const member = await this.prisma.teamMember.findUnique({
             where: { userId_teamId: { userId: requesterId, teamId } }
         });
+        const requester = await this.prisma.user.findUnique({
+            where: { id: requesterId }, select: { isRoot: true }
+        });
+        if (requester?.isRoot) return true; // global root: account-level superuser
         const anyAdmin = await this.prisma.teamMember.findFirst({
             where: { userId: requesterId, role: 'ADMIN' }
         });
-        
+
         if (anyAdmin) return true;
         if (!member) throw new ForbiddenException('You do not belong to this team');
         if (!allowedRoles.includes(member.role)) throw new ForbiddenException('Insufficient permissions');

@@ -37,7 +37,8 @@ export class MembersService {
       select: { teamId: true, role: true }
     });
 
-    const isAdmin = requesterMemberships.some(rm => rm.role === 'ADMIN');
+    const requester = await this.prisma.user.findUnique({ where: { id: requesterId }, select: { isRoot: true } });
+    const isAdmin = !!requester?.isRoot || requesterMemberships.some(rm => rm.role === 'ADMIN');
 
     if (isAdmin) {
       // Admins see everyone!
@@ -100,8 +101,9 @@ export class MembersService {
       const requesterMemberships = await this.prisma.teamMember.findMany({
         where: { userId: requesterId },
       });
-      const isAdmin = requesterMemberships.some(rm => rm.role === 'ADMIN');
-      
+      const requester = await this.prisma.user.findUnique({ where: { id: requesterId }, select: { isRoot: true } });
+      const isAdmin = !!requester?.isRoot || requesterMemberships.some(rm => rm.role === 'ADMIN');
+
       let isPermitted = isAdmin;
 
       if (!isAdmin) {
@@ -137,7 +139,7 @@ export class MembersService {
   }
 
   async syncUser(data: { id: string, email: string, name: string, avatar?: string | null }) {
-    return this.prisma.user.upsert({
+    const user = await this.prisma.user.upsert({
       where: { id: data.id },
       update: {
         email: data.email,
@@ -152,15 +154,27 @@ export class MembersService {
         status: 'Available',
       },
     });
+
+    // Auto-enroll removed: signing in now only upserts the user record, it no
+    // longer grants membership/roles in the seeded demo teams. Previously every
+    // login re-upserted the user as ADMIN of all demo teams, which silently
+    // reverted any manual role/membership change on the next sign-in. Membership
+    // is now managed explicitly via the team endpoints.
+    return user;
   }
 
   async delete(id: string, requesterId: string) {
     if (!requesterId) throw new ForbiddenException('Unauthorized');
-    const requesterMemberships = await this.prisma.teamMember.findMany({
-      where: { userId: requesterId },
-    });
-    const isAdmin = requesterMemberships.some(rm => rm.role === 'ADMIN');
-    if (!isAdmin) throw new ForbiddenException('Only administrators can delete users');
+    // Deleting a user account is a destructive, system-wide action — reserved
+    // for root (the platform operator), not ordinary team admins.
+    const requester = await this.prisma.user.findUnique({ where: { id: requesterId }, select: { isRoot: true } });
+    if (!requester?.isRoot) throw new ForbiddenException('Only a root user can delete user accounts');
+    // Root accounts are protected: they can never be deleted through the API —
+    // not by another root, and not by themselves. This prevents an irreversible
+    // lockout of the platform's superuser.
+    const target = await this.prisma.user.findUnique({ where: { id }, select: { isRoot: true } });
+    if (!target) throw new NotFoundException('User not found');
+    if (target.isRoot) throw new ForbiddenException('Root accounts cannot be deleted.');
     return await this.prisma.user.delete({ where: { id } });
   }
 }

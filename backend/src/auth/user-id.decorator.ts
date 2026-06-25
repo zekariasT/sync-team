@@ -3,7 +3,9 @@ import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 export const UserId = createParamDecorator(
   (data: unknown, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest();
-    // Prioritize populated user from ClerkAuthGuard, then fallback to header in dev
-    return request['user']?.clerkId || request.headers['x-user-id'];
+    // Always use the identity the ClerkAuthGuard verified and populated.
+    // Never fall back to the raw x-user-id header — it is client-controlled
+    // and trusting it for authorization allows cross-tenant impersonation.
+    return request['user']?.clerkId;
   },
 );

@@ -1,9 +1,8 @@
-import { ThemeToggle } from '@/components/ThemeToggle';
 import MemberClock from '@/components/MemberClock';
-import { Show, UserButton } from '@clerk/nextjs';
 import { currentUser, auth } from '@clerk/nextjs/server';
 import PulseForm from './PulseForm';
 import MemberRoleBadge from './MemberRoleBadge';
+import RootBadge from './RootBadge';
 
 export default async function PulseView() {
   const user = await currentUser();
@@ -31,24 +30,25 @@ export default async function PulseView() {
 
   const currentMember = members.find(m => m.id === activeUserId);
   const isAdmin = currentMember?.teamMembers?.some((tm: any) => tm.role === 'ADMIN');
+  const isRoot = !!currentMember?.isRoot; // only root may grant/revoke ADMIN
   const leadTeamIds = currentMember?.teamMembers?.filter((tm: any) => tm.role === 'LEAD').map((tm: any) => tm.teamId) || [];
 
   return (
     <div className="flex-1 h-screen overflow-y-auto bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-10 backdrop-blur-md bg-background/80 border-b border-primary/15 h-14 flex items-center justify-between px-6">
+      <header className="sticky top-0 z-10 backdrop-blur-md bg-background/70 border-b border-primary/15 h-14 flex items-center justify-between pl-6 pr-48">
         <div className="flex items-center gap-3">
-          <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px] shadow-green-500 animate-pulse" />
-          <h2 className="font-bold text-text">Team Pulse</h2>
-          <span className="text-[10px] font-mono text-primary/40 bg-primary/5 px-2 py-0.5 rounded-full">
-            {members.length} ONLINE
+          <div className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-70" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500 shadow-[0_0_8px] shadow-green-500" />
+          </div>
+          <h2 className="font-display text-lg font-bold tracking-tight text-text">Team Pulse</h2>
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-secondary bg-secondary/10 border border-secondary/20 px-2 py-0.5 rounded-full">
+            {members.length} Online
           </span>
         </div>
-        <div className="flex items-center gap-3">
-          <ThemeToggle />
-          <Show when="signed-in">
-            <UserButton />
-          </Show>
+        <div className="hidden sm:flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.25em] text-primary/40">
+          <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse" /> Live Feed
         </div>
       </header>
 
@@ -62,7 +62,7 @@ export default async function PulseView() {
             return (
               <div
                 key={member.id}
-                className="bg-primary/5 border border-primary/15 p-5 rounded-xl hover:border-primary/30 transition-all group flex flex-col justify-between"
+                className="member-card bg-primary/5 border border-primary/15 p-5 rounded-xl group flex flex-col justify-between overflow-hidden"
               >
                 <div>
                   <div className="flex justify-between items-start">
@@ -75,16 +75,20 @@ export default async function PulseView() {
                         </div>
                       )}
                       <div>
-                        <h2 className="text-base font-bold text-text">{member.name}</h2>
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-base font-bold text-text">{member.name}</h2>
+                          {member.isRoot && <RootBadge />}
+                        </div>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {member.teamMembers?.map((tm: any) => (
                             <div key={`${member.id}-${tm.teamId}`} className="flex items-center gap-1 bg-secondary/10 px-2 py-0.5 rounded-full text-[10px] font-bold text-secondary">
                               <span className="opacity-70 truncate max-w-[60px]">{tm.team?.name}</span>
-                              <MemberRoleBadge 
-                                memberId={member.id} 
-                                teamId={tm.teamId} 
+                              <MemberRoleBadge
+                                memberId={member.id}
+                                teamId={tm.teamId}
                                 role={tm.role}
-                                canEdit={isAdmin} 
+                                canEdit={isAdmin}
+                                canGrantAdmin={isRoot}
                               />
                             </div>
                           ))}

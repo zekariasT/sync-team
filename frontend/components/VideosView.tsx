@@ -30,51 +30,48 @@ export interface VideoMessage {
     avatar: string | null;
   };
   reactions?: Reaction[];
+  tags?: { user: { id: string; name: string; avatar: string | null } }[];
 }
 
-export default function VideosView({ teamId: initialTeamId, onMenuClick }: { teamId?: string; onMenuClick?: () => void }) {
+export default function VideosView({ teamId, onMenuClick }: { teamId?: string; onMenuClick?: () => void }) {
   const { user } = useUser();
   const { getToken } = useAuth();
-  const [teamId, setTeamId] = useState<string | null>(initialTeamId || null);
   const [videos, setVideos] = useState<VideoMessage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<VideoMessage | null>(null);
 
   useEffect(() => {
-    if (!teamId) {
-      // Fetch teams first
-      fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/teams`)
-        .then(res => res.json())
-        .then(data => {
-          if (data && data.length > 0) {
-            setTeamId(data[0].id);
-          } else {
-            setLoading(false);
-          }
-        })
-        .catch(() => setLoading(false));
-    } else {
+    if (teamId) {
       fetchVideos();
+    } else {
+      // No team selected yet — don't hang on the loading spinner forever.
+      setLoading(false);
     }
   }, [teamId, user]);
 
   const fetchVideos = async () => {
     if (!teamId) return;
     const userId = user?.id || 'guest-demo-user';
+    setError(null);
     try {
       const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/video/teams/${teamId}`, {
-        headers: { 
+        headers: {
           'x-user-id': userId,
           'Authorization': `Bearer ${token}`
         }
       });
       if (res.ok) {
         setVideos(await res.json());
+      } else {
+        const data = await res.json().catch(() => null);
+        setError(data?.message || `Could not load videos (${res.status}).`);
       }
     } catch (err) {
       console.error(err);
+      setError('Could not load videos. Check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -121,6 +118,19 @@ export default function VideosView({ teamId: initialTeamId, onMenuClick }: { tea
                    </div>
                    Recorded by <span className="font-semibold text-text">{selectedVideo.sender.name}</span>
                 </div>
+                {selectedVideo.tags && selectedVideo.tags.length > 0 && (
+                  <div className="mt-2 flex items-center gap-2 text-sm text-primary/70 flex-wrap">
+                    <span className="text-xs uppercase tracking-widest text-primary/40 font-bold">Tagged</span>
+                    {selectedVideo.tags.map((t) => (
+                      <span key={t.user.id} className="flex items-center gap-1.5 bg-secondary/10 border border-secondary/20 rounded-full pl-1 pr-2.5 py-0.5 text-xs font-semibold text-secondary">
+                        <span className="w-5 h-5 rounded-full overflow-hidden bg-secondary/20 flex items-center justify-center shrink-0">
+                          {t.user.avatar ? <img src={t.user.avatar} alt="" className="w-full h-full object-cover" /> : <span className="text-[10px] font-bold">{t.user.name.charAt(0)}</span>}
+                        </span>
+                        {t.user.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
              </div>
 
              <div className="w-full xl:w-96 flex flex-col gap-4">
@@ -167,23 +177,31 @@ export default function VideosView({ teamId: initialTeamId, onMenuClick }: { tea
                    
                    const videoEl = document.querySelector('video');
                    const timestamp = videoEl ? videoEl.currentTime : 0;
-                   const userId = user?.id || 'guest-demo-user';
+                   const userId = user?.id || '';
+                   const token = await getToken();
                    try {
                      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/video/${selectedVideo.id}/reactions`, {
                        method: 'POST',
                         headers: {
                           'Content-Type': 'application/json',
-                          'x-user-id': userId
+                          'x-user-id': userId,
+                          'Authorization': `Bearer ${token}`,
                         },
                        body: JSON.stringify({ userId, timestamp, comment })
                      });
                      if (res.ok) {
                        const savedReaction = await res.json();
-                       // Optimistically update
+                       // Optimistically update the open video...
                        setSelectedVideo(prev => {
                          if (!prev) return prev;
                          return { ...prev, reactions: [...(prev.reactions || []), savedReaction] };
                        });
+                       // ...and the backing list, so closing + reopening the card
+                       // (which re-selects from `videos`) keeps the new reaction.
+                       setVideos(prev => prev.map(v =>
+                         v.id === selectedVideo.id
+                           ? { ...v, reactions: [...(v.reactions || []), savedReaction] }
+                           : v));
                        form.reset();
                      }
                    } catch(err) { console.error('Add reaction failed', err); }
@@ -206,6 +224,24 @@ export default function VideosView({ teamId: initialTeamId, onMenuClick }: { tea
               <div className="flex justify-center p-12">
                 <div className="w-8 h-8 border-2 border-primary/20 border-t-secondary rounded-full animate-spin" />
               </div>
+            ) : !teamId ? (
+              <div className="text-center py-20 bg-primary/5 rounded-xl border border-primary/15 border-dashed">
+                <Video size={48} className="mx-auto text-primary/30 mb-4 opacity-50" />
+                <h3 className="text-lg font-bold text-text mb-2">No team selected</h3>
+                <p className="text-sm text-primary/50">Pick a team from the sidebar to see its sync videos.</p>
+              </div>
+            ) : error ? (
+              <div className="text-center py-20 bg-accent/5 rounded-xl border border-accent/20 border-dashed">
+                <Video size={48} className="mx-auto text-accent/40 mb-4 opacity-60" />
+                <h3 className="text-lg font-bold text-accent mb-2">Couldn&apos;t load videos</h3>
+                <p className="text-sm text-accent/70 max-w-md mx-auto">{error}</p>
+                <button
+                  onClick={() => { setLoading(true); fetchVideos(); }}
+                  className="mt-6 font-bold text-secondary text-sm hover:underline cursor-pointer"
+                >
+                  Try again
+                </button>
+              </div>
             ) : videos.length === 0 ? (
               <div className="text-center py-20 bg-primary/5 rounded-xl border border-primary/15 border-dashed">
                 <Video size={48} className="mx-auto text-primary/30 mb-4 opacity-50" />
@@ -213,7 +249,7 @@ export default function VideosView({ teamId: initialTeamId, onMenuClick }: { tea
                 <p className="text-sm text-primary/50">Record a quick update to share with your team asynchronously.</p>
                 <button
                   onClick={() => setIsRecording(true)}
-                  className="mt-6 font-bold text-secondary text-sm hover:underline"
+                  className="mt-6 font-bold text-secondary text-sm hover:underline cursor-pointer"
                 >
                   Start Recording
                 </button>
@@ -224,7 +260,7 @@ export default function VideosView({ teamId: initialTeamId, onMenuClick }: { tea
                   <div
                     key={video.id}
                     onClick={() => setSelectedVideo(video)}
-                    className="bg-primary/5 border border-primary/15 rounded-xl overflow-hidden hover:border-secondary hover:shadow-[0_4px_20px_rgba(25,108,138,0.15)] transition-all cursor-pointer group flex flex-col"
+                    className="lift-card bg-primary/5 border border-primary/15 rounded-xl overflow-hidden cursor-pointer group flex flex-col"
                   >
                     <div className="aspect-video bg-black relative group flex items-center justify-center">
                        {/* Use the video component but pause it to act as thumbnail */}
@@ -252,6 +288,18 @@ export default function VideosView({ teamId: initialTeamId, onMenuClick }: { tea
                           )}
                         </div>
                         <span className="text-xs font-semibold text-text truncate">{video.sender.name}</span>
+                        {video.tags && video.tags.length > 0 && (
+                          <div className="ml-auto flex items-center -space-x-1.5" title={`Tagged: ${video.tags.map(t => t.user.name).join(', ')}`}>
+                            {video.tags.slice(0, 3).map((t) => (
+                              <span key={t.user.id} className="w-5 h-5 rounded-full overflow-hidden bg-secondary/20 ring-2 ring-background flex items-center justify-center shrink-0">
+                                {t.user.avatar ? <img src={t.user.avatar} alt="" className="w-full h-full object-cover" /> : <span className="text-[9px] font-bold text-secondary">{t.user.name.charAt(0)}</span>}
+                              </span>
+                            ))}
+                            {video.tags.length > 3 && (
+                              <span className="w-5 h-5 rounded-full bg-primary/15 ring-2 ring-background flex items-center justify-center shrink-0 text-[9px] font-bold text-primary/60">+{video.tags.length - 3}</span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

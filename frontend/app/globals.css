@@ -8,6 +8,11 @@
   --primary: #475569;    /* Darker Slate for primary text/icons */
   --secondary: #0284c7;  /* High-contrast Sky blue for actions */
   --accent: #be123c;     /* Sharp Rose for accents */
+
+  /* Atmosphere tuning (per-theme) */
+  --glow-strength: 9%;   /* signal-blue radial wash */
+  --grid-strength: 5%;   /* technical hairline grid */
+  --grain-opacity: 0.035;
 }
 
 .dark {
@@ -16,6 +21,10 @@
   --primary: #94a3b8;    /* Lighter Slate for secondary text */
   --secondary: #38bdf8;  /* Vibrant Sky blue */
   --accent: #fb7185;     /* Soft Rose accent */
+
+  --glow-strength: 14%;
+  --grid-strength: 7%;
+  --grain-opacity: 0.05;
 }
 
 
@@ -25,12 +34,147 @@
   --color-primary: var(--primary);
   --color-secondary: var(--secondary);
   --color-accent: var(--accent);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-hanken);
+  --font-mono: var(--font-jetbrains);
+  --font-display: var(--font-bricolage);
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background-color: var(--background);
   color: var(--text);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: background-color 0.4s ease, color 0.4s ease;
+}
+
+/* ----- Mission-Control atmosphere -------------------------------------- */
+/* Layer 1: signal-blue radial wash + faint technical grid, pinned behind UI */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(60rem 60rem at 12% -8%, color-mix(in srgb, var(--secondary) var(--glow-strength), transparent), transparent 60%),
+    radial-gradient(50rem 50rem at 100% 0%, color-mix(in srgb, var(--accent) calc(var(--glow-strength) - 4%), transparent), transparent 55%),
+    linear-gradient(color-mix(in srgb, var(--primary) var(--grid-strength), transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--primary) var(--grid-strength), transparent) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 44px 44px, 44px 44px;
+  -webkit-mask-image: radial-gradient(120% 120% at 50% 0%, #000 35%, transparent 100%);
+          mask-image: radial-gradient(120% 120% at 50% 0%, #000 35%, transparent 100%);
+}
+
+/* Layer 2: fine film grain for tactile depth */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Keep real app content above the atmosphere layers */
+body > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ----- Refined system chrome ------------------------------------------ */
+::selection {
+  background-color: color-mix(in srgb, var(--secondary) 28%, transparent);
+  color: var(--text);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--primary) 35%, transparent) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: color-mix(in srgb, var(--primary) 28%, transparent);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--secondary) 60%, transparent);
+}
+
+/* Cohesive keyboard focus ring on the signal color */
+:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--secondary) 70%, transparent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ----- Reusable accents (used sparingly for hero moments) ------------- */
+.font-display {
+  font-family: var(--font-display), var(--font-sans), sans-serif;
+}
+
+/* soft signal glow behind an element */
+.signal-glow {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--secondary) 25%, transparent),
+              0 8px 40px -8px color-mix(in srgb, var(--secondary) 45%, transparent);
+}
+
+/* animated conic ring for framing focal cards */
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
+}
+.animate-spin-slow {
+  animation: spin-slow 14s linear infinite;
+}
+
+/* signal-glow lift + corner accent on hover — shared across card grids */
+.member-card,
+.lift-card {
+  position: relative;
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+}
+.member-card::after,
+.lift-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background: radial-gradient(circle at top right, color-mix(in srgb, var(--secondary) 20%, transparent), transparent 68%);
+}
+.member-card:hover,
+.lift-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--secondary) 40%, transparent);
+  box-shadow: 0 14px 44px -18px color-mix(in srgb, var(--secondary) 55%, transparent);
+}
+.member-card:hover::after,
+.lift-card:hover::after {
+  opacity: 1;
+}
+
+/* gentle float for ambient marks */
+@keyframes float-soft {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.animate-float-soft {
+  animation: float-soft 7s ease-in-out infinite;
 }

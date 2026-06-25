@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service.js';
 import { GoogleGenAI } from '@google/genai';
 
@@ -10,7 +10,28 @@ export class AiService {
     this.ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
   }
 
-  async summarizeTeam(teamId: string): Promise<{ summary: string; generatedAt: string }> {
+  private async checkTeamPermission(teamId: string, requesterId: string, allowedRoles: string[]) {
+    if (!requesterId) throw new ForbiddenException('Unauthorized');
+    const member = await this.prisma.teamMember.findUnique({
+      where: { userId_teamId: { userId: requesterId, teamId } }
+    });
+    const requester = await this.prisma.user.findUnique({
+      where: { id: requesterId }, select: { isRoot: true }
+    });
+    if (requester?.isRoot) return true; // global root: account-level superuser
+    const anyAdmin = await this.prisma.teamMember.findFirst({
+      where: { userId: requesterId, role: 'ADMIN' }
+    });
+
+    if (anyAdmin) return true;
+    if (!member) throw new ForbiddenException('You do not belong to this team');
+    if (!allowedRoles.includes(member.role)) throw new ForbiddenException('Insufficient permissions');
+    return true;
+  }
+
+  async summarizeTeam(teamId: string, requesterId?: string): Promise<{ summary: string; generatedAt: string }> {
+    if (requesterId) await this.checkTeamPermission(teamId, requesterId, ['ADMIN', 'LEAD']);
+
     // 1. Fetch all team members and their current statuses
     const team = await this.prisma.team.findUnique({
       where: { id: teamId },

@@ -10,23 +10,32 @@ interface MemberRoleBadgeProps {
   teamId: string;
   role: string;
   canEdit: boolean;
+  // Granting or revoking the ADMIN role is reserved for root users. When false,
+  // the ADMIN option is hidden and existing admins can't be edited here.
+  canGrantAdmin?: boolean;
+  onChanged?: () => void;
 }
 
-export default function MemberRoleBadge({ memberId, teamId, role, canEdit }: MemberRoleBadgeProps) {
+export default function MemberRoleBadge({ memberId, teamId, role, canEdit, canGrantAdmin = false, onChanged }: MemberRoleBadgeProps) {
   const { success, error: toastError } = useToast();
   const [loading, setLoading] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
-  const roles = [
+  const allRoles = [
     { label: 'Admin', value: 'ADMIN', icon: Star, color: 'text-rose-400 bg-rose-400/10 border-rose-400/20' },
     { label: 'Lead', value: 'LEAD', icon: Shield, color: 'text-amber-400 bg-amber-400/10 border-amber-400/20' },
     { label: 'Member', value: 'MEMBER', icon: User, color: 'text-primary/50 bg-primary/10 border-primary/15' },
   ];
+  // Only root may assign ADMIN; everyone else manages LEAD/MEMBER.
+  const roles = allRoles.filter(r => r.value !== 'ADMIN' || canGrantAdmin);
 
-  const currentRole = roles.find(r => r.value === role) || roles[2];
+  const currentRole = allRoles.find(r => r.value === role) || allRoles[2];
+  // A non-root user can't change a member who is already ADMIN (revoking admin
+  // is root-only) — matches the backend rule.
+  const editable = canEdit && (role !== 'ADMIN' || canGrantAdmin);
 
   const handleRoleChange = async (newRole: string) => {
-    if (newRole === role || !canEdit) return;
+    if (newRole === role || !editable) return;
     setLoading(true);
     setShowMenu(false);
     try {
@@ -35,6 +44,7 @@ export default function MemberRoleBadge({ memberId, teamId, role, canEdit }: Mem
         toastError(result.error);
       } else {
         success('Role updated successfully');
+        onChanged?.();
       }
     } catch (err: any) {
       toastError('An unexpected error occurred');
@@ -46,13 +56,13 @@ export default function MemberRoleBadge({ memberId, teamId, role, canEdit }: Mem
   return (
     <div className="relative">
       <button
-        onClick={() => canEdit && setShowMenu(!showMenu)}
-        disabled={loading || !canEdit}
-        className={`flex items-center gap-1.5 px-2 py-0.5 border rounded-full text-[9px] font-black uppercase tracking-tighter transition-all ${currentRole.color} ${canEdit ? 'hover:brightness-125 cursor-pointer shadow-sm' : ''} ${loading ? 'animate-pulse' : ''}`}
+        onClick={() => editable && setShowMenu(!showMenu)}
+        disabled={loading || !editable}
+        className={`flex items-center gap-1.5 px-2 py-0.5 border rounded-full text-[9px] font-black uppercase tracking-tighter transition-all ${currentRole.color} ${editable ? 'hover:brightness-125 cursor-pointer shadow-sm' : ''} ${loading ? 'animate-pulse' : ''}`}
       >
         <currentRole.icon size={10} strokeWidth={3} />
         {currentRole.label}
-        {canEdit && <ChevronDown size={10} className={`transition-transform duration-200 ${showMenu ? 'rotate-180' : ''}`} />}
+        {editable && <ChevronDown size={10} className={`transition-transform duration-200 ${showMenu ? 'rotate-180' : ''}`} />}
       </button>
 
       {showMenu && (

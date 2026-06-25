@@ -9,14 +9,17 @@ import CycleView from '@/components/CycleView';
 import RoadmapView from '@/components/RoadmapView';
 import KnowledgeBaseView from '@/components/KnowledgeBaseView';
 import CommandPalette from '@/components/CommandPalette';
-import { Hash, Menu, X, Info, ArrowRight, ShieldCheck, Zap, Bot, Shield } from 'lucide-react';
+import NotificationsBell from '@/components/NotificationsBell';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { Hash, Menu, X, Info } from 'lucide-react';
 
 interface DashboardShellProps {
   pulseContent: React.ReactNode;
 }
 
-import { useUser, useAuth } from '@clerk/nextjs';
+import { useUser, useAuth, UserButton, Show } from '@clerk/nextjs';
 import UserManagementView from '@/components/UserManagementView';
+import DrawioViewer from '@/components/DrawioViewer';
 
 export default function DashboardShell({ pulseContent }: DashboardShellProps) {
   const { user } = useUser();
@@ -54,12 +57,32 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
   }, [activeView, activeChannelId, activeChannelName, isInitialized]);
 
   useEffect(() => {
-    const userId = user?.id || 'guest-demo-user';
-    
-    async function loadTeams() {
+    if (!user) return;
+    const u = user;
+    const userId = u.id;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com";
+
+    async function init() {
       const token = await getToken();
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/teams`, {
-        headers: { 
+
+      // Sync (and auto-enroll) this Clerk user BEFORE loading teams, so a fresh
+      // sign-in lands in a fully populated workspace without needing a refresh.
+      await fetch(`${apiUrl}/members/sync`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          id: u.id,
+          email: u.primaryEmailAddress?.emailAddress,
+          name: u.fullName || u.username || 'Unknown',
+          avatar: u.imageUrl,
+        }),
+      }).catch(err => console.error('User sync failed:', err));
+
+      const res = await fetch(`${apiUrl}/teams`, {
+        headers: {
           'x-user-id': userId,
           'Authorization': `Bearer ${token}`
         }
@@ -71,7 +94,7 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
       }
     }
 
-    loadTeams().catch(err => console.error(err));
+    init().catch(err => console.error(err));
   }, [user, getToken]);
 
   useEffect(() => {
@@ -133,6 +156,8 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
           }}
           activeChannelId={activeChannelId}
           onChannelSelect={handleChannelSelect}
+          activeTeamId={teamId}
+          onTeamChange={setTeamId}
         />
       </div>
 
@@ -164,10 +189,7 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
           ) : activeView === 'kb' ? (
             <KnowledgeBaseView onMenuClick={() => setIsSidebarOpen(true)} teamId={teamId} />
           ) : activeView === 'admin' ? (
-            <div className="flex-1 flex flex-col items-center justify-center h-full bg-background text-primary/40 p-6">
-               <Shield size={48} className="mb-4 opacity-20" />
-               <p className="text-sm font-mono uppercase tracking-widest">ACCESS_RESTRICTED_FOR_DEMO</p>
-            </div>
+            <UserManagementView onMenuClick={() => setIsSidebarOpen(true)} />
           ) : activeView === 'chat' && activeChannelId ? (
             <ChatArea onMenuClick={() => setIsSidebarOpen(true)} channelId={activeChannelId} channelName={activeChannelName || undefined} />
           ) : activeView === 'chat' ? (
@@ -195,10 +217,29 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
         </main>
       </div>
 
+      {/* Global sticky controls — visible on every view and while scrolling.
+          Headers reserve pr-48 safe zone so this never overlaps action buttons. */}
+      <div className="fixed right-3 z-50 flex items-center gap-2.5 rounded-full border border-primary/15 bg-background/70 px-3 py-1.5 shadow-lg shadow-black/5 backdrop-blur-md">
+        <ThemeToggle />
+        <Show when="signed-in">
+          <span className="h-4 w-px bg-primary/15" />
+          <NotificationsBell
+            onOpenVideo={(tid) => {
+              if (tid) setTeamId(tid);
+              setActiveView('videos');
+            }}
+          />
+        </Show>
+        <span className="h-4 w-px bg-primary/15" />
+        <Show when="signed-in">
+          <UserButton />
+        </Show>
+      </div>
+
       {/* Floating Technical Overview Button */}
-      <button 
+      <button
         onClick={() => setIsOverviewOpen(true)}
-        className="fixed bottom-6 right-6 bg-primary/10 hover:bg-primary/20 backdrop-blur-md border border-primary/20 text-primary p-3 rounded-full shadow-2xl transition-all z-40 group flex items-center gap-2"
+        className="fixed bottom-28 right-6 bg-primary/10 hover:bg-primary/20 backdrop-blur-md border border-primary/20 text-primary p-3 rounded-full shadow-2xl transition-all z-40 group flex items-center gap-2"
         title="Technical Overview"
       >
         <Info size={20} className="group-hover:text-secondary transition-colors" />
@@ -208,67 +249,21 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
       {/* Technical Overview Modal */}
       {isOverviewOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-background border border-primary/20 rounded-2xl w-full max-w-3xl max-h-[90vh] shadow-2xl overflow-hidden relative flex flex-col mx-auto">
+          <div className="bg-background border border-primary/20 rounded-2xl w-full max-w-5xl max-h-[90vh] shadow-2xl overflow-hidden relative flex flex-col mx-auto">
             <div className="p-6 border-b border-primary/10 flex justify-between items-center bg-primary/5">
               <h2 className="text-xl font-black tracking-tighter text-text">TECHNICAL OVERVIEW</h2>
               <button onClick={() => setIsOverviewOpen(false)} className="text-primary/50 hover:text-text transition-colors">
                 <X size={24} />
               </button>
             </div>
-            
-            <div className="p-6 md:p-10 bg-linear-to-b from-background to-primary/5 overflow-y-auto flex-1">
-              <div className="text-center mb-10">
-                <p className="text-primary/70 text-sm max-w-xl mx-auto">
-                  SyncPoint OS uses a modern microservices architecture designed for real-time collaboration, security, and AI enrichment.
-                </p>
-              </div>
 
-              {/* Architecture Flow */}
-              <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6 relative">
-                
-                {/* Node 1: Auth */}
-                <div className="flex flex-col items-center gap-3 w-48 text-center p-5 bg-background border border-primary/20 rounded-2xl shadow-xl z-10">
-                  <div className="w-12 h-12 bg-blue-500/10 text-blue-400 rounded-full flex items-center justify-center mb-2 mx-auto ring-1 ring-blue-500/30">
-                    <ShieldCheck size={24} />
-                  </div>
-                  <h3 className="font-bold text-sm">Identity</h3>
-                  <p className="text-[10px] text-primary/50 font-mono">Clerk Auth</p>
-                  <p className="text-xs text-primary/60 mt-1 leading-tight">Secures requests via short-lived JWTs and manages user profiles.</p>
-                </div>
-
-                <ArrowRight className="text-primary/30 hidden md:block" size={24} />
-                <div className="w-px h-6 bg-primary/30 md:hidden" />
-
-                {/* Node 2: Real-time Gateway */}
-                <div className="flex flex-col items-center gap-3 w-48 text-center p-5 bg-background border border-primary/20 rounded-2xl shadow-xl z-10 relative">
-                  <div className="absolute inset-0 bg-secondary/5 rounded-2xl animate-pulse"></div>
-                  <div className="w-12 h-12 bg-secondary/10 text-secondary rounded-full flex items-center justify-center mb-2 mx-auto ring-1 ring-secondary/30 relative z-10">
-                    <Zap size={24} />
-                  </div>
-                  <h3 className="font-bold text-sm relative z-10">Pulse Gateway</h3>
-                  <p className="text-[10px] text-primary/50 font-mono relative z-10">NestJS WebSockets</p>
-                  <p className="text-xs text-primary/60 mt-1 leading-tight relative z-10">Broadcasts instant state changes and presence across teams.</p>
-                </div>
-
-                <ArrowRight className="text-primary/30 hidden md:block" size={24} />
-                <div className="w-px h-6 bg-primary/30 md:hidden" />
-
-                {/* Node 3: AI Engine */}
-                <div className="flex flex-col items-center gap-3 w-48 text-center p-5 bg-background border border-primary/20 rounded-2xl shadow-xl z-10">
-                  <div className="w-12 h-12 bg-purple-500/10 text-purple-400 rounded-full flex items-center justify-center mb-2 mx-auto ring-1 ring-purple-500/30">
-                    <Bot size={24} />
-                  </div>
-                  <h3 className="font-bold text-sm">AI Worker</h3>
-                  <p className="text-[10px] text-primary/50 font-mono">Gemini & Pinecone</p>
-                  <p className="text-xs text-primary/60 mt-1 leading-tight">Vectorizes documents for RAG and generates team summaries.</p>
-                </div>
-
-              </div>
+            <div className="p-6 md:p-8 bg-linear-to-b from-background to-primary/5 overflow-y-auto flex-1">
+              <DrawioViewer />
             </div>
             <div className="p-4 bg-background border-t border-primary/10 flex flex-col md:flex-row justify-between items-center gap-2 text-[10px] uppercase font-bold tracking-widest text-primary/30 text-center md:text-left">
-              <span>Frontend: Vercel (Next.js)</span>
-              <span>Backend: Render (NestJS)</span>
-              <span>DB: Aiven (MySQL)</span>
+              <span>Client: Next.js</span>
+              <span>Services: NestJS (Core API + AI Worker)</span>
+              <span>Infra: RabbitMQ · Redis · MariaDB · Pinecone</span>
             </div>
           </div>
         </div>

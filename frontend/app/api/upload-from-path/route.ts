@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 
 export async function POST(req: NextRequest) {
   // Safety: only allow in local/dev environments
@@ -21,11 +22,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Unsupported file type: ${ext}` }, { status: 400 });
   }
 
-  // Read file from disk
+  // Confine reads to an allowlisted root so this endpoint can't be coerced into
+  // reading sensitive files elsewhere on the host (e.g. /etc/passwd, other homes).
+  // Set LOCAL_UPLOAD_ROOT to narrow it further (e.g. a dedicated docs folder).
+  const allowedRoot = path.resolve(process.env.LOCAL_UPLOAD_ROOT || os.homedir());
+
   let buffer: Buffer;
   try {
-    const resolvedPath = filePath.startsWith('file://') ? decodeURIComponent(filePath.replace('file://', '')) : filePath;
-    buffer = fs.readFileSync(resolvedPath);
+    const requested = filePath.startsWith('file://')
+      ? decodeURIComponent(filePath.replace('file://', ''))
+      : filePath;
+    // realpathSync resolves symlinks and `..`, defeating traversal/symlink escapes.
+    const realPath = fs.realpathSync(path.resolve(requested));
+    if (realPath !== allowedRoot && !realPath.startsWith(allowedRoot + path.sep)) {
+      return NextResponse.json({ error: 'Access to this path is not allowed' }, { status: 403 });
+    }
+    if (!fs.statSync(realPath).isFile()) {
+      return NextResponse.json({ error: 'Path is not a file' }, { status: 400 });
+    }
+    buffer = fs.readFileSync(realPath);
   } catch (e: any) {
     return NextResponse.json({ error: `Could not read file: ${e.message}` }, { status: 400 });
   }

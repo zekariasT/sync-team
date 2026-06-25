@@ -1,16 +1,28 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from '@clerk/nextjs';
-import { Geist, Geist_Mono } from "next/font/google";
+import { Hanken_Grotesk, JetBrains_Mono, Bricolage_Grotesque } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Mission-Control type system:
+//  - Hanken Grotesk: refined grotesque workhorse for UI/body
+//  - JetBrains Mono: technical OS micro-labels (the SYNCPOINT_OS voice)
+//  - Bricolage Grotesque: characterful display for wordmark + headlines
+const sans = Hanken_Grotesk({
+  variable: "--font-hanken",
   subsets: ["latin"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const mono = JetBrains_Mono({
+  variable: "--font-jetbrains",
   subsets: ["latin"],
+  display: "swap",
+});
+
+const display = Bricolage_Grotesque({
+  variable: "--font-bricolage",
+  subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -28,10 +40,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
+    // Point every Clerk redirect at the app's OWN /sign-in & /sign-up routes.
+    // Without these, auth.protect() (and sign-out) bounce to Clerk's hosted
+    // Account Portal on *.accounts.dev — a cross-origin URL Next.js can't fetch
+    // as an RSC payload, which throws the CORS / "Failed to fetch RSC payload"
+    // console errors seen on logout. Keeping redirects same-origin fixes that.
+    <ClerkProvider
+      signInUrl="/sign-in"
+      signUpUrl="/sign-up"
+      afterSignOutUrl="/sign-in"
+    >
       <html lang="en" suppressHydrationWarning>
         <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+          className={`${sans.variable} ${mono.variable} ${display.variable} antialiased`}
         >
           <RealTimeProvider>
             <ToastProvider>

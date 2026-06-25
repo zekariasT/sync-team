@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useUser, useAuth } from '@clerk/nextjs';
 import { Users, Shield, Star, User as UserIcon, Search, Mail, MapPin, Loader2, Plus, X, Trash2, ChevronDown, Menu } from 'lucide-react';
 import MemberRoleBadge from './MemberRoleBadge';
+import RootBadge from './RootBadge';
+import AddToTeamButton from './AddToTeamButton';
 import { addMember, removeMember, deleteUserSystem } from '@/app/actions';
 import { useToast } from './ToastProvider';
 
@@ -19,6 +21,7 @@ interface User {
   avatar: string | null;
   status: string;
   timezone: string;
+  isRoot?: boolean;
   teamMembers: TeamMember[];
 }
 
@@ -76,6 +79,9 @@ export default function UserManagementView({ onMenuClick }: UserManagementViewPr
   };
 
   useEffect(() => { loadData(); }, [currentUser, getToken]);
+
+  // Only a root user may grant/revoke the ADMIN role.
+  const currentIsRoot = users.find(u => u.id === currentUser?.id)?.isRoot ?? false;
 
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,7 +200,7 @@ export default function UserManagementView({ onMenuClick }: UserManagementViewPr
       )}
 
       {/* Mobile Header */}
-      <header className="h-14 border-b border-primary/15 flex items-center px-4 md:hidden bg-background shrink-0 sticky top-0 z-10">
+      <header className="h-14 border-b border-primary/15 flex items-center pl-4 pr-48 md:hidden bg-background shrink-0 sticky top-0 z-10">
         {onMenuClick && (
           <button 
             onClick={onMenuClick}
@@ -216,10 +222,10 @@ export default function UserManagementView({ onMenuClick }: UserManagementViewPr
 
       <div className="p-4 md:p-8">
         <div className="max-w-6xl mx-auto">
-          {/* Desktop Header */}
-          <div className="hidden md:flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          {/* Desktop Header (pr-48 keeps the toolbar clear of the global account pill) */}
+          <div className="hidden md:flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 md:pr-48">
             <div>
-              <h1 className="text-3xl font-black tracking-tighter text-text mb-1 flex items-center gap-3">
+              <h1 className="font-display text-3xl font-extrabold tracking-tight text-text mb-1 flex items-center gap-3">
                 <Users className="text-secondary" /> User Management
               </h1>
               <p className="text-sm text-primary/50 font-medium">Manage team members, roles, and access permissions.</p>
@@ -283,7 +289,10 @@ export default function UserManagementView({ onMenuClick }: UserManagementViewPr
                             )}
                           </div>
                           <div className="min-w-0">
-                            <p className="text-sm font-bold text-text truncate group-hover:text-secondary transition-colors">{u.name}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-bold text-text truncate group-hover:text-secondary transition-colors">{u.name}</p>
+                              {u.isRoot && <RootBadge />}
+                            </div>
                             <p className="text-xs text-primary/40 flex items-center gap-1.5 truncate">
                               <Mail size={12} className="opacity-50" /> {u.email}
                             </p>
@@ -291,41 +300,57 @@ export default function UserManagementView({ onMenuClick }: UserManagementViewPr
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex flex-wrap gap-2">
-                          {u.teamMembers.length > 0 ? (
-                            u.teamMembers.map((tm) => (
-                              <div key={`${tm.teamId}-${u.id}`} className="flex items-center gap-1 bg-primary/5 border border-primary/10 rounded-full pl-2 pr-1 py-0.5">
-                                  <span className="text-[10px] font-bold text-primary/40 truncate max-w-[80px]">
-                                    {teams.find(t => t.id === tm.teamId)?.name || 'Unknown'}
-                                  </span>
-                                  <MemberRoleBadge 
-                                    memberId={u.id}
-                                    teamId={tm.teamId}
-                                    role={tm.role}
-                                    canEdit={true}
-                                  />
-                                  <button 
-                                    onClick={() => handleRemoveMember(tm.teamId, u.id)}
-                                    className="p-1 text-primary/20 hover:text-accent transition-colors rounded-full"
-                                    title="Remove from team"
-                                  >
-                                    <X size={10} strokeWidth={3} />
-                                  </button>
-                              </div>
-                            ))
-                          ) : (
-                            <span className="text-[10px] font-mono text-accent bg-accent/10 px-2 py-0.5 rounded-full">NO TEAMS</span>
-                          )}
-                        </div>
+                        {u.isRoot ? (
+                          <span className="text-[10px] font-mono text-secondary bg-secondary/10 border border-secondary/20 px-2 py-0.5 rounded-full">
+                            Global superuser — all teams
+                          </span>
+                        ) : (
+                          <div className="flex flex-wrap items-center gap-2">
+                            {u.teamMembers.length > 0 ? (
+                              u.teamMembers.map((tm) => (
+                                <div key={`${tm.teamId}-${u.id}`} className="flex items-center gap-1 bg-primary/5 border border-primary/10 rounded-full pl-2 pr-1 py-0.5">
+                                    <span className="text-[10px] font-bold text-primary/40 truncate max-w-[80px]">
+                                      {teams.find(t => t.id === tm.teamId)?.name || 'Unknown'}
+                                    </span>
+                                    <MemberRoleBadge
+                                      memberId={u.id}
+                                      teamId={tm.teamId}
+                                      role={tm.role}
+                                      canEdit={true}
+                                      canGrantAdmin={currentIsRoot}
+                                      onChanged={loadData}
+                                    />
+                                    <button
+                                      onClick={() => handleRemoveMember(tm.teamId, u.id)}
+                                      className="p-1 text-primary/20 hover:text-accent transition-colors rounded-full"
+                                      title="Remove from team"
+                                    >
+                                      <X size={10} strokeWidth={3} />
+                                    </button>
+                                </div>
+                              ))
+                            ) : (
+                              <span className="text-[10px] font-mono text-accent bg-accent/10 px-2 py-0.5 rounded-full">NO TEAMS</span>
+                            )}
+                            <AddToTeamButton
+                              userEmail={u.email}
+                              currentTeamIds={u.teamMembers.map(tm => tm.teamId)}
+                              teams={teams}
+                              onAdded={loadData}
+                            />
+                          </div>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <button 
-                          onClick={() => handleDeleteUser(u.id)}
-                          className="p-2 text-primary/20 hover:text-accent transition-all hover:bg-accent/10 rounded-lg"
-                          title="Delete User from System"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                        {currentIsRoot && !u.isRoot && (
+                          <button
+                            onClick={() => handleDeleteUser(u.id)}
+                            className="p-2 text-primary/20 hover:text-accent transition-all hover:bg-accent/10 rounded-lg"
+                            title="Delete User from System"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -355,45 +380,64 @@ export default function UserManagementView({ onMenuClick }: UserManagementViewPr
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-text truncate">{u.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-bold text-text truncate">{u.name}</p>
+                      {u.isRoot && <RootBadge />}
+                    </div>
                     <p className="text-xs text-primary/40 truncate">{u.email}</p>
                   </div>
-                  <button 
-                    onClick={() => handleDeleteUser(u.id)}
-                    className="p-2 text-primary/20 hover:text-accent transition-all hover:bg-accent/10 rounded-lg shrink-0"
-                    title="Delete User from System"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  {currentIsRoot && !u.isRoot && (
+                    <button
+                      onClick={() => handleDeleteUser(u.id)}
+                      className="p-2 text-primary/20 hover:text-accent transition-all hover:bg-accent/10 rounded-lg shrink-0"
+                      title="Delete User from System"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
                 </div>
 
                 {/* Teams & Roles */}
-                <div className="flex flex-wrap gap-1.5">
-                  {u.teamMembers.length > 0 ? (
-                    u.teamMembers.map((tm) => (
-                      <div key={`${tm.teamId}-${u.id}`} className="flex items-center gap-1 bg-background border border-primary/10 rounded-full pl-2 pr-1 py-0.5">
-                        <span className="text-[10px] font-bold text-primary/40 truncate max-w-[70px]">
-                          {teams.find(t => t.id === tm.teamId)?.name || 'Unknown'}
-                        </span>
-                        <MemberRoleBadge 
-                          memberId={u.id}
-                          teamId={tm.teamId}
-                          role={tm.role}
-                          canEdit={true}
-                        />
-                        <button 
-                          onClick={() => handleRemoveMember(tm.teamId, u.id)}
-                          className="p-1 text-primary/20 hover:text-accent transition-colors rounded-full"
-                          title="Remove from team"
-                        >
-                          <X size={10} strokeWidth={3} />
-                        </button>
-                      </div>
-                    ))
-                  ) : (
-                    <span className="text-[10px] font-mono text-accent bg-accent/10 px-2 py-0.5 rounded-full">NO TEAMS</span>
-                  )}
-                </div>
+                {u.isRoot ? (
+                  <span className="text-[10px] font-mono text-secondary bg-secondary/10 border border-secondary/20 px-2 py-0.5 rounded-full inline-block">
+                    Global superuser — all teams
+                  </span>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {u.teamMembers.length > 0 ? (
+                      u.teamMembers.map((tm) => (
+                        <div key={`${tm.teamId}-${u.id}`} className="flex items-center gap-1 bg-background border border-primary/10 rounded-full pl-2 pr-1 py-0.5">
+                          <span className="text-[10px] font-bold text-primary/40 truncate max-w-[70px]">
+                            {teams.find(t => t.id === tm.teamId)?.name || 'Unknown'}
+                          </span>
+                          <MemberRoleBadge
+                            memberId={u.id}
+                            teamId={tm.teamId}
+                            role={tm.role}
+                            canEdit={true}
+                            canGrantAdmin={currentIsRoot}
+                            onChanged={loadData}
+                          />
+                          <button
+                            onClick={() => handleRemoveMember(tm.teamId, u.id)}
+                            className="p-1 text-primary/20 hover:text-accent transition-colors rounded-full"
+                            title="Remove from team"
+                          >
+                            <X size={10} strokeWidth={3} />
+                          </button>
+                        </div>
+                      ))
+                    ) : (
+                      <span className="text-[10px] font-mono text-accent bg-accent/10 px-2 py-0.5 rounded-full">NO TEAMS</span>
+                    )}
+                    <AddToTeamButton
+                      userEmail={u.email}
+                      currentTeamIds={u.teamMembers.map(tm => tm.teamId)}
+                      teams={teams}
+                      onAdded={loadData}
+                    />
+                  </div>
+                )}
               </div>
             ))}
 

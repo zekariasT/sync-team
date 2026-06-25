@@ -1,28 +1,32 @@
 'use server'
 
 import { revalidatePath } from 'next/cache';
-import { currentUser } from '@clerk/nextjs/server';
+import { currentUser, auth } from '@clerk/nextjs/server';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com";
 
-// Helper to get active user ID or fallback to guest for demo purposes
-async function getUserId() {
+// Real auth is enforced on the backend: the guard only trusts the identity it
+// verifies from a Clerk session token, so every call MUST carry a Bearer token.
+// x-user-id is kept for logging/compat but is no longer trusted for authz.
+async function authHeaders(): Promise<Record<string, string>> {
   const user = await currentUser();
-  return user?.id || 'guest-demo-user';
+  const { getToken } = await auth();
+  const token = await getToken();
+  return {
+    'Content-Type': 'application/json',
+    'x-user-id': user?.id ?? '',
+    'Authorization': `Bearer ${token}`,
+  };
 }
 
 export async function updatePulse(id: string, formData: FormData) {
-  const userId = await getUserId();
   const status = formData.get('status') as string;
   if (!status) return;
 
   try {
     const response = await fetch(`${API_URL}/members/${id}`, {
       method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-id': userId,
-      },
+      headers: await authHeaders(),
       body: JSON.stringify({ status }),
     });
 
@@ -40,15 +44,10 @@ export async function updatePulse(id: string, formData: FormData) {
 }
 
 export async function updateRole(targetUserId: string, teamId: string, role: string) {
-  const userId = await getUserId();
-
   try {
     const response = await fetch(`${API_URL}/teams/${teamId}/members/${targetUserId}/role`, {
-      method: 'POST', 
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-id': userId,
-      },
+      method: 'POST',
+      headers: await authHeaders(),
       body: JSON.stringify({ role }),
     });
 
@@ -65,15 +64,10 @@ export async function updateRole(targetUserId: string, teamId: string, role: str
   }
 }
 export async function addMember(teamId: string, email: string) {
-  const userId = await getUserId();
-
   try {
     const response = await fetch(`${API_URL}/teams/${teamId}/members`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-id': userId,
-      },
+      headers: await authHeaders(),
       body: JSON.stringify({ email }),
     });
 
@@ -90,14 +84,10 @@ export async function addMember(teamId: string, email: string) {
 }
 
 export async function removeMember(teamId: string, targetUserId: string) {
-  const userId = await getUserId();
-
   try {
     const response = await fetch(`${API_URL}/teams/${teamId}/members/${targetUserId}`, {
       method: 'DELETE',
-      headers: {
-        'x-user-id': userId,
-      },
+      headers: await authHeaders(),
     });
 
     if (!response.ok) {
@@ -113,14 +103,10 @@ export async function removeMember(teamId: string, targetUserId: string) {
 }
 
 export async function deleteUserSystem(targetUserId: string) {
-  const userId = await getUserId();
-
   try {
     const response = await fetch(`${API_URL}/members/${targetUserId}`, {
       method: 'DELETE',
-      headers: {
-        'x-user-id': userId,
-      },
+      headers: await authHeaders(),
     });
 
     if (!response.ok) {

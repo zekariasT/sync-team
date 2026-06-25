@@ -11,10 +11,14 @@ export class TasksService {
     const member = await this.prisma.teamMember.findUnique({
       where: { userId_teamId: { userId: requesterId, teamId } }
     });
+    const requester = await this.prisma.user.findUnique({
+      where: { id: requesterId }, select: { isRoot: true }
+    });
+    if (requester?.isRoot) return true; // global root: account-level superuser
     const anyAdmin = await this.prisma.teamMember.findFirst({
       where: { userId: requesterId, role: 'ADMIN' }
     });
-    
+
     if (anyAdmin) return true;
     if (!member) throw new ForbiddenException('You do not belong to this team');
     if (!allowedRoles.includes(member.role)) throw new ForbiddenException('Insufficient permissions');
@@ -26,21 +30,23 @@ export class TasksService {
     const task = await this.prisma.task.findUnique({ where: { id: taskId } });
     if (!task) throw new NotFoundException('Task not found');
     
-    const anyAdmin = await this.prisma.teamMember.findFirst({
-      where: { userId: requesterId, role: 'ADMIN' }
+    const requester = await this.prisma.user.findUnique({
+      where: { id: requesterId }, select: { isRoot: true }
     });
-    if (anyAdmin) return task;
+    if (requester?.isRoot) return task; // global root: account-level superuser
 
+    // Authority over a task is scoped to the task's own team: ADMIN/LEAD of that
+    // team may move/assign/edit any task; a MEMBER may only act on a task that
+    // is assigned to them. (Move/assign/edit all share this rule.)
     const member = await this.prisma.teamMember.findUnique({
       where: { userId_teamId: { userId: requesterId, teamId: task.teamId } }
     });
 
     if (!member) throw new ForbiddenException('You do not belong to this team');
 
-    if (action === 'MOVE') {
-       if (member.role === 'MEMBER' && task.assigneeId !== requesterId) {
-          throw new ForbiddenException('Members can only move their assigned tasks');
-       }
+    if (member.role === 'MEMBER' && task.assigneeId !== requesterId) {
+      const verb = action === 'MOVE' ? 'move' : action === 'ASSIGN' ? 'reassign' : 'edit';
+      throw new ForbiddenException(`Members can only ${verb} their own assigned tasks`);
     }
     return task;
   }

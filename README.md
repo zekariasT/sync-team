@@ -76,7 +76,7 @@ We implemented an atomic synchronization pipeline using `@nestjs/event-emitter`:
    cd backend
    npm install
    # Create .env based on .env.example
-   npx prisma db push
+   npx prisma migrate deploy   # applies migrations (use `migrate dev` when changing the schema)
    npx prisma db seed # Seeds the comprehensive demo data
    npm run start:dev
    ```

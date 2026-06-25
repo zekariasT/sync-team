@@ -164,10 +164,11 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
 
   const fetchCycles = async () => {
     if (!teamId) return;
-    const userId = user?.id || 'guest-demo-user';
+    const userId = user?.id || '';
+    const token = await getToken();
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/teams/${teamId}/cycles`, {
-        headers: { 'x-user-id': userId }
+        headers: { 'x-user-id': userId, 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) setCycles(await res.json());
     } catch(err) { console.error(err); }
@@ -175,10 +176,11 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
 
   const fetchMembers = async () => {
     if (!teamId) return;
-    const userId = user?.id || 'guest-demo-user';
+    const userId = user?.id || '';
+    const token = await getToken();
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/teams/${teamId}`, {
-        headers: { 'x-user-id': userId }
+        headers: { 'x-user-id': userId, 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
         const team = await res.json();
@@ -189,10 +191,11 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
 
   const fetchTasks = async () => {
     if (!teamId) return;
-    const userId = user?.id || 'guest-demo-user';
+    const userId = user?.id || '';
+    const token = await getToken();
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/teams/${teamId}/tasks`, {
-        headers: { 'x-user-id': userId }
+        headers: { 'x-user-id': userId, 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) setTasks(await res.json());
     } catch(err) { console.error(err); }
@@ -227,13 +230,15 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
 
     if (activeTask.state !== newStatus) {
       setTasks(prev => prev.map(t => t.id === activeId ? { ...t, state: newStatus } : t));
-      const userId = user?.id || 'guest-demo-user';
+      const userId = user?.id || '';
+      const token = await getToken();
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/${activeId}/state`, {
           method: 'PATCH',
-          headers: { 
+          headers: {
             'Content-Type': 'application/json',
-            'x-user-id': userId
+            'x-user-id': userId,
+            'Authorization': `Bearer ${token}`,
           },
           body: JSON.stringify({ state: newStatus })
         });
@@ -259,20 +264,22 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
       
       const method = editingTask ? 'PATCH' : 'POST';
 
-      const userId = user?.id || 'guest-demo-user';
-      const body = editingTask 
+      const userId = user?.id || '';
+      const token = await getToken();
+      const body = editingTask
         ? JSON.stringify(data)
-        : JSON.stringify({ 
+        : JSON.stringify({
             ...data,
-            reporterId: userId, 
-            state: 'TODO' 
+            reporterId: userId,
+            state: 'TODO'
           });
 
       const res = await fetch(url, {
         method,
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'x-user-id': userId
+          'x-user-id': userId,
+          'Authorization': `Bearer ${token}`,
         },
         body
       });

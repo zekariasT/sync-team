@@ -19,6 +19,7 @@ export class VideoController {
         @Param('teamId') teamId: string,
         @Body('senderId') senderId: string,
         @Body('title') title: string,
+        @Body('taggedUserIds') taggedUserIdsRaw: string,
         @UploadedFile() file: Express.Multer.File,
         @UserId() requesterId?: string
     ) {
@@ -29,7 +30,21 @@ export class VideoController {
             throw new BadRequestException('senderId is required');
         }
 
-        return this.videoService.processVideo(teamId, senderId, file.buffer, file.mimetype, title, requesterId);
+        // taggedUserIds arrives as a JSON-encoded array in the multipart form.
+        // Parse defensively — a malformed value just means "no tags".
+        let taggedUserIds: string[] = [];
+        if (taggedUserIdsRaw) {
+            try {
+                const parsed = JSON.parse(taggedUserIdsRaw);
+                if (Array.isArray(parsed)) {
+                    taggedUserIds = parsed.filter((id): id is string => typeof id === 'string');
+                }
+            } catch {
+                // ignore — leave taggedUserIds empty
+            }
+        }
+
+        return this.videoService.processVideo(teamId, senderId, file.buffer, file.mimetype, title, requesterId, taggedUserIds);
     }
 
     @Post(':videoId/reactions')
