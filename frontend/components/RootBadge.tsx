@@ -1,4 +1,5 @@
 import { Crown } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 /**
  * Account-level "root" indicator. Root is a global superuser attribute on the
@@ -7,12 +8,13 @@ import { Crown } from 'lucide-react';
  */
 export default function RootBadge() {
   return (
-    <span
+    <Badge
+      variant="outline"
       title="Root — global superuser"
-      className="inline-flex items-center gap-1 px-2 py-0.5 border rounded-full text-[9px] font-black uppercase tracking-tighter text-violet-400 bg-violet-400/10 border-violet-400/20 shadow-sm"
+      className="gap-1 border-brand-accent/30 bg-brand-accent/10 text-brand-accent"
     >
-      <Crown size={10} strokeWidth={3} />
+      <Crown />
       Root
-    </span>
+    </Badge>
   );
 }
