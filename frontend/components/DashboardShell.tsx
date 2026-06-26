@@ -17,13 +17,15 @@ interface DashboardShellProps {
   pulseContent: React.ReactNode;
 }
 
-import { useUser, useAuth, UserButton, Show } from '@clerk/nextjs';
+import { useUser, useAuth, useClerk, Show } from '@clerk/nextjs';
 import UserManagementView from '@/components/UserManagementView';
 import DrawioViewer from '@/components/DrawioViewer';
+import { InitialsAvatar } from '@/components/InitialsAvatar';
 
 export default function DashboardShell({ pulseContent }: DashboardShellProps) {
   const { user } = useUser();
   const { getToken } = useAuth();
+  const { openUserProfile } = useClerk();
   const [activeView, setActiveView] = useState<'pulse' | 'chat' | 'videos' | 'tasks' | 'cycles' | 'roadmap' | 'kb' | 'admin'>('pulse');
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [activeChannelName, setActiveChannelName] = useState<string>('');
@@ -232,7 +234,19 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
         </Show>
         <span className="h-4 w-px bg-muted" />
         <Show when="signed-in">
-          <UserButton />
+          <button
+            onClick={() => openUserProfile()}
+            aria-label="Account settings"
+            title="Account"
+            className="cursor-pointer rounded-lg transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
+            <InitialsAvatar
+              name={user?.fullName || user?.username}
+              seed={user?.id}
+              tint="primary"
+              className="size-7 text-xs"
+            />
+          </button>
         </Show>
       </div>
 

@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { InitialsAvatar } from '@/components/InitialsAvatar';
 import {
   Table,
   TableBody,
@@ -95,16 +95,6 @@ interface UserManagementViewProps {
 }
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://syncpoint-backend.onrender.com';
-
-function initials(name: string) {
-  return name
-    .split(' ')
-    .map((p) => p[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
-}
 
 export default function UserManagementView({ onMenuClick }: UserManagementViewProps) {
   const { user: currentUser } = useUser();
@@ -343,10 +333,7 @@ export default function UserManagementView({ onMenuClick }: UserManagementViewPr
                     <TableRow key={u.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <Avatar className="size-10">
-                            <AvatarImage src={u.avatar ?? undefined} alt="" />
-                            <AvatarFallback>{initials(u.name)}</AvatarFallback>
-                          </Avatar>
+                          <InitialsAvatar name={u.name} seed={u.id} isRoot={u.isRoot} className="size-10" />
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
                               <p className="truncate text-sm font-semibold">{u.name}</p>
@@ -371,10 +358,7 @@ export default function UserManagementView({ onMenuClick }: UserManagementViewPr
               {filteredUsers.map((u) => (
                 <Card key={u.id} className="gap-3 p-4">
                   <div className="flex items-center gap-3">
-                    <Avatar className="size-10">
-                      <AvatarImage src={u.avatar ?? undefined} alt="" />
-                      <AvatarFallback>{initials(u.name)}</AvatarFallback>
-                    </Avatar>
+                    <InitialsAvatar name={u.name} seed={u.id} isRoot={u.isRoot} className="size-10" />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <p className="truncate text-sm font-semibold">{u.name}</p>

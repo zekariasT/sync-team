@@ -5,6 +5,7 @@ import { useUser, useAuth } from '@clerk/nextjs';
 import { Video, Plus, MessageSquare, PlayCircle, FileText, X } from 'lucide-react';
 import ViewHeader from './ViewHeader';
 import VideoRecorder from './VideoRecorder';
+import { InitialsAvatar } from './InitialsAvatar';
 
 import { useToast } from './ToastProvider';
 
@@ -113,9 +114,7 @@ export default function VideosView({ teamId, onMenuClick }: { teamId?: string; o
                    <span className="text-sm font-mono text-muted-foreground">{new Date(selectedVideo.createdAt).toLocaleDateString()}</span>
                 </div>
                 <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
-                   <div className="w-6 h-6 rounded-full overflow-hidden bg-muted shrink-0">
-                      {selectedVideo.sender.avatar ? <img src={selectedVideo.sender.avatar} alt="avatar" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center font-bold text-xs">{selectedVideo.sender.name.charAt(0)}</div>}
-                   </div>
+                   <InitialsAvatar name={selectedVideo.sender.name} className="size-6 rounded-full text-[10px]" />
                    Recorded by <span className="font-semibold text-foreground">{selectedVideo.sender.name}</span>
                 </div>
                 {selectedVideo.tags && selectedVideo.tags.length > 0 && (
@@ -123,9 +122,7 @@ export default function VideosView({ teamId, onMenuClick }: { teamId?: string; o
                     <span className="text-xs uppercase tracking-widest text-muted-foreground font-bold">Tagged</span>
                     {selectedVideo.tags.map((t) => (
                       <span key={t.user.id} className="flex items-center gap-1.5 bg-brand/10 border border-brand/20 rounded-full pl-1 pr-2.5 py-0.5 text-xs font-semibold text-brand-text">
-                        <span className="w-5 h-5 rounded-full overflow-hidden bg-brand/10 flex items-center justify-center shrink-0">
-                          {t.user.avatar ? <img src={t.user.avatar} alt="" className="w-full h-full object-cover" /> : <span className="text-[10px] font-bold">{t.user.name.charAt(0)}</span>}
-                        </span>
+                        <InitialsAvatar name={t.user.name} seed={t.user.id} className="size-5 rounded-full text-[9px]" />
                         {t.user.name}
                       </span>
                     ))}
@@ -280,20 +277,12 @@ export default function VideosView({ teamId, onMenuClick }: { teamId?: string; o
                         </div>
                       </div>
                       <div className="mt-3 flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full overflow-hidden bg-brand/10">
-                          {video.sender.avatar ? (
-                            <img src={video.sender.avatar} className="w-full h-full object-cover" alt="" />
-                          ) : (
-                            <div className="flex items-center justify-center h-full text-brand-text font-bold text-xs">{video.sender.name.charAt(0)}</div>
-                          )}
-                        </div>
+                        <InitialsAvatar name={video.sender.name} className="size-6 rounded-full text-[10px]" />
                         <span className="text-xs font-semibold text-foreground truncate">{video.sender.name}</span>
                         {video.tags && video.tags.length > 0 && (
                           <div className="ml-auto flex items-center -space-x-1.5" title={`Tagged: ${video.tags.map(t => t.user.name).join(', ')}`}>
                             {video.tags.slice(0, 3).map((t) => (
-                              <span key={t.user.id} className="w-5 h-5 rounded-full overflow-hidden bg-brand/10 ring-2 ring-background flex items-center justify-center shrink-0">
-                                {t.user.avatar ? <img src={t.user.avatar} alt="" className="w-full h-full object-cover" /> : <span className="text-[9px] font-bold text-brand-text">{t.user.name.charAt(0)}</span>}
-                              </span>
+                              <InitialsAvatar key={t.user.id} name={t.user.name} seed={t.user.id} className="size-5 rounded-full text-[9px] ring-2 ring-background" />
                             ))}
                             {video.tags.length > 3 && (
                               <span className="w-5 h-5 rounded-full bg-muted ring-2 ring-background flex items-center justify-center shrink-0 text-[9px] font-bold text-muted-foreground">+{video.tags.length - 3}</span>

@@ -4,16 +4,7 @@ import PulseForm from './PulseForm';
 import MemberRoleBadge from './MemberRoleBadge';
 import RootBadge from './RootBadge';
 import { Globe } from 'lucide-react';
-
-// Deterministic avatar tint so each member keeps a stable colour across renders
-// (sage / clay / amber), with root pinned to the solid primary tint.
-const TINTS = ['sage', 'clay', 'amber'] as const;
-function tintFor(seed: string, isRoot?: boolean) {
-  if (isRoot) return 'primary';
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-  return TINTS[h % TINTS.length];
-}
+import { InitialsAvatar } from './InitialsAvatar';
 
 export default async function PulseView() {
   const user = await currentUser();
@@ -70,7 +61,6 @@ export default async function PulseView() {
             const isTargetMemberInLeadedTeam = member.teamMembers?.some((tm: any) => leadTeamIds.includes(tm.teamId));
             const canUpdate = isAdmin || activeUserId === member.id || isTargetMemberInLeadedTeam;
             const offline = member.status?.toLowerCase() === 'offline';
-            const tint = tintFor(member.id ?? member.name ?? '', member.isRoot);
 
             return (
               <div
@@ -79,16 +69,12 @@ export default async function PulseView() {
               >
                 {/* Identity row */}
                 <div className="flex items-start gap-3">
-                  {member.avatar ? (
-                    <img src={member.avatar} alt="" className="size-[42px] shrink-0 rounded-lg object-cover" />
-                  ) : (
-                    <div
-                      data-tint={tint}
-                      className="avatar-tint flex size-[42px] shrink-0 items-center justify-center rounded-lg text-sm font-semibold"
-                    >
-                      {member.name?.charAt(0)?.toUpperCase() || '?'}
-                    </div>
-                  )}
+                  <InitialsAvatar
+                    name={member.name}
+                    seed={member.id ?? member.name}
+                    isRoot={member.isRoot}
+                    className="size-[42px]"
+                  />
                   <div className="flex min-w-0 flex-1 items-center gap-2 self-stretch">
                     <h3 className="min-w-0 truncate text-[15px] font-semibold text-text">{member.name}</h3>
                     {member.isRoot && <RootBadge />}

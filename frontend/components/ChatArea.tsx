@@ -5,6 +5,7 @@ import { useUser, useAuth } from '@clerk/nextjs';
 import { io, Socket } from 'socket.io-client';
 import { Send, Hash, Smile, Menu } from 'lucide-react';
 import ViewHeader from './ViewHeader';
+import { InitialsAvatar } from './InitialsAvatar';
 
 interface Message {
   id: string;
@@ -204,15 +205,7 @@ export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAr
                   ) : (
                     /* Full message with avatar */
                     <div key={msg.id} className="group flex items-start gap-3 mt-4 first:mt-0 hover:bg-muted rounded p-1 -ml-1 transition-colors">
-                      <div className="w-9 h-9 rounded-lg bg-brand/10 overflow-hidden shrink-0 mt-0.5">
-                        {msg.sender?.avatar ? (
-                          <img src={msg.sender.avatar} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-brand-text text-sm font-bold">
-                            {msg.sender?.name?.charAt(0)?.toUpperCase() || '?'}
-                          </div>
-                        )}
-                      </div>
+                      <InitialsAvatar name={msg.sender?.name} seed={msg.sender?.id} className="size-9 mt-0.5" />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-baseline gap-2">
                           <span className="font-bold text-sm text-foreground">{msg.sender?.name || 'Unknown'}</span>

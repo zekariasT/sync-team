@@ -5,6 +5,7 @@ import { useUser, useAuth } from '@clerk/nextjs';
 import { Video, Mic, StopCircle, X, CheckSquare, RefreshCcw, Camera, Monitor, AlertTriangle, Users, Check } from 'lucide-react';
 
 import { VideoMessage } from './VideosView';
+import { InitialsAvatar } from './InitialsAvatar';
 
 interface VideoRecorderProps {
   teamId: string;
@@ -471,11 +472,7 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
                         : 'bg-background border-border text-muted-foreground hover:border-border hover:text-foreground'
                     }`}
                   >
-                    <span className="w-5 h-5 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0">
-                      {m.avatar
-                        ? <img src={m.avatar} alt="" className="w-full h-full object-cover" />
-                        : <span className="text-[10px] font-bold">{m.name.charAt(0)}</span>}
-                    </span>
+                    <InitialsAvatar name={m.name} seed={m.id} className="size-5 rounded-full text-[9px]" />
                     {m.name}
                     {selected && <Check size={12} className="shrink-0" />}
                   </button>

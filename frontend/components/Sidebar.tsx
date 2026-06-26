@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useUser, useClerk, useAuth } from '@clerk/nextjs';
 import { Hash, Activity, Plus, LayoutDashboard, Users, RotateCw, Map, BookOpen, ChevronDown, ChevronRight, Video, Settings, LogOut, Check } from 'lucide-react';
 import AiSummaryPanel from './AiSummaryPanel';
+import { InitialsAvatar } from './InitialsAvatar';
 import { useTeamRole } from '@/hooks/useTeamRole';
 
 interface Channel {
@@ -369,9 +370,12 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
             onClick={() => setShowUserMenu(!showUserMenu)}
             className="w-full flex items-center gap-2 p-1.5 hover:bg-muted rounded-xl transition-all group cursor-pointer"
           >
-            <div className="w-8 h-8 rounded-lg bg-brand/10 overflow-hidden shrink-0 border border-brand/20 group-hover:border-brand/40 transition-colors">
-              {user.imageUrl && <img src={user.imageUrl} alt="" className="w-full h-full object-cover" />}
-            </div>
+            <InitialsAvatar
+              name={user.fullName || user.username}
+              seed={user.id}
+              tint="primary"
+              className="size-8 text-xs"
+            />
             <div className="min-w-0 flex-1 text-left">
               <p className="text-xs font-bold text-foreground truncate leading-tight">{user.fullName || user.username}</p>
               <p className="text-[10px] text-muted-foreground truncate leading-tight">{user.primaryEmailAddress?.emailAddress}</p>
