@@ -71,7 +71,7 @@ export default function CreateCycleModal({ isOpen, onClose, onSubmit }: CreateCy
               }
             }}
             disabled={!name.trim()}
-            className="w-full py-2.5 bg-primary text-white text-sm font-bold rounded-lg hover:bg-brand/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-brand/20"
+            className="w-full py-2.5 bg-primary text-white text-sm font-bold rounded-lg hover:bg-[var(--primary-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-brand/20"
           >
             Create Cycle
           </button>

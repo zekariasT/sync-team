@@ -260,7 +260,7 @@ export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAr
                 if (textarea) textarea.style.height = 'auto';
             }}
             disabled={!newMessage.trim()}
-            className="p-2 mb-1 rounded-lg bg-primary hover:bg-brand/10 text-background disabled:opacity-30 disabled:cursor-not-allowed transition-all shrink-0"
+            className="p-2 mb-1 rounded-lg bg-primary hover:bg-[var(--primary-hover)] text-primary-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-all shrink-0"
           >
             <Send size={16} />
           </button>

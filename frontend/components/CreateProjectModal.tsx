@@ -72,7 +72,7 @@ export default function CreateProjectModal({ isOpen, onClose, onSubmit }: Create
               }
             }}
             disabled={!name.trim()}
-            className="px-6 py-2.5 bg-primary text-white text-sm font-bold rounded-lg hover:bg-brand/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-brand/20"
+            className="px-6 py-2.5 bg-primary text-white text-sm font-bold rounded-lg hover:bg-[var(--primary-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-brand/20"
           >
             Launch Project
           </button>

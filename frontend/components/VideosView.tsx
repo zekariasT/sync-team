@@ -91,7 +91,7 @@ export default function VideosView({ teamId, onMenuClick }: { teamId?: string; o
       >
         <button
           onClick={() => setIsRecording(true)}
-          className="flex items-center gap-2 bg-primary hover:bg-brand/10 text-background px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors shadow-sm"
+          className="flex items-center gap-2 bg-primary hover:bg-[var(--primary-hover)] text-background px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors shadow-sm"
         >
           <Plus size={16} /> <span className="hidden sm:inline">New Recording</span>
         </button>

@@ -241,7 +241,7 @@ export default function KnowledgeBaseView({ teamId, onMenuClick }: { teamId?: st
                   <button 
                     type="submit" 
                     disabled={!query.trim() || isSearching}
-                    className="absolute right-2 top-2 bottom-2 w-8 flex items-center justify-center bg-primary text-white rounded-full hover:bg-brand/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="absolute right-2 top-2 bottom-2 w-8 flex items-center justify-center bg-primary text-white rounded-full hover:bg-[var(--primary-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {isSearching ? (
                       <div className="w-3 h-3 border-2 border-white border-b-transparent rounded-full animate-spin"></div>

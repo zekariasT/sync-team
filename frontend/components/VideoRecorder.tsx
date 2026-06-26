@@ -515,7 +515,7 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
               <button
                 onClick={uploadVideo}
                 disabled={uploading}
-                className="flex items-center gap-2 bg-primary hover:bg-brand/10 text-white px-5 py-2.5 rounded-lg font-bold transition-colors disabled:opacity-50 shadow-sm shadow-brand/20"
+                className="flex items-center gap-2 bg-primary hover:bg-[var(--primary-hover)] text-white px-5 py-2.5 rounded-lg font-bold transition-colors disabled:opacity-50 shadow-sm shadow-brand/20"
               >
                 {uploading ? <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /> : <CheckSquare size={18} />}
                 {uploading ? 'Uploading...' : 'Save & Share'}

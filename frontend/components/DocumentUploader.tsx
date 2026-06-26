@@ -197,7 +197,7 @@ export default function DocumentUploader({ teamId, onUploadSuccess, editingDocId
         </p>
 
         <div className="flex gap-2">
-          <label className="cursor-pointer bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-brand/10 transition-colors">
+          <label className="cursor-pointer bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-[var(--primary-hover)] transition-colors">
             Browse Files
             <input
               type="file"
