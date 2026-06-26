@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Sparkles, X, Loader2, Brain, AlertTriangle } from 'lucide-react';
+import { Sparkles, X, Loader2, Brain, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useAuth, useUser } from '@clerk/nextjs';
 
 interface AiSummaryPanelProps {
@@ -204,9 +204,9 @@ export default function AiSummaryPanel({ teamId, teamName }: AiSummaryPanelProps
         {loading ? (
           <Loader2 size={14} className="animate-spin shrink-0" />
         ) : (
-          <Sparkles size={14} className="group-hover:animate-pulse shrink-0" />
+          <RefreshCw size={14} className="shrink-0" />
         )}
-        <span className="truncate">{loading ? 'Generating summary...' : `Global Sync: ${teamName}`}</span>
+        <span className="truncate">{loading ? 'Generating summary...' : teamName}</span>
       </button>
 
       {isOpen && mounted && createPortal(modalContent, document.body)}

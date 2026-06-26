@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useUser, useClerk, useAuth } from '@clerk/nextjs';
-import { Hash, Radio, Plus, MessageSquare, Users, Shield, ChevronDown, ChevronRight, Video, Database, Settings, LogOut, Check } from 'lucide-react';
+import { Hash, Activity, Plus, LayoutDashboard, Users, RotateCw, Map, BookOpen, ChevronDown, ChevronRight, Video, Settings, LogOut, Check } from 'lucide-react';
 import AiSummaryPanel from './AiSummaryPanel';
 import { useTeamRole } from '@/hooks/useTeamRole';
 
@@ -177,7 +177,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
               ? 'bg-secondary/10 text-secondary' 
               : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
         >
-          <Radio size={16} /> Heartbeat
+          <Activity size={16} /> Heartbeat
         </button>
         <button
           onClick={() => onViewChange('chat')}
@@ -186,7 +186,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
               ? 'bg-secondary/10 text-secondary' 
               : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
         >
-          <MessageSquare size={16} /> Channels
+          <Hash size={16} /> Channels
         </button>
         <button
           onClick={() => onViewChange('videos')}
@@ -208,7 +208,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
               ? 'bg-secondary/10 text-secondary' 
               : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
         >
-          <div className="w-4 h-4 rounded-full border-2 border-current opacity-70" /> Board
+          <LayoutDashboard size={16} /> Board
         </button>
         <button
           onClick={() => onViewChange('cycles')}
@@ -217,7 +217,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
               ? 'bg-secondary/10 text-secondary' 
               : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
         >
-          <div className="flex gap-0.5 items-end h-4 w-4 opacity-70"><div className="w-1 h-2 bg-current rounded-sm"/><div className="w-1 h-4 bg-current rounded-sm"/><div className="w-1 h-3 bg-current rounded-sm"/></div> Cycles
+          <RotateCw size={16} /> Cycles
         </button>
         <button
           onClick={() => onViewChange('roadmap')}
@@ -226,7 +226,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
               ? 'bg-secondary/10 text-secondary' 
               : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
         >
-          <div className="w-4 h-4 rounded-full border border-current opacity-70 flex items-center justify-center"><div className="w-1.5 h-1.5 bg-current rounded-full" /></div> Roadmap
+          <Map size={16} /> Roadmap
         </button>
         <button
           onClick={() => onViewChange('kb')}
@@ -235,7 +235,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
               ? 'bg-secondary/10 text-secondary' 
               : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
         >
-          <Database size={16} className="opacity-70" /> Knowledge Base
+          <BookOpen size={16} /> Knowledge Base
         </button>
 
         {isAdmin && (
@@ -246,7 +246,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
                 ? 'bg-secondary/10 text-secondary'
                 : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
           >
-            <Shield size={16} className="text-secondary" /> User Management
+            <Users size={16} /> User Management
           </button>
         )}
       </div>
@@ -334,7 +334,8 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
           <div className="h-9 w-full bg-primary/5 animate-pulse rounded-xl border border-primary/10" />
         </div>
       ) : teams.length > 0 && (
-        <div className="px-3 py-2 border-t border-primary/15">
+        <div className="flex flex-col p-2 gap-1 border-t border-primary/15">
+          <div className="text-xs font-bold text-primary/50 uppercase tracking-wider px-2 py-2">Global Sync</div>
           {teams.map(team => (
             <AiSummaryPanel key={team.id} teamId={team.id} teamName={team.name} />
           ))}
