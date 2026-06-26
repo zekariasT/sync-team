@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { updateRole } from '@/app/actions';
 import { toast } from 'sonner';
 import { ChevronDown, Shield, User, Star, type LucideIcon } from 'lucide-react';
-import { badgeVariants } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,15 +24,18 @@ interface MemberRoleBadgeProps {
   onChanged?: () => void;
 }
 
-type RoleDef = { label: string; value: string; icon: LucideIcon; color: string };
+type RoleDef = { label: string; value: string; kind: 'admin' | 'lead' | 'member'; icon: LucideIcon };
 
-// Each role carries an icon as well as a hue so role is never conveyed by
-// color alone (a11y: color-not-only).
+// Each role pairs a text label with a semantic tint (admin/sage, lead/amber,
+// member/neutral) so role is never conveyed by color alone (a11y).
 const ALL_ROLES: RoleDef[] = [
-  { label: 'Admin', value: 'ADMIN', icon: Star, color: 'border-primary/30 bg-primary/10 text-primary' },
-  { label: 'Lead', value: 'LEAD', icon: Shield, color: 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400' },
-  { label: 'Member', value: 'MEMBER', icon: User, color: 'border-border bg-muted text-muted-foreground' },
+  { label: 'Admin', value: 'ADMIN', kind: 'admin', icon: Star },
+  { label: 'Lead', value: 'LEAD', kind: 'lead', icon: Shield },
+  { label: 'Member', value: 'MEMBER', kind: 'member', icon: User },
 ];
+
+const badgeClass =
+  'role-tint inline-flex items-center gap-1 rounded-sm border px-2 py-0.5 text-[10.5px] font-semibold uppercase leading-relaxed tracking-wide transition-[filter]';
 
 export default function MemberRoleBadge({ memberId, teamId, role, canEdit, canGrantAdmin = false, onChanged }: MemberRoleBadgeProps) {
   const [loading, setLoading] = useState(false);
@@ -64,18 +66,10 @@ export default function MemberRoleBadge({ memberId, teamId, role, canEdit, canGr
     }
   };
 
-  const triggerClass = cn(
-    badgeVariants({ variant: 'outline' }),
-    current.color,
-    'font-semibold uppercase tracking-tight',
-    editable && 'cursor-pointer',
-    loading && 'animate-pulse',
-  );
-
   if (!editable) {
     return (
-      <span className={triggerClass}>
-        <Icon data-icon="inline-start" />
+      <span data-kind={current.kind} className={badgeClass}>
+        <Icon className="size-2.5" strokeWidth={2.5} />
         {current.label}
       </span>
     );
@@ -84,24 +78,21 @@ export default function MemberRoleBadge({ memberId, teamId, role, canEdit, canGr
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className={triggerClass}
+        data-kind={current.kind}
+        className={cn(badgeClass, 'cursor-pointer hover:brightness-[0.97]', loading && 'animate-pulse')}
         disabled={loading}
         aria-label={`Change role, currently ${current.label}`}
       >
-        <Icon data-icon="inline-start" />
+        <Icon className="size-2.5" strokeWidth={2.5} />
         {current.label}
-        <ChevronDown data-icon="inline-end" />
+        <ChevronDown className="size-2.5 opacity-60" strokeWidth={2.5} />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-32">
         <DropdownMenuGroup>
           {roles.map((r) => {
             const RoleIcon = r.icon;
             return (
-              <DropdownMenuItem
-                key={r.value}
-                disabled={r.value === role}
-                onSelect={() => handleRoleChange(r.value)}
-              >
+              <DropdownMenuItem key={r.value} disabled={r.value === role} onSelect={() => handleRoleChange(r.value)}>
                 <RoleIcon data-icon="inline-start" />
                 {r.label}
               </DropdownMenuItem>

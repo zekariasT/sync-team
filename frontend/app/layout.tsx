@@ -1,22 +1,13 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from '@clerk/nextjs';
-import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 
-// Indigo-workspace type system:
-//  - Plus Jakarta Sans: modern geometric SaaS workhorse for UI/body + display
-//  - JetBrains Mono: tabular/technical figures (data, timers, code labels)
-const sans = Plus_Jakarta_Sans({
-  variable: "--font-jakarta",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const mono = JetBrains_Mono({
-  variable: "--font-jetbrains",
-  subsets: ["latin"],
-  display: "swap",
-});
+// Team Pulse type system: Geist (UI/body/display) + Geist Mono (tabular figures
+// — clocks, timezones, data). Exposes --font-geist-sans / --font-geist-mono.
+const sans = GeistSans;
+const mono = GeistMono;
 
 export const metadata: Metadata = {
   title: "SyncPoint OS — Team Operating System",

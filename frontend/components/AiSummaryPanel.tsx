@@ -65,10 +65,10 @@ export default function AiSummaryPanel({ teamId, teamName }: AiSummaryPanelProps
       {/* Modal Container */}
       <div className="relative w-full max-w-2xl max-h-[85vh] bg-background border border-primary/20 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-primary/15 bg-gradient-to-r from-violet-600/10 to-indigo-600/10 shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-primary/15 bg-[var(--brand-soft)] shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-violet-600/10 flex items-center justify-center">
-              <Brain size={20} className="text-violet-400" />
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Brain size={20} className="text-brand" />
             </div>
             <div>
               <h3 className="font-bold text-text">AI Team Summary</h3>
@@ -88,10 +88,10 @@ export default function AiSummaryPanel({ teamId, teamName }: AiSummaryPanelProps
           {loading && (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
               <div className="relative w-20 h-20">
-                <div className="absolute inset-0 rounded-2xl bg-violet-600/10 flex items-center justify-center">
-                  <Sparkles size={32} className="text-violet-400 animate-pulse" />
+                <div className="absolute inset-0 rounded-2xl bg-primary/10 flex items-center justify-center">
+                  <Sparkles size={32} className="text-brand animate-pulse" />
                 </div>
-                <Loader2 size={88} className="absolute -inset-[4px] text-violet-500/30 animate-spin" strokeWidth={1} />
+                <Loader2 size={88} className="absolute -inset-[4px] text-primary/30 animate-spin" strokeWidth={1} />
               </div>
               <div className="text-center mt-4">
                 <p className="text-base font-semibold text-text">Analyzing team history...</p>
@@ -102,8 +102,8 @@ export default function AiSummaryPanel({ teamId, teamName }: AiSummaryPanelProps
 
           {error && !loading && (
             <div className="flex flex-col items-center justify-center py-16 gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center">
-                <AlertTriangle size={32} className="text-accent" />
+              <div className="w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center">
+                <AlertTriangle size={32} className="text-destructive" />
               </div>
               <div className="text-center">
                 <p className="text-lg font-bold text-text">Summarization Failed</p>
@@ -111,7 +111,7 @@ export default function AiSummaryPanel({ teamId, teamName }: AiSummaryPanelProps
               </div>
               <button
                 onClick={handleSummarize}
-                className="mt-4 px-6 py-2.5 bg-secondary text-white rounded-xl text-sm font-bold hover:bg-secondary/90 transition-all shadow-lg shadow-secondary/20"
+                className="mt-4 px-6 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:bg-[var(--primary-hover)] transition-all shadow-lg shadow-primary/20"
               >
                 Try Again
               </button>
@@ -128,7 +128,7 @@ export default function AiSummaryPanel({ teamId, teamName }: AiSummaryPanelProps
                     const text = line.replace(/^##\s*/, '').replace(/\*\*/g, '');
                     return (
                       <h4 key={i} className="text-base font-bold text-text mt-8 mb-4 flex items-center gap-2">
-                        <span className="w-2 h-2 rounded bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.5)]" />
+                        <span className="w-2 h-2 rounded bg-brand" />
                         {text}
                       </h4>
                     );
@@ -138,8 +138,8 @@ export default function AiSummaryPanel({ teamId, teamName }: AiSummaryPanelProps
                     const text = line.replace(/^\d+\.\s*/, '');
                     const parts = text.split(/\*\*/);
                     return (
-                      <div key={i} className="flex gap-3 mt-4 mb-2 bg-primary/5 p-3 rounded-xl border border-primary/5 hover:border-violet-500/10 transition-colors">
-                        <span className="w-6 h-6 rounded-lg bg-violet-600/10 flex items-center justify-center text-xs font-bold text-violet-400 shrink-0 mt-0.5">
+                      <div key={i} className="flex gap-3 mt-4 mb-2 bg-primary/5 p-3 rounded-xl border border-primary/5 hover:border-primary/15 transition-colors">
+                        <span className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-xs font-bold text-brand shrink-0 mt-0.5">
                           {line.match(/^\d+/)?.[0]}
                         </span>
                         <p className="text-sm text-text/80 leading-relaxed">
@@ -180,7 +180,7 @@ export default function AiSummaryPanel({ teamId, teamName }: AiSummaryPanelProps
                   </p>
                   <button
                     onClick={handleSummarize}
-                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg text-xs font-bold hover:bg-violet-700 transition-all shadow-lg shadow-violet-600/20 cursor-pointer"
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-bold hover:bg-[var(--primary-hover)] transition-all shadow-lg shadow-primary/20 cursor-pointer"
                   >
                     <Sparkles size={14} />
                     Regenerate Summary
@@ -199,7 +199,7 @@ export default function AiSummaryPanel({ teamId, teamName }: AiSummaryPanelProps
       <button
         onClick={() => { setIsOpen(true); handleSummarize(); }}
         disabled={loading}
-        className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 dark:bg-violet-600/20 border border-violet-500/20 hover:bg-violet-700 dark:hover:border-violet-500/40 rounded-xl text-xs font-semibold text-white dark:text-violet-300 transition-all group w-full mb-1 shadow-sm cursor-pointer disabled:opacity-70 disabled:cursor-wait"
+        className="flex items-center gap-2 px-4 py-2.5 bg-primary dark:bg-primary/15 border border-transparent dark:border-[var(--brand-soft-border)] hover:bg-[var(--primary-hover)] dark:hover:border-brand rounded-xl text-xs font-semibold text-primary-foreground dark:text-brand-text transition-all group w-full mb-1 shadow-sm cursor-pointer disabled:opacity-70 disabled:cursor-wait"
       >
         {loading ? (
           <Loader2 size={14} className="animate-spin shrink-0" />

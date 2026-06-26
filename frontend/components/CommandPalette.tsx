@@ -73,7 +73,7 @@ export default function CommandPalette({ isOpen, onClose, onSelectAction }: Comm
              onClick={() => { onSelectAction?.('create_cycle'); onClose(); }}
           >
              <div className="flex items-center gap-3 text-sm font-medium">
-               <Calendar size={16} className="text-indigo-400" />
+               <Calendar size={16} className="text-brand" />
                Plan new Cycle
              </div>
           </button>

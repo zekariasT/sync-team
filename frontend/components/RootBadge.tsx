@@ -1,20 +1,21 @@
 import { Crown } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 
 /**
  * Account-level "root" indicator. Root is a global superuser attribute on the
  * user (User.isRoot), independent of any team membership — so it's shown once
  * next to the person's name, not per-team like MemberRoleBadge.
+ *
+ * Rendered as the solid "root" role-kind tint from the Team Pulse design system.
  */
 export default function RootBadge() {
   return (
-    <Badge
-      variant="outline"
+    <span
+      data-kind="root"
       title="Root — global superuser"
-      className="gap-1 border-brand-accent/30 bg-brand-accent/10 text-brand-accent"
+      className="role-tint inline-flex shrink-0 items-center gap-1 rounded-sm border px-2 py-0.5 text-[9.5px] font-bold uppercase leading-relaxed tracking-wider"
     >
-      <Crown />
+      <Crown className="size-2.5" strokeWidth={2.5} />
       Root
-    </Badge>
+    </span>
   );
 }

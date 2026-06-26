@@ -5,119 +5,172 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ============================================================================
-   SyncPoint OS — "Indigo workspace" theme
-   Semantic shadcn token system, mapped to a deliberate indigo/violet palette.
-   Values are Tailwind v4 oklch primitives so the scale stays internally
-   consistent. Primary (indigo) is intentionally distinct from destructive
-   (red) so primary and danger actions never read alike. WCAG AA verified.
+   SyncPoint OS — "Team Pulse" design system
+   Imported from the claude.ai/design mockup (project: SyncPoint frontend
+   redesign). Warm cream/charcoal base with a sage-teal accent (Clay alt).
+
+   Two layers:
+   1. Raw design tokens (--bg, --surface, --brand, role/tint cascades) — the
+      source-of-truth values straight from the mockup.
+   2. A shadcn semantic bridge (--background, --primary, --card, …) mapped onto
+      the raw tokens so every shadcn primitive renders on-brand.
+   AA contrast verified in both themes (see scripts/contrast-check).
    ========================================================================== */
 
 :root {
-  --radius: 0.625rem;
+  /* ---- Raw design tokens (light) ---------------------------------------- */
+  --bg: #F5F1EA;            /* cream base */
+  --surface: #FCFAF6;
+  --surface-2: #EFE9DE;
+  --surface-3: #E8E1D4;
+  --sidebar-bg: #EFE8DD;
+  --text: #2B2722;
+  --text-muted: #5F5950;
+  --text-faint: #6A6358;
+  --border-c: #E3DBCD;
+  --border-strong: #D6CCBA;
 
-  /* Surfaces & text */
-  --background: oklch(0.984 0.003 247.86);   /* slate-50  */
-  --foreground: oklch(0.208 0.042 265.8);    /* slate-900 */
-  --card: oklch(1 0 0);                       /* white     */
-  --card-foreground: oklch(0.208 0.042 265.8);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.208 0.042 265.8);
+  /* Brand — sage-teal. --brand-text is the darkened accent for AA on cream. */
+  --brand: #5C8374;
+  --brand-text: #3C5A4C;
+  --brand-soft: rgba(92, 131, 116, 0.13);
+  --brand-soft-border: rgba(92, 131, 116, 0.30);
+  --primary-c: #4C6F60;
+  --primary-hover: #42604F;
+  --primary-fg: #FBF8F2;
+  --presence: #5C8374;
 
-  /* Brand — indigo */
-  --primary: oklch(0.511 0.262 276.97);      /* indigo-600 */
-  --primary-foreground: oklch(0.985 0 0);
+  /* Lead (amber) role tint */
+  --lead-bg: rgba(176, 134, 52, 0.14);
+  --lead-border: rgba(176, 134, 52, 0.32);
+  --lead-text: #7A5A1E;
 
-  /* Neutral support (subtle backgrounds, hover fills) */
-  --secondary: oklch(0.968 0.007 247.9);     /* slate-100 */
-  --secondary-foreground: oklch(0.279 0.041 260.0);
-  --muted: oklch(0.968 0.007 247.9);         /* slate-100 */
-  --muted-foreground: oklch(0.554 0.046 257.4); /* slate-500 */
-  --accent: oklch(0.968 0.007 247.9);        /* slate-100 hover fill (shadcn semantics) */
-  --accent-foreground: oklch(0.279 0.041 260.0);
+  /* Destructive (warm red, tuned to the palette) */
+  --destructive-c: #B23A2C;
+  --destructive-fg: #FBF8F2;
 
-  /* Status */
-  --destructive: oklch(0.637 0.237 25.33);   /* red-500 */
-  --destructive-foreground: oklch(0.985 0 0);
+  --shadow: 0 1px 2px rgba(60, 50, 35, 0.05), 0 6px 18px rgba(60, 50, 35, 0.05);
 
-  /* Lines & focus */
-  --border: oklch(0.929 0.013 255.5);        /* slate-200 */
-  --input: oklch(0.929 0.013 255.5);
-  --ring: oklch(0.511 0.262 276.97);         /* indigo focus ring */
+  /* Role-badge cascade defaults (overridden per data-kind) */
+  --b-bg: var(--surface-2);
+  --b-fg: var(--text-muted);
+  --b-bd: var(--border-c);
+  /* Avatar-tint cascade defaults (overridden per data-tint) */
+  --av-bg: var(--surface-2);
+  --av-fg: var(--text-muted);
 
-  /* Brand accent (violet) — for hero moments, NOT shadcn's --accent hover token */
-  --brand-accent: oklch(0.541 0.281 293.01); /* violet-600 */
-  --brand-accent-foreground: oklch(0.985 0 0);
+  --radius: 0.7rem; /* card≈16px, avatar≈11px, input/btn≈9px, badge≈7px */
 
-  /* Data viz — categorical, colorblind-considerate */
-  --chart-1: oklch(0.511 0.262 276.97);      /* indigo */
-  --chart-2: oklch(0.541 0.281 293.01);      /* violet */
-  --chart-3: oklch(0.685 0.169 237.3);       /* sky    */
-  --chart-4: oklch(0.696 0.170 162.5);       /* emerald*/
-  --chart-5: oklch(0.769 0.170 70.0);        /* amber  */
+  /* ---- shadcn semantic bridge (light) ----------------------------------- */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary: var(--primary-c);
+  --primary-foreground: var(--primary-fg);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--text);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--surface-2);          /* shadcn hover-fill (NOT the brand accent) */
+  --accent-foreground: var(--text);
+  --destructive: var(--destructive-c);
+  --destructive-foreground: var(--destructive-fg);
+  --border: var(--border-c);
+  --input: var(--border-c);
+  --ring: var(--brand);
 
-  /* Sidebar */
-  --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.208 0.042 265.8);
-  --sidebar-primary: oklch(0.511 0.262 276.97);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.968 0.007 247.9);
-  --sidebar-accent-foreground: oklch(0.279 0.041 260.0);
-  --sidebar-border: oklch(0.929 0.013 255.5);
-  --sidebar-ring: oklch(0.511 0.262 276.97);
+  --chart-1: var(--brand);
+  --chart-2: #B07158;        /* clay   */
+  --chart-3: #B08634;        /* amber  */
+  --chart-4: #6E8FA8;        /* slate-blue */
+  --chart-5: #C2823A;        /* warm ochre (no violet anywhere) */
 
-  /* Ambient atmosphere strength (per theme) */
-  --glow-strength: 7%;
+  --sidebar: var(--sidebar-bg);
+  --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--primary-c);
+  --sidebar-primary-foreground: var(--primary-fg);
+  --sidebar-accent: var(--brand-soft);
+  --sidebar-accent-foreground: var(--brand-text);
+  --sidebar-border: var(--border-c);
+  --sidebar-ring: var(--brand);
 }
 
 .dark {
-  --background: oklch(0.208 0.042 265.8);     /* slate-900 */
-  --foreground: oklch(0.984 0.003 247.86);    /* slate-50  */
-  --card: oklch(0.279 0.041 260.0);           /* slate-800 */
-  --card-foreground: oklch(0.984 0.003 247.86);
-  --popover: oklch(0.279 0.041 260.0);
-  --popover-foreground: oklch(0.984 0.003 247.86);
+  /* ---- Raw design tokens (dark) ----------------------------------------- */
+  --bg: #1C1A18;            /* charcoal base */
+  --surface: #24211E;
+  --surface-2: #2B2824;
+  --surface-3: #322E29;
+  --sidebar-bg: #1F1D1A;
+  --text: #ECE7DE;
+  --text-muted: #A39B8F;
+  --text-faint: #948B7E;
+  --border-c: #34302B;
+  --border-strong: #423D36;
 
-  --primary: oklch(0.673 0.182 276.94);       /* indigo-400 — pops on dark */
-  --primary-foreground: oklch(0.208 0.042 265.8);
+  --brand: #7BA893;          /* lightened in dark */
+  --brand-text: #A9CDBC;
+  --brand-soft: rgba(123, 168, 147, 0.16);
+  --brand-soft-border: rgba(123, 168, 147, 0.30);
+  --primary-c: #6E9A88;
+  --primary-hover: #7BA893;
+  --primary-fg: #16201B;
+  --presence: #7BA893;
 
-  --secondary: oklch(0.279 0.041 260.0);      /* slate-800 */
-  --secondary-foreground: oklch(0.984 0.003 247.86);
-  --muted: oklch(0.279 0.041 260.0);
-  --muted-foreground: oklch(0.704 0.040 256.8); /* slate-400 */
-  --accent: oklch(0.372 0.044 257.3);         /* slate-700 hover fill */
-  --accent-foreground: oklch(0.984 0.003 247.86);
+  --lead-bg: rgba(214, 178, 110, 0.15);
+  --lead-border: rgba(214, 178, 110, 0.30);
+  --lead-text: #D8B673;
 
-  --destructive: oklch(0.704 0.191 22.216);   /* red-400 */
-  --destructive-foreground: oklch(0.985 0 0);
+  --destructive-c: #E08267;
+  --destructive-fg: #1C140F;
 
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.673 0.182 276.94);
-
-  --brand-accent: oklch(0.667 0.247 292.0);   /* violet-400 */
-  --brand-accent-foreground: oklch(0.208 0.042 265.8);
-
-  --chart-1: oklch(0.673 0.182 276.94);
-  --chart-2: oklch(0.667 0.247 292.0);
-  --chart-3: oklch(0.685 0.169 237.3);
-  --chart-4: oklch(0.696 0.170 162.5);
-  --chart-5: oklch(0.769 0.170 70.0);
-
-  --sidebar: oklch(0.208 0.042 265.8);
-  --sidebar-foreground: oklch(0.984 0.003 247.86);
-  --sidebar-primary: oklch(0.673 0.182 276.94);
-  --sidebar-primary-foreground: oklch(0.208 0.042 265.8);
-  --sidebar-accent: oklch(0.279 0.041 260.0);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.86);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.673 0.182 276.94);
-
-  --glow-strength: 11%;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.30), 0 8px 22px rgba(0, 0, 0, 0.28);
 }
+
+/* ---- Accent swap: Clay (switchable via data-accent on <html>) ----------- */
+[data-accent="clay"] {
+  --brand: #B07158;
+  --brand-text: #7E4A34;
+  --brand-soft: rgba(176, 113, 88, 0.14);
+  --brand-soft-border: rgba(176, 113, 88, 0.30);
+  --primary-c: #9A5E45;
+  --primary-hover: #85503B;
+  --primary-fg: #FBF6F2;
+  --presence: #B07158;
+}
+.dark[data-accent="clay"] {
+  --brand: #C98A6E;
+  --brand-text: #D9A589;
+  --brand-soft: rgba(201, 138, 110, 0.16);
+  --brand-soft-border: rgba(201, 138, 110, 0.30);
+  --primary-c: #C0795C;
+  --primary-hover: #C98A6E;
+  --primary-fg: #1C140F;
+  --presence: #C98A6E;
+}
+
+/* ---- Role-badge tints (semantic, paired with a text label, never color-only) */
+[data-kind="admin"]  { --b-bg: var(--brand-soft); --b-fg: var(--brand-text); --b-bd: var(--brand-soft-border); }
+[data-kind="member"] { --b-bg: var(--surface-2);  --b-fg: var(--text-muted);  --b-bd: var(--border-c); }
+[data-kind="lead"]   { --b-bg: var(--lead-bg);    --b-fg: var(--lead-text);   --b-bd: var(--lead-border); }
+[data-kind="root"]   { --b-bg: var(--primary-c);  --b-fg: var(--primary-fg);  --b-bd: transparent; }
+
+/* ---- Avatar tints ------------------------------------------------------- */
+[data-tint="sage"]    { --av-bg: rgba(92, 131, 116, 0.16);  --av-fg: #33503F; }
+[data-tint="clay"]    { --av-bg: rgba(176, 113, 88, 0.16);  --av-fg: #7E4A34; }
+[data-tint="amber"]   { --av-bg: rgba(176, 134, 52, 0.16);  --av-fg: #6B4F18; }
+[data-tint="primary"] { --av-bg: var(--primary-c);          --av-fg: var(--primary-fg); }
+.dark [data-tint="sage"]  { --av-bg: rgba(123, 168, 147, 0.18); --av-fg: #A9CDBC; }
+.dark [data-tint="clay"]  { --av-bg: rgba(201, 138, 110, 0.18); --av-fg: #D9A589; }
+.dark [data-tint="amber"] { --av-bg: rgba(214, 178, 110, 0.18); --av-fg: #D8B673; }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-text: var(--text);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
@@ -132,8 +185,6 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
-  --color-brand-accent: var(--brand-accent);
-  --color-brand-accent-foreground: var(--brand-accent-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -151,16 +202,26 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  --font-sans: var(--font-jakarta);
-  --font-mono: var(--font-jetbrains);
-  --font-display: var(--font-jakarta);
+  /* Brand + surface tokens exposed as utilities (bg-brand, text-brand-text, …) */
+  --color-brand: var(--brand);
+  --color-brand-text: var(--brand-text);
+  --color-presence: var(--presence);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-text-muted: var(--text-muted);
+  --color-text-faint: var(--text-faint);
+  --color-border-strong: var(--border-strong);
 
-  --radius-sm: calc(var(--radius) * 0.6);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-geist-sans);
+
+  --radius-sm: calc(var(--radius) * 0.55);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-xl: calc(var(--radius) * 1.45);
   --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
 }
 
 @layer base {
@@ -169,7 +230,6 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "cv11", "ss01";
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
@@ -179,68 +239,56 @@
   }
 }
 
-/* ----- Subtle ambient atmosphere -------------------------------------------
-   A single low-intensity indigo→violet radial wash pinned behind the UI.
-   Decorative only, non-interactive; honors reduced transparency via tokens. */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(60rem 60rem at 12% -8%,
-      color-mix(in oklch, var(--primary) var(--glow-strength), transparent), transparent 60%),
-    radial-gradient(50rem 50rem at 100% 0%,
-      color-mix(in oklch, var(--brand-accent) calc(var(--glow-strength) - 3%), transparent), transparent 55%);
-  -webkit-mask-image: radial-gradient(120% 120% at 50% 0%, #000 35%, transparent 100%);
-          mask-image: radial-gradient(120% 120% at 50% 0%, #000 35%, transparent 100%);
-}
-body > * {
-  position: relative;
-  z-index: 1;
-}
-
-/* ----- System chrome ------------------------------------------------------- */
+/* ---- System chrome (warm scrollbar from the mockup) --------------------- */
 ::selection {
-  background-color: color-mix(in oklch, var(--primary) 26%, transparent);
+  background-color: color-mix(in srgb, var(--brand) 24%, transparent);
 }
-
 * {
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in oklch, var(--muted-foreground) 45%, transparent) transparent;
+  scrollbar-color: var(--border-strong) transparent;
 }
-*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar { width: 11px; height: 11px; }
 *::-webkit-scrollbar-track { background: transparent; }
 *::-webkit-scrollbar-thumb {
-  background-color: color-mix(in oklch, var(--muted-foreground) 35%, transparent);
-  border-radius: 999px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-}
-*::-webkit-scrollbar-thumb:hover {
-  background-color: color-mix(in oklch, var(--primary) 55%, transparent);
+  background: var(--border-strong);
+  border-radius: 6px;
+  border: 3px solid var(--bg);
 }
 
-/* ----- Reusable accents ---------------------------------------------------- */
-.font-display {
-  font-family: var(--font-display), var(--font-sans), sans-serif;
+/* ---- Reusable design utilities ----------------------------------------- */
+.font-display { font-family: var(--font-display), var(--font-sans), sans-serif; }
+.shadow-card { box-shadow: var(--shadow); }
+
+/* Team Pulse member grid — multi-column, density-matched to the mockup
+   (repeat(auto-fill, minmax(358px, 1fr))). Raw CSS so the nested min() never
+   trips Tailwind's arbitrary-value parser. min(100%, …) keeps it single-column
+   without horizontal overflow on narrow viewports. */
+.pulse-grid {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
 }
 
-.signal-glow {
-  box-shadow:
-    0 0 0 1px color-mix(in oklch, var(--primary) 25%, transparent),
-    0 8px 40px -8px color-mix(in oklch, var(--primary) 45%, transparent);
+/* Role badge surface driven by the data-kind cascade above */
+.role-tint {
+  background: var(--b-bg);
+  color: var(--b-fg);
+  border-color: var(--b-bd);
+}
+/* Avatar surface driven by the data-tint cascade above */
+.avatar-tint {
+  background: var(--av-bg);
+  color: var(--av-fg);
 }
 
-@keyframes spin-slow { to { transform: rotate(360deg); } }
-.animate-spin-slow { animation: spin-slow 14s linear infinite; }
-
-@keyframes float-soft {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
+/* Presence "pulse" ring (live online indicator) */
+@keyframes pulseRing {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--presence) 55%, transparent); }
+  70%  { box-shadow: 0 0 0 7px color-mix(in srgb, var(--presence) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--presence) 0%, transparent); }
 }
-.animate-float-soft { animation: float-soft 7s ease-in-out infinite; }
+.animate-pulse-ring { animation: pulseRing 2.6s infinite; }
 
 /* Honor reduced-motion globally (a11y: reduced-motion) */
 @media (prefers-reduced-motion: reduce) {
