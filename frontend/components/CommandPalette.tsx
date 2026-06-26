@@ -33,43 +33,43 @@ export default function CommandPalette({ isOpen, onClose, onSelectAction }: Comm
       <div className="absolute inset-0 bg-background/80 backdrop-blur-sm pointer-events-none" />
       
       <div 
-        className="w-full max-w-lg bg-background border border-primary/20 rounded-xl shadow-2xl overflow-hidden relative"
+        className="w-full max-w-lg bg-background border border-border rounded-xl shadow-2xl overflow-hidden relative"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center px-4 py-3 border-b border-primary/10">
-          <Search size={18} className="text-primary/50 mr-3" />
+        <div className="flex items-center px-4 py-3 border-b border-border">
+          <Search size={18} className="text-muted-foreground mr-3" />
           <input
             type="text"
             autoFocus
             placeholder="Type a command or search..."
-            className="flex-1 bg-transparent border-none outline-none text-text text-sm placeholder:text-primary/40"
+            className="flex-1 bg-transparent border-none outline-none text-foreground text-sm placeholder:text-muted-foreground"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          <div className="text-[10px] items-center flex gap-1 font-mono text-primary/40 bg-primary/5 px-2 py-1 rounded">
+          <div className="text-[10px] items-center flex gap-1 font-mono text-muted-foreground bg-muted px-2 py-1 rounded">
              ESC
           </div>
         </div>
 
         <div className="max-h-[300px] overflow-y-auto p-2">
           {/* Default actions */}
-          <div className="px-3 py-1.5 text-[10px] font-bold text-primary/40 uppercase tracking-wider">
+          <div className="px-3 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
             Quick Actions
           </div>
           
           <button 
-             className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-primary/5 group transition-colors"
+             className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-muted group transition-colors"
              onClick={() => { onSelectAction?.('create_task'); onClose(); }}
           >
              <div className="flex items-center gap-3 text-sm font-medium">
-               <Plus size={16} className="text-secondary" />
+               <Plus size={16} className="text-brand-text" />
                Create new Issue
              </div>
-             <div className="text-[10px] font-mono text-primary/40 bg-primary/5 px-2 py-0.5 rounded group-hover:bg-primary/10 group-hover:text-primary/60">C</div>
+             <div className="text-[10px] font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded group-hover:bg-muted group-hover:text-muted-foreground">C</div>
           </button>
           
           <button 
-             className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-primary/5 group transition-colors"
+             className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-muted group transition-colors"
              onClick={() => { onSelectAction?.('create_cycle'); onClose(); }}
           >
              <div className="flex items-center gap-3 text-sm font-medium">
@@ -79,7 +79,7 @@ export default function CommandPalette({ isOpen, onClose, onSelectAction }: Comm
           </button>
 
           <button 
-             className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-primary/5 group transition-colors"
+             className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-muted group transition-colors"
              onClick={() => { onSelectAction?.('create_channel'); onClose(); }}
           >
              <div className="flex items-center gap-3 text-sm font-medium">

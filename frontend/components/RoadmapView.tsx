@@ -159,7 +159,7 @@ export default function RoadmapView({ teamId, onMenuClick }: { teamId?: string; 
         {(isAdmin || isLead) && (
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="bg-secondary text-white px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1 hover:bg-secondary/90 transition-colors shadow-sm"
+            className="bg-primary text-white px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1 hover:bg-brand/10 transition-colors shadow-sm"
           >
             <Plus size={16} /> <span className="hidden sm:inline">New Project</span>
           </button>
@@ -169,10 +169,10 @@ export default function RoadmapView({ teamId, onMenuClick }: { teamId?: string; 
       <div className="flex-1 overflow-y-auto p-4 md:p-6 w-full max-w-5xl mx-auto flex flex-col gap-6">
         <div className="flex flex-col gap-6 w-full">
           {projects.length === 0 ? (
-            <div className="text-center py-20 bg-primary/5 rounded-xl border border-primary/10 border-dashed">
-              <Route size={48} className="mx-auto text-primary/30 mb-4 opacity-50" />
-              <h3 className="text-lg font-bold text-text mb-2">No active projects</h3>
-              <p className="text-sm text-primary/50">Chart out your long-term goals and epics.</p>
+            <div className="text-center py-20 bg-muted rounded-xl border border-border border-dashed">
+              <Route size={48} className="mx-auto text-muted-foreground mb-4 opacity-50" />
+              <h3 className="text-lg font-bold text-foreground mb-2">No active projects</h3>
+              <p className="text-sm text-muted-foreground">Chart out your long-term goals and epics.</p>
             </div>
           ) : (
             projects.map(project => (
@@ -180,15 +180,15 @@ export default function RoadmapView({ teamId, onMenuClick }: { teamId?: string; 
                 key={project.id} 
                 className={`border rounded-xl p-5 transition-all cursor-pointer flex gap-4 items-start relative overflow-hidden group ${
                   expandedProjectId === project.id 
-                    ? 'border-secondary/40 bg-secondary/5 ring-1 ring-secondary/20 shadow-lg' 
-                    : 'border-primary/20 hover:border-secondary/30 bg-primary/5'
+                    ? 'border-brand/40 bg-brand/10 ring-1 ring-brand/20 shadow-lg' 
+                    : 'border-border hover:border-brand/30 bg-muted'
                 }`}
                 onClick={() => setExpandedProjectId(expandedProjectId === project.id ? null : project.id)}
               >
                 <div className={`absolute top-0 left-0 bottom-0 w-1 rounded-l-xl transition-all duration-300 ${
-                  expandedProjectId === project.id ? 'bg-secondary' : 'bg-secondary/40'
+                  expandedProjectId === project.id ? 'bg-brand/20' : 'bg-brand/10'
                 }`}></div>
-                <div className="w-12 h-12 rounded-lg bg-background border border-primary/20 flex items-center justify-center shrink-0 shadow-sm text-secondary">
+                <div className="w-12 h-12 rounded-lg bg-background border border-border flex items-center justify-center shrink-0 shadow-sm text-brand-text">
                    <FolderKanban size={24} />
                 </div>
                 <div className="flex-1">
@@ -200,24 +200,24 @@ export default function RoadmapView({ teamId, onMenuClick }: { teamId?: string; 
                       <>
                         <div className="flex justify-between items-start mb-2">
                           <h3 className="font-bold text-lg">{project.name}</h3>
-                          <span className="text-xs font-mono bg-background border border-primary/10 px-2 py-1 rounded text-primary/70 shadow-sm">
+                          <span className="text-xs font-mono bg-background border border-border px-2 py-1 rounded text-muted-foreground shadow-sm">
                             {totalTasks} Tasks
                           </span>
                         </div>
                         {project.description && (
-                          <p className="text-sm text-primary/60 mb-4 leading-relaxed">{project.description}</p>
+                          <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{project.description}</p>
                         )}
                         
-                        <div className="w-full bg-background rounded-full h-2.5 mb-1 overflow-hidden border border-primary/10">
+                        <div className="w-full bg-background rounded-full h-2.5 mb-1 overflow-hidden border border-border">
                           <div 
-                            className="bg-secondary h-2.5 rounded-full transition-all duration-500" 
+                            className="bg-primary h-2.5 rounded-full transition-all duration-500" 
                             style={{ width: `${percentage}%` }}
                           ></div>
                         </div>
-                        <div className="text-[10px] text-right font-bold text-secondary uppercase tracking-widest">{percentage}% Completed</div>
+                        <div className="text-[10px] text-right font-bold text-brand-text uppercase tracking-widest">{percentage}% Completed</div>
 
                         {expandedProjectId === project.id && (
-                          <div className="mt-6 space-y-2 border-t border-secondary/10 pt-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                          <div className="mt-6 space-y-2 border-t border-brand/10 pt-4 animate-in fade-in slide-in-from-top-4 duration-500">
                              {project.tasks && project.tasks.length > 0 ? (
                                project.tasks.map((task: any) => (
                                  <div 
@@ -227,22 +227,22 @@ export default function RoadmapView({ teamId, onMenuClick }: { teamId?: string; 
                                      setEditingTask(task);
                                      setIsTaskModalOpen(true);
                                    }}
-                                   className="flex items-center justify-between p-2 rounded-lg bg-background/50 border border-primary/10 hover:border-secondary/20 transition-all hover:translate-x-1 duration-200 cursor-pointer group"
+                                   className="flex items-center justify-between p-2 rounded-lg bg-background/50 border border-border hover:border-brand/20 transition-all hover:translate-x-1 duration-200 cursor-pointer group"
                                  >
                                    <div className="flex items-center gap-3">
                                       <div className={`w-2 h-2 rounded-full ${
-                                        task.state === 'DONE' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]' : 
-                                        task.state === 'TODO' ? 'bg-primary/30' : 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.3)]'
+                                        task.state === 'DONE' ? 'bg-presence shadow-[0_0_8px_rgba(16,185,129,0.3)]' : 
+                                        task.state === 'TODO' ? 'bg-muted' : 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.3)]'
                                       }`} />
-                                      <span className="text-sm font-medium text-text">{task.title}</span>
+                                      <span className="text-sm font-medium text-foreground">{task.title}</span>
                                    </div>
-                                   <span className="text-[10px] uppercase font-black tracking-tighter text-primary/20 bg-background px-1.5 py-0.5 rounded border border-primary/5">
+                                   <span className="text-[10px] uppercase font-black tracking-tighter text-muted-foreground bg-background px-1.5 py-0.5 rounded border border-border">
                                       {task.state.replace('_', ' ')}
                                    </span>
                                  </div>
                                ))
                              ) : (
-                               <div className="text-center py-8 text-xs text-primary/20 font-bold uppercase tracking-widest italic">
+                               <div className="text-center py-8 text-xs text-muted-foreground font-bold uppercase tracking-widest italic">
                                  No tasks linked to this project
                                </div>
                              )}

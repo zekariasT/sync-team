@@ -37,95 +37,95 @@ export default function TaskModal({ isOpen, onClose, onSubmit, members, projects
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-background border border-primary/20 rounded-xl shadow-2xl overflow-hidden p-6 animate-in fade-in zoom-in duration-200">
+      <div className="relative w-full max-w-lg bg-background border border-border rounded-xl shadow-2xl overflow-hidden p-6 animate-in fade-in zoom-in duration-200">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold">{initialData ? 'Edit Task' : 'New Task'}</h2>
-          <button onClick={onClose} className="p-1 hover:bg-primary/10 rounded-full transition-colors">
+          <button onClick={onClose} className="p-1 hover:bg-muted rounded-full transition-colors">
             <X size={20} />
           </button>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-widest text-primary/50 mb-1.5">Title</label>
+            <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Title</label>
             <input
               autoFocus
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="What needs to be done?"
-              className="w-full bg-primary/5 border border-primary/10 rounded-lg px-4 py-3 focus:outline-none focus:border-secondary transition-colors text-text"
+              className="w-full bg-muted border border-border rounded-lg px-4 py-3 focus:outline-none focus:border-brand transition-colors text-foreground"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="relative">
-              <label className="block text-xs font-bold uppercase tracking-widest text-primary/50 mb-1.5">Project</label>
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Project</label>
               <div className="relative">
                 <select
                   value={projectId}
                   onChange={(e) => setProjectId(e.target.value)}
-                  className="w-full bg-primary/10 border border-primary/20 rounded-lg px-4 py-3 focus:outline-none focus:border-secondary transition-colors text-text appearance-none cursor-pointer pr-10"
+                  className="w-full bg-muted border border-border rounded-lg px-4 py-3 focus:outline-none focus:border-brand transition-colors text-foreground appearance-none cursor-pointer pr-10"
                 >
-                  <option value="" className="bg-background text-text">No Project</option>
+                  <option value="" className="bg-background text-foreground">No Project</option>
                   {projects?.map(p => (
-                    <option key={p.id} value={p.id} className="bg-background text-text">{p.name}</option>
+                    <option key={p.id} value={p.id} className="bg-background text-foreground">{p.name}</option>
                   ))}
                 </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-primary/40">
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                 </div>
               </div>
             </div>
 
             <div className="relative">
-              <label className="block text-xs font-bold uppercase tracking-widest text-primary/50 mb-1.5">Cycle</label>
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Cycle</label>
               <div className="relative">
                 <select
                   value={cycleId}
                   onChange={(e) => setCycleId(e.target.value)}
-                  className="w-full bg-primary/10 border border-primary/20 rounded-lg px-4 py-3 focus:outline-none focus:border-secondary transition-colors text-text appearance-none cursor-pointer pr-10"
+                  className="w-full bg-muted border border-border rounded-lg px-4 py-3 focus:outline-none focus:border-brand transition-colors text-foreground appearance-none cursor-pointer pr-10"
                 >
-                  <option value="" className="bg-background text-text">No Cycle</option>
+                  <option value="" className="bg-background text-foreground">No Cycle</option>
                   {cycles?.map(c => (
-                    <option key={c.id} value={c.id} className="bg-background text-text">{c.name}</option>
+                    <option key={c.id} value={c.id} className="bg-background text-foreground">{c.name}</option>
                   ))}
                 </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-primary/40">
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                 </div>
               </div>
             </div>
           </div>
           <div className="relative">
-            <label className="block text-xs font-bold uppercase tracking-widest text-primary/50 mb-1.5">Assignee</label>
+            <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Assignee</label>
             <div className="relative">
               <select
                 value={canAssign ? assigneeId : ''}
                 onChange={(e) => setAssigneeId(e.target.value)}
                 disabled={!canAssign}
-                className="w-full bg-primary/10 border border-primary/20 rounded-lg px-4 py-3 focus:outline-none focus:border-secondary transition-colors text-text appearance-none cursor-pointer pr-10 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-muted border border-border rounded-lg px-4 py-3 focus:outline-none focus:border-brand transition-colors text-foreground appearance-none cursor-pointer pr-10 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <option value="" className="bg-background text-text">Unassigned</option>
+                <option value="" className="bg-background text-foreground">Unassigned</option>
                 {canAssign && members?.map(m => (
-                  <option key={m.userId} value={m.userId} className="bg-background text-text">
+                  <option key={m.userId} value={m.userId} className="bg-background text-foreground">
                     {m.user?.name || m.userId}
                   </option>
                 ))}
               </select>
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-primary/40">
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
               </div>
             </div>
           </div>
           <div>
-            <label className="block text-xs font-bold uppercase tracking-widest text-primary/50 mb-1.5">Description (Optional)</label>
+            <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Description (Optional)</label>
             <textarea
               rows={4}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Add more details..."
-              className="w-full bg-primary/5 border border-primary/10 rounded-lg px-4 py-3 focus:outline-none focus:border-secondary transition-colors resize-none text-text"
+              className="w-full bg-muted border border-border rounded-lg px-4 py-3 focus:outline-none focus:border-brand transition-colors resize-none text-foreground"
             />
           </div>
         </div>
@@ -133,7 +133,7 @@ export default function TaskModal({ isOpen, onClose, onSubmit, members, projects
         <div className="flex justify-end gap-3 mt-8">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-semibold hover:bg-primary/5 rounded-lg transition-colors"
+            className="px-4 py-2 text-sm font-semibold hover:bg-muted rounded-lg transition-colors"
           >
             Cancel
           </button>
@@ -155,7 +155,7 @@ export default function TaskModal({ isOpen, onClose, onSubmit, members, projects
               }
             }}
             disabled={!title.trim()}
-            className="px-4 py-2 bg-secondary text-white text-sm font-bold rounded-lg hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            className="px-4 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-brand/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             {initialData ? 'Save Changes' : 'Create Task'}
           </button>

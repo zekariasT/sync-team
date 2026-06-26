@@ -109,12 +109,12 @@ export default function NotificationsBell({ onOpenVideo }: { onOpenVideo: (teamI
     <div className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="relative flex items-center text-primary/70 hover:text-text transition-colors"
+        className="relative flex items-center text-muted-foreground hover:text-foreground transition-colors"
         title="Notifications"
       >
         <Bell size={18} />
         {unreadCount > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 bg-accent text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+          <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 bg-destructive text-white text-[10px] font-bold rounded-full flex items-center justify-center">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -124,33 +124,33 @@ export default function NotificationsBell({ onOpenVideo }: { onOpenVideo: (teamI
         <>
           {/* click-outside backdrop */}
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute top-full right-0 mt-2 w-80 max-w-[90vw] bg-background border border-primary/20 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-primary/10 bg-primary/5">
+          <div className="absolute top-full right-0 mt-2 w-80 max-w-[90vw] bg-background border border-border rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted">
               <span className="font-bold text-sm">Notifications</span>
               {items.some((n) => !n.isRead) && (
-                <button onClick={markAllRead} className="flex items-center gap-1 text-[11px] font-bold text-secondary hover:underline">
+                <button onClick={markAllRead} className="flex items-center gap-1 text-[11px] font-bold text-brand-text hover:underline">
                   <CheckCheck size={13} /> Mark all read
                 </button>
               )}
             </div>
             <div className="max-h-80 overflow-y-auto">
               {items.length === 0 ? (
-                <div className="px-4 py-8 text-center text-sm text-primary/40">No notifications yet.</div>
+                <div className="px-4 py-8 text-center text-sm text-muted-foreground">No notifications yet.</div>
               ) : (
                 items.map((n) => (
                   <button
                     key={n.id}
                     onClick={() => handleClick(n)}
-                    className={`w-full text-left flex items-start gap-2.5 px-4 py-3 border-b border-primary/5 hover:bg-primary/5 transition-colors ${n.isRead ? 'opacity-60' : ''}`}
+                    className={`w-full text-left flex items-start gap-2.5 px-4 py-3 border-b border-border hover:bg-muted transition-colors ${n.isRead ? 'opacity-60' : ''}`}
                   >
-                    <span className="mt-0.5 w-7 h-7 rounded-full bg-secondary/10 text-secondary flex items-center justify-center shrink-0">
+                    <span className="mt-0.5 w-7 h-7 rounded-full bg-brand/10 text-brand-text flex items-center justify-center shrink-0">
                       <Video size={14} />
                     </span>
                     <span className="flex-1 min-w-0">
-                      <span className="block text-sm text-text leading-snug">{n.message}</span>
-                      <span className="block text-[11px] text-primary/40 mt-0.5">{timeAgo(n.createdAt)}</span>
+                      <span className="block text-sm text-foreground leading-snug">{n.message}</span>
+                      <span className="block text-[11px] text-muted-foreground mt-0.5">{timeAgo(n.createdAt)}</span>
                     </span>
-                    {!n.isRead && <span className="mt-1.5 w-2 h-2 rounded-full bg-accent shrink-0" />}
+                    {!n.isRead && <span className="mt-1.5 w-2 h-2 rounded-full bg-brand shrink-0" />}
                   </button>
                 ))
               )}

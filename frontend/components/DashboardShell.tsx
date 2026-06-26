@@ -128,7 +128,7 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
   };
 
   return (
-    <div className="flex h-screen bg-background text-text overflow-hidden">
+    <div className="flex h-screen bg-background text-foreground overflow-hidden">
       <CommandPalette 
         isOpen={isCmdkOpen} 
         onClose={() => setIsCmdkOpen(false)} 
@@ -167,10 +167,10 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
           {activeView === 'pulse' ? (
             <div className="h-full overflow-y-auto">
               {/* Pulse doesn't have its own internal header yet, so we add one here */}
-              <header className="h-14 border-b border-primary/15 flex items-center px-4 md:hidden bg-background shrink-0 sticky top-0 z-10">
+              <header className="h-14 border-b border-border flex items-center px-4 md:hidden bg-background shrink-0 sticky top-0 z-10">
                 <button 
                   onClick={() => setIsSidebarOpen(true)}
-                  className="p-2 -ml-2 text-primary hover:text-text"
+                  className="p-2 -ml-2 text-primary hover:text-foreground"
                 >
                   <Menu size={20} />
                 </button>
@@ -194,21 +194,21 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
             <ChatArea onMenuClick={() => setIsSidebarOpen(true)} channelId={activeChannelId} channelName={activeChannelName || undefined} />
           ) : activeView === 'chat' ? (
             <div className="flex-1 flex flex-col items-center justify-center h-full bg-background p-6">
-              <header className="absolute top-0 left-0 right-0 h-14 border-b border-primary/15 flex items-center px-4 md:hidden bg-background shrink-0">
+              <header className="absolute top-0 left-0 right-0 h-14 border-b border-border flex items-center px-4 md:hidden bg-background shrink-0">
                 <button 
                   onClick={() => setIsSidebarOpen(true)}
-                  className="p-2 -ml-2 text-primary hover:text-text"
+                  className="p-2 -ml-2 text-primary hover:text-foreground"
                 >
                   <Menu size={20} />
                 </button>
                 <h1 className="ml-2 text-sm font-black tracking-tighter text-primary">SYNCPOINT_OS</h1>
               </header>
               <div className="text-center">
-                <div className="w-20 h-20 rounded-2xl bg-primary/5 border border-primary/15 flex items-center justify-center mx-auto mb-5">
-                  <Hash size={32} className="text-primary/30" />
+                <div className="w-20 h-20 rounded-2xl bg-muted border border-border flex items-center justify-center mx-auto mb-5">
+                  <Hash size={32} className="text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-bold text-text mb-2 text-balance">Select a Channel</h3>
-                <p className="text-sm text-primary/50 max-w-xs mx-auto text-balance">
+                <h3 className="text-lg font-bold text-foreground mb-2 text-balance">Select a Channel</h3>
+                <p className="text-sm text-muted-foreground max-w-xs mx-auto text-balance">
                   Pick a channel from the sidebar to start chatting with your team.
                 </p>
               </div>
@@ -219,10 +219,10 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
 
       {/* Global sticky controls — visible on every view and while scrolling.
           Headers reserve pr-48 safe zone so this never overlaps action buttons. */}
-      <div className="fixed right-3 z-50 flex items-center gap-2.5 rounded-full border border-primary/15 bg-background/70 px-3 py-1.5 shadow-lg shadow-black/5 backdrop-blur-md">
+      <div className="fixed right-3 z-50 flex items-center gap-2.5 rounded-full border border-border bg-background/70 px-3 py-1.5 shadow-lg shadow-black/5 backdrop-blur-md">
         <ThemeToggle />
         <Show when="signed-in">
-          <span className="h-4 w-px bg-primary/15" />
+          <span className="h-4 w-px bg-muted" />
           <NotificationsBell
             onOpenVideo={(tid) => {
               if (tid) setTeamId(tid);
@@ -230,7 +230,7 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
             }}
           />
         </Show>
-        <span className="h-4 w-px bg-primary/15" />
+        <span className="h-4 w-px bg-muted" />
         <Show when="signed-in">
           <UserButton />
         </Show>
@@ -239,20 +239,20 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
       {/* Floating Technical Overview Button */}
       <button
         onClick={() => setIsOverviewOpen(true)}
-        className="fixed bottom-28 right-6 bg-primary/10 hover:bg-primary/20 backdrop-blur-md border border-primary/20 text-primary p-3 rounded-full shadow-2xl transition-all z-40 group flex items-center gap-2"
+        className="fixed bottom-28 right-6 bg-muted hover:bg-muted backdrop-blur-md border border-border text-primary p-3 rounded-full shadow-2xl transition-all z-40 group flex items-center gap-2"
         title="Technical Overview"
       >
-        <Info size={20} className="group-hover:text-secondary transition-colors" />
+        <Info size={20} className="group-hover:text-brand-text transition-colors" />
         <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 ease-in-out text-sm font-bold opacity-0 group-hover:opacity-100 pr-1">Architecture</span>
       </button>
 
       {/* Technical Overview Modal */}
       {isOverviewOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-background border border-primary/20 rounded-2xl w-full max-w-5xl max-h-[90vh] shadow-2xl overflow-hidden relative flex flex-col mx-auto">
-            <div className="p-6 border-b border-primary/10 flex justify-between items-center bg-primary/5">
-              <h2 className="text-xl font-black tracking-tighter text-text">TECHNICAL OVERVIEW</h2>
-              <button onClick={() => setIsOverviewOpen(false)} className="text-primary/50 hover:text-text transition-colors">
+          <div className="bg-background border border-border rounded-2xl w-full max-w-5xl max-h-[90vh] shadow-2xl overflow-hidden relative flex flex-col mx-auto">
+            <div className="p-6 border-b border-border flex justify-between items-center bg-muted">
+              <h2 className="text-xl font-black tracking-tighter text-foreground">TECHNICAL OVERVIEW</h2>
+              <button onClick={() => setIsOverviewOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
                 <X size={24} />
               </button>
             </div>
@@ -260,7 +260,7 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
             <div className="p-6 md:p-8 bg-linear-to-b from-background to-primary/5 overflow-y-auto flex-1">
               <DrawioViewer />
             </div>
-            <div className="p-4 bg-background border-t border-primary/10 flex flex-col md:flex-row justify-between items-center gap-2 text-[10px] uppercase font-bold tracking-widest text-primary/30 text-center md:text-left">
+            <div className="p-4 bg-background border-t border-border flex flex-col md:flex-row justify-between items-center gap-2 text-[10px] uppercase font-bold tracking-widest text-muted-foreground text-center md:text-left">
               <span>Client: Next.js</span>
               <span>Services: NestJS (Core API + AI Worker)</span>
               <span>Infra: RabbitMQ · Redis · MariaDB · Pinecone</span>

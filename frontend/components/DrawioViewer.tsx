@@ -95,9 +95,9 @@ export default function DrawioViewer() {
 
   if (error) {
     return (
-      <div className="text-center text-sm text-primary/50 py-12">
+      <div className="text-center text-sm text-muted-foreground py-12">
         {error}{' '}
-        <a href="/api/architecture-diagram" className="text-secondary underline" download="syncpoint.drawio">
+        <a href="/api/architecture-diagram" className="text-brand-text underline" download="syncpoint.drawio">
           Download the .drawio
         </a>
       </div>
@@ -107,8 +107,8 @@ export default function DrawioViewer() {
   if (!srcDoc) {
     return (
       <div className="flex flex-col items-center gap-3 py-12">
-        <div className="w-8 h-8 border-2 border-primary/20 border-t-secondary rounded-full animate-spin" />
-        <p className="text-xs text-primary/40 font-mono">LOADING DIAGRAM...</p>
+        <div className="w-8 h-8 border-2 border-border border-t-secondary rounded-full animate-spin" />
+        <p className="text-xs text-muted-foreground font-mono">LOADING DIAGRAM...</p>
       </div>
     );
   }

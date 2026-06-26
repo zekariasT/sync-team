@@ -330,22 +330,22 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
   };
 
   return (
-    <div className="bg-background border border-primary/20 rounded-xl overflow-hidden shadow-2xl flex flex-col w-full max-w-2xl">
-      <div className="flex justify-between items-center p-4 border-b border-primary/10">
-        <h3 className="font-bold text-text flex items-center gap-2">
+    <div className="bg-background border border-border rounded-xl overflow-hidden shadow-2xl flex flex-col w-full max-w-2xl">
+      <div className="flex justify-between items-center p-4 border-b border-border">
+        <h3 className="font-bold text-foreground flex items-center gap-2">
           <Video size={16} /> Record Sync Point
         </h3>
         <div className="flex items-center gap-2">
           {/* Mode toggle — only show when not recording and no recording captured */}
           {!recording && recordedChunks.length === 0 && !videoUrl && (
-            <div className="flex items-center gap-1 bg-primary/5 border border-primary/15 rounded-lg p-0.5">
+            <div className="flex items-center gap-1 bg-muted border border-border rounded-lg p-0.5">
               <button
                 onClick={() => { setMode('screen'); setError(null); }}
                 disabled={isMobile}
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold transition-all ${
                   mode === 'screen'
-                    ? 'bg-secondary text-background shadow-sm'
-                    : 'text-primary/50 hover:text-text'
+                    ? 'bg-primary text-background shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
                 } ${isMobile ? 'opacity-30 cursor-not-allowed' : ''}`}
                 title={isMobile ? 'Screen recording is not supported on this device' : 'Record your screen'}
               >
@@ -355,8 +355,8 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
                 onClick={() => { setMode('camera'); setError(null); }}
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold transition-all ${
                   mode === 'camera'
-                    ? 'bg-secondary text-background shadow-sm'
-                    : 'text-primary/50 hover:text-text'
+                    ? 'bg-primary text-background shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
                 title="Record from camera"
               >
@@ -365,7 +365,7 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
             </div>
           )}
           {onClose && (
-            <button onClick={onClose} className="text-primary/50 hover:text-text transition-colors">
+            <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
               <X size={18} />
             </button>
           )}
@@ -407,16 +407,16 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
 
         {/* Recording Indicator */}
         {recording && (
-          <div className="absolute top-4 right-4 bg-accent text-white text-xs px-3 py-1 rounded-full animate-pulse flex items-center gap-2 font-bold shadow-[0_0_10px_rgba(157,21,21,0.5)]">
+          <div className="absolute top-4 right-4 bg-destructive text-white text-xs px-3 py-1 rounded-full animate-pulse flex items-center gap-2 font-bold shadow-[0_0_10px_rgba(157,21,21,0.5)]">
             <div className="w-2 h-2 bg-white rounded-full" /> RECORDING
           </div>
         )}
       </div>
 
-      <div className="p-4 bg-primary/5 flex flex-col gap-3">
+      <div className="p-4 bg-muted flex flex-col gap-3">
         {/* Error message */}
         {error && (
-          <div className="flex items-start gap-2 bg-accent/10 border border-accent/20 rounded-lg px-3 py-2 text-xs text-accent">
+          <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 text-xs text-destructive">
             <AlertTriangle size={14} className="shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
@@ -425,14 +425,14 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
         {/* Live mic/audio level meter — confirms sound is being captured */}
         {recording && (
           <div className="flex items-center gap-2" title="Live audio level">
-            <Mic size={14} className={audioLevel > 0.02 ? 'text-secondary' : 'text-primary/40'} />
-            <div className="flex-1 h-2 bg-primary/10 rounded-full overflow-hidden">
+            <Mic size={14} className={audioLevel > 0.02 ? 'text-brand-text' : 'text-muted-foreground'} />
+            <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
               <div
-                className={`h-full rounded-full transition-[width] duration-75 ${audioLevel > 0.02 ? 'bg-secondary' : 'bg-primary/30'}`}
+                className={`h-full rounded-full transition-[width] duration-75 ${audioLevel > 0.02 ? 'bg-presence' : 'bg-muted'}`}
                 style={{ width: `${Math.round(audioLevel * 100)}%` }}
               />
             </div>
-            <span className="text-[10px] font-mono w-16 shrink-0 text-right text-primary/50">
+            <span className="text-[10px] font-mono w-16 shrink-0 text-right text-muted-foreground">
               {audioLevel > 0.02 ? 'audio ok' : 'silent'}
             </span>
           </div>
@@ -444,17 +444,17 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
             placeholder="Recording Title (optional)..."
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="bg-background border border-primary/20 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:border-secondary transition-colors"
+            className="bg-background border border-border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:border-brand transition-colors"
           />
         )}
 
         {/* Tag teammates — they get a notification when this video is shared */}
         {recordedChunks.length > 0 && !recording && !videoUrl && members.length > 0 && (
           <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-primary/60">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
               <Users size={13} /> Tag teammates
               {selectedTagIds.length > 0 && (
-                <span className="text-secondary">· {selectedTagIds.length} selected</span>
+                <span className="text-brand-text">· {selectedTagIds.length} selected</span>
               )}
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -467,11 +467,11 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
                     onClick={() => toggleTag(m.id)}
                     className={`flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full border text-xs font-semibold transition-all ${
                       selected
-                        ? 'bg-secondary/15 border-secondary/40 text-secondary'
-                        : 'bg-background border-primary/15 text-primary/60 hover:border-primary/30 hover:text-text'
+                        ? 'bg-brand/10 border-brand/40 text-brand-text'
+                        : 'bg-background border-border text-muted-foreground hover:border-border hover:text-foreground'
                     }`}
                   >
-                    <span className="w-5 h-5 rounded-full overflow-hidden bg-primary/20 flex items-center justify-center shrink-0">
+                    <span className="w-5 h-5 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0">
                       {m.avatar
                         ? <img src={m.avatar} alt="" className="w-full h-full object-cover" />
                         : <span className="text-[10px] font-bold">{m.name.charAt(0)}</span>}
@@ -489,7 +489,7 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
           {!recording && recordedChunks.length === 0 && !videoUrl && (
             <button
               onClick={startRecording}
-              className="flex items-center gap-2 bg-accent hover:bg-accent/80 text-white px-5 py-2.5 rounded-lg font-bold transition-colors"
+              className="flex items-center gap-2 bg-destructive hover:bg-destructive/90 text-white px-5 py-2.5 rounded-lg font-bold transition-colors"
             >
               <Mic size={18} /> Start Recording
             </button>
@@ -498,7 +498,7 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
           {recording && (
             <button
               onClick={stopRecording}
-              className="flex items-center gap-2 bg-white text-accent hover:bg-gray-100 px-5 py-2.5 rounded-lg font-bold transition-colors"
+              className="flex items-center gap-2 bg-white text-destructive hover:bg-gray-100 px-5 py-2.5 rounded-lg font-bold transition-colors"
             >
               <StopCircle size={18} /> Stop
             </button>
@@ -508,14 +508,14 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
             <>
               <button
                 onClick={retry}
-                className="flex items-center gap-2 bg-background border border-primary/20 hover:bg-primary/5 text-text px-5 py-2.5 rounded-lg font-bold transition-colors shadow-sm"
+                className="flex items-center gap-2 bg-background border border-border hover:bg-muted text-foreground px-5 py-2.5 rounded-lg font-bold transition-colors shadow-sm"
               >
                 <RefreshCcw size={18} /> Retry
               </button>
               <button
                 onClick={uploadVideo}
                 disabled={uploading}
-                className="flex items-center gap-2 bg-secondary hover:bg-secondary/90 text-white px-5 py-2.5 rounded-lg font-bold transition-colors disabled:opacity-50 shadow-sm shadow-secondary/20"
+                className="flex items-center gap-2 bg-primary hover:bg-brand/10 text-white px-5 py-2.5 rounded-lg font-bold transition-colors disabled:opacity-50 shadow-sm shadow-brand/20"
               >
                 {uploading ? <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /> : <CheckSquare size={18} />}
                 {uploading ? 'Uploading...' : 'Save & Share'}
@@ -525,12 +525,12 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
 
           {videoUrl && (
             <div className="w-full text-center">
-              <p className="text-secondary font-bold text-sm mb-2">✅ Video saved successfully!</p>
+              <p className="text-brand-text font-bold text-sm mb-2">✅ Video saved successfully!</p>
               <input
                 type="text"
                 readOnly
                 value={videoUrl}
-                className="w-full text-xs text-center p-2 rounded bg-background border border-primary/20"
+                className="w-full text-xs text-center p-2 rounded bg-background border border-border"
                 onClick={(e) => (e.target as HTMLInputElement).select()}
               />
             </div>

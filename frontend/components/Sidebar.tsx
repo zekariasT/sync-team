@@ -115,48 +115,48 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
   };
 
   return (
-    <aside className="w-64 bg-background border-r border-primary/15 flex flex-col h-screen shadow-[4px_0_24px_rgba(33,35,40,0.5)] z-20 relative">
+    <aside className="w-64 bg-background border-r border-border flex flex-col h-screen shadow-[4px_0_24px_rgba(33,35,40,0.5)] z-20 relative">
       {/* Logo */}
-      <div className="p-4 border-b border-primary/15">
-        <h1 className="font-display text-xl font-extrabold tracking-tight text-text">
-          SYNCPOINT<span className="text-secondary">_OS</span>
+      <div className="p-4 border-b border-border">
+        <h1 className="font-display text-xl font-extrabold tracking-tight text-foreground">
+          SYNCPOINT<span className="text-brand-text">_OS</span>
         </h1>
-        <div className="text-[10px] font-mono text-primary/50 mt-1 tracking-[0.25em] uppercase flex items-center gap-1.5">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px] shadow-emerald-500" />
+        <div className="text-[10px] font-mono text-muted-foreground mt-1 tracking-[0.25em] uppercase flex items-center gap-1.5">
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-presence shadow-[0_0_6px] shadow-presence" />
           Team Operating System
         </div>
       </div>
 
       {/* Team Switcher — controls the active team for Board/Cycles/Roadmap/KB/Videos */}
       {onTeamChange && (
-        <div className="p-2 border-b border-primary/15 relative">
+        <div className="p-2 border-b border-border relative">
           {loadingTeams ? (
-            <div className="h-9 w-full bg-primary/5 animate-pulse rounded-lg border border-primary/10" />
+            <div className="h-9 w-full bg-muted animate-pulse rounded-lg border border-border" />
           ) : teams.length > 0 ? (
             <>
               <button
                 onClick={() => setShowTeamSwitcher(!showTeamSwitcher)}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/15 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer"
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-muted hover:bg-muted transition-colors cursor-pointer"
               >
-                <Users size={14} className="text-secondary shrink-0" />
-                <span className="flex-1 text-left text-sm font-semibold text-text truncate">
+                <Users size={14} className="text-brand-text shrink-0" />
+                <span className="flex-1 text-left text-sm font-semibold text-foreground truncate">
                   {teams.find(t => t.id === activeTeamId)?.name || 'Select Team'}
                 </span>
-                <ChevronDown size={14} className={`text-primary/50 shrink-0 transition-transform ${showTeamSwitcher ? 'rotate-180' : ''}`} />
+                <ChevronDown size={14} className={`text-muted-foreground shrink-0 transition-transform ${showTeamSwitcher ? 'rotate-180' : ''}`} />
               </button>
 
               {showTeamSwitcher && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setShowTeamSwitcher(false)} />
-                  <div className="absolute top-full left-2 right-2 mt-1 bg-background border border-primary/15 rounded-xl shadow-2xl p-1 z-50 overflow-hidden backdrop-blur-md">
+                  <div className="absolute top-full left-2 right-2 mt-1 bg-background border border-border rounded-xl shadow-2xl p-1 z-50 overflow-hidden backdrop-blur-md">
                     {teams.map(team => (
                       <button
                         key={team.id}
                         onClick={() => { onTeamChange(team.id); setShowTeamSwitcher(false); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm font-semibold text-text hover:bg-primary/5 rounded-lg transition-colors cursor-pointer"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm font-semibold text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer"
                       >
                         <span className="flex-1 text-left truncate">{team.name}</span>
-                        {team.id === activeTeamId && <Check size={14} className="text-secondary shrink-0" />}
+                        {team.id === activeTeamId && <Check size={14} className="text-brand-text shrink-0" />}
                       </button>
                     ))}
                   </div>
@@ -168,14 +168,14 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
       )}
 
       {/* Nav Tabs */}
-      <div className="flex flex-col p-2 gap-1 border-b border-primary/15">
-        <div className="text-xs font-bold text-primary/50 uppercase tracking-wider px-2 py-2">Workspace</div>
+      <div className="flex flex-col p-2 gap-1 border-b border-border">
+        <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2 py-2">Workspace</div>
         <button
           onClick={() => onViewChange('pulse')}
           className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all cursor-pointer
             ${activeView === 'pulse' 
-              ? 'bg-secondary/10 text-secondary' 
-              : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
+              ? 'bg-brand/10 text-brand-text' 
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
         >
           <Activity size={16} /> Heartbeat
         </button>
@@ -183,8 +183,8 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
           onClick={() => onViewChange('chat')}
           className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all cursor-pointer
             ${activeView === 'chat' 
-              ? 'bg-secondary/10 text-secondary' 
-              : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
+              ? 'bg-brand/10 text-brand-text' 
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
         >
           <Hash size={16} /> Channels
         </button>
@@ -192,21 +192,21 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
           onClick={() => onViewChange('videos')}
           className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all cursor-pointer
             ${activeView === 'videos' 
-              ? 'bg-secondary/10 text-secondary' 
-              : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
+              ? 'bg-brand/10 text-brand-text' 
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
         >
           <Video size={16} /> Sync Videos
         </button>
       </div>
 
-      <div className="flex flex-col p-2 gap-1 border-b border-primary/15">
-        <div className="text-xs font-bold text-primary/50 uppercase tracking-wider px-2 py-2">Task Management</div>
+      <div className="flex flex-col p-2 gap-1 border-b border-border">
+        <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2 py-2">Task Management</div>
         <button
           onClick={() => onViewChange('tasks')}
           className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all cursor-pointer
             ${activeView === 'tasks' 
-              ? 'bg-secondary/10 text-secondary' 
-              : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
+              ? 'bg-brand/10 text-brand-text' 
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
         >
           <LayoutDashboard size={16} /> Board
         </button>
@@ -214,8 +214,8 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
           onClick={() => onViewChange('cycles')}
           className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all cursor-pointer
             ${activeView === 'cycles' 
-              ? 'bg-secondary/10 text-secondary' 
-              : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
+              ? 'bg-brand/10 text-brand-text' 
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
         >
           <RotateCw size={16} /> Cycles
         </button>
@@ -223,8 +223,8 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
           onClick={() => onViewChange('roadmap')}
           className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all cursor-pointer
             ${activeView === 'roadmap' 
-              ? 'bg-secondary/10 text-secondary' 
-              : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
+              ? 'bg-brand/10 text-brand-text' 
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
         >
           <Map size={16} /> Roadmap
         </button>
@@ -232,8 +232,8 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
           onClick={() => onViewChange('kb')}
           className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all cursor-pointer
             ${activeView === 'kb' 
-              ? 'bg-secondary/10 text-secondary' 
-              : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
+              ? 'bg-brand/10 text-brand-text' 
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
         >
           <BookOpen size={16} /> Knowledge Base
         </button>
@@ -243,8 +243,8 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
             onClick={() => onViewChange('admin')}
             className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all
               ${activeView === 'admin'
-                ? 'bg-secondary/10 text-secondary'
-                : 'text-primary/70 hover:text-text hover:bg-primary/5'}`}
+                ? 'bg-brand/10 text-brand-text'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
           >
             <Users size={16} /> User Management
           </button>
@@ -256,9 +256,9 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
         <div className="flex-1 overflow-y-auto py-2">
           {teams.length === 0 ? (
             <div className="px-4 py-8 text-center">
-              <Users size={32} className="mx-auto text-primary/30 mb-3" />
-              <p className="text-xs text-primary/50">No teams yet.</p>
-              <p className="text-[10px] text-primary/30 mt-1">Create a team to start chatting.</p>
+              <Users size={32} className="mx-auto text-muted-foreground mb-3" />
+              <p className="text-xs text-muted-foreground">No teams yet.</p>
+              <p className="text-[10px] text-muted-foreground mt-1">Create a team to start chatting.</p>
             </div>
           ) : (
             teams.map(team => (
@@ -266,7 +266,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
                 {/* Team Header */}
                 <button
                   onClick={() => toggleTeam(team.id)}
-                  className="w-full flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-primary/70 hover:text-primary uppercase tracking-wider transition-colors cursor-pointer"
+                  className="w-full flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-muted-foreground hover:text-primary uppercase tracking-wider transition-colors cursor-pointer"
                 >
                   {expandedTeams.has(team.id) ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                   <Users size={12} />
@@ -284,8 +284,8 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
                           onClick={() => onChannelSelect(channel.id, channel.name)}
                           className={`w-full flex items-center gap-2 px-4 py-1.5 text-sm transition-all rounded-r-lg cursor-pointer
                             ${activeChannelId === channel.id
-                              ? 'text-text bg-secondary/15 border-l-2 border-secondary font-semibold'
-                              : 'text-primary/60 hover:text-text hover:bg-primary/5 border-l-2 border-transparent'}`}
+                              ? 'text-foreground bg-brand/10 border-l-2 border-brand font-semibold'
+                              : 'text-muted-foreground hover:text-foreground hover:bg-muted border-l-2 border-transparent'}`}
                         >
                           <Hash size={14} className="shrink-0" />
                           <span className="truncate">{channel.name}</span>
@@ -295,7 +295,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
                     {/* New Channel Input */}
                     {showNewChannel === team.id ? (
                       <div className="px-4 py-1.5 flex items-center gap-1">
-                        <Hash size={14} className="text-primary/30 shrink-0" />
+                        <Hash size={14} className="text-muted-foreground shrink-0" />
                         <input
                           type="text"
                           value={newChannelName}
@@ -306,13 +306,13 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
                           }}
                           placeholder="channel-name"
                           autoFocus
-                          className="bg-transparent border-b border-primary/30 text-sm text-text py-0.5 w-full focus:outline-none focus:border-secondary placeholder:text-primary/30"
+                          className="bg-transparent border-b border-border text-sm text-foreground py-0.5 w-full focus:outline-none focus:border-brand placeholder:text-muted-foreground"
                         />
                       </div>
                     ) : (
                       <button
                         onClick={() => setShowNewChannel(team.id)}
-                        className="w-full flex items-center gap-2 px-4 py-1.5 text-xs text-primary/40 hover:text-secondary transition-colors cursor-pointer"
+                        className="w-full flex items-center gap-2 px-4 py-1.5 text-xs text-muted-foreground hover:text-brand-text transition-colors cursor-pointer"
                       >
                         <Plus size={12} />
                         Add Channel
@@ -328,14 +328,14 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
 
       {/* AI Summary Section */}
       {loadingTeams ? (
-        <div className="px-3 py-3 border-t border-primary/15 space-y-2">
-          <div className="h-9 w-full bg-primary/5 animate-pulse rounded-xl border border-primary/10" />
-          <div className="h-9 w-full bg-primary/5 animate-pulse rounded-xl border border-primary/10" />
-          <div className="h-9 w-full bg-primary/5 animate-pulse rounded-xl border border-primary/10" />
+        <div className="px-3 py-3 border-t border-border space-y-2">
+          <div className="h-9 w-full bg-muted animate-pulse rounded-xl border border-border" />
+          <div className="h-9 w-full bg-muted animate-pulse rounded-xl border border-border" />
+          <div className="h-9 w-full bg-muted animate-pulse rounded-xl border border-border" />
         </div>
       ) : teams.length > 0 && (
-        <div className="flex flex-col p-2 gap-1 border-t border-primary/15">
-          <div className="text-xs font-bold text-primary/50 uppercase tracking-wider px-2 py-2">Global Sync</div>
+        <div className="flex flex-col p-2 gap-1 border-t border-border">
+          <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2 py-2">Global Sync</div>
           {teams.map(team => (
             <AiSummaryPanel key={team.id} teamId={team.id} teamName={team.name} />
           ))}
@@ -344,22 +344,22 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
 
       {/* User Info Footer */}
       {user && (
-        <div className="p-3 border-t border-primary/15 relative">
+        <div className="p-3 border-t border-border relative">
           {/* User Menu Drawer */}
           {showUserMenu && (
-            <div className="absolute top-full left-2 right-2 bg-background border border-primary/15 rounded-xl shadow-2xl p-1 z-50 overflow-hidden backdrop-blur-md">
+            <div className="absolute top-full left-2 right-2 bg-background border border-border rounded-xl shadow-2xl p-1 z-50 overflow-hidden backdrop-blur-md">
               <button 
                 onClick={() => { setShowUserMenu(false); openUserProfile(); }}
-                className="w-full flex items-center gap-3 px-3 py-2 text-xs font-semibold text-text hover:bg-primary/5 rounded-lg transition-colors cursor-pointer"
+                className="w-full flex items-center gap-3 px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer"
               >
-                <Settings size={14} className="text-primary/50" />
+                <Settings size={14} className="text-muted-foreground" />
                 Manage Account
               </button>
               <button 
                 onClick={() => { setShowUserMenu(false); signOut({ redirectUrl: '/sign-in' }); }}
-                className="w-full flex items-center gap-3 px-3 py-2 text-xs font-semibold text-accent hover:bg-accent/5 rounded-lg transition-colors cursor-pointer"
+                className="w-full flex items-center gap-3 px-3 py-2 text-xs font-semibold text-destructive hover:bg-destructive/10 rounded-lg transition-colors cursor-pointer"
               >
-                <LogOut size={14} className="text-accent/50" />
+                <LogOut size={14} className="text-destructive/50" />
                 Sign Out
               </button>
             </div>
@@ -367,14 +367,14 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
           
           <button 
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className="w-full flex items-center gap-2 p-1.5 hover:bg-primary/5 rounded-xl transition-all group cursor-pointer"
+            className="w-full flex items-center gap-2 p-1.5 hover:bg-muted rounded-xl transition-all group cursor-pointer"
           >
-            <div className="w-8 h-8 rounded-lg bg-secondary/20 overflow-hidden shrink-0 border border-secondary/20 group-hover:border-secondary/40 transition-colors">
+            <div className="w-8 h-8 rounded-lg bg-brand/10 overflow-hidden shrink-0 border border-brand/20 group-hover:border-brand/40 transition-colors">
               {user.imageUrl && <img src={user.imageUrl} alt="" className="w-full h-full object-cover" />}
             </div>
             <div className="min-w-0 flex-1 text-left">
-              <p className="text-xs font-bold text-text truncate leading-tight">{user.fullName || user.username}</p>
-              <p className="text-[10px] text-primary/40 truncate leading-tight">{user.primaryEmailAddress?.emailAddress}</p>
+              <p className="text-xs font-bold text-foreground truncate leading-tight">{user.fullName || user.username}</p>
+              <p className="text-[10px] text-muted-foreground truncate leading-tight">{user.primaryEmailAddress?.emailAddress}</p>
             </div>
           </button>
         </div>
