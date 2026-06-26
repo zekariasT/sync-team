@@ -11,7 +11,6 @@ import KnowledgeBaseView from '@/components/KnowledgeBaseView';
 import CommandPalette from '@/components/CommandPalette';
 import NotificationsBell from '@/components/NotificationsBell';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { AccentToggle } from '@/components/AccentToggle';
 import { Hash, Menu, X, Info } from 'lucide-react';
 
 interface DashboardShellProps {
@@ -221,7 +220,6 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
       {/* Global sticky controls — visible on every view and while scrolling.
           Headers reserve pr-48 safe zone so this never overlaps action buttons. */}
       <div className="fixed right-3 z-50 flex items-center gap-2.5 rounded-full border border-border bg-background/70 px-3 py-1.5 shadow-lg shadow-black/5 backdrop-blur-md">
-        <AccentToggle />
         <ThemeToggle />
         <Show when="signed-in">
           <span className="h-4 w-px bg-muted" />
