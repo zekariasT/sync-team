@@ -390,7 +390,7 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
 
         {/* Initial View */}
         {!recording && recordedChunks.length === 0 && !previewStream && (
-          <div className="text-center text-primary px-4">
+          <div className="text-center text-muted-foreground px-4">
             {mode === 'camera' ? (
               <>
                 <Camera size={48} className="mx-auto mb-4 opacity-50" />

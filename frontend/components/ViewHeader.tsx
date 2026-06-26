@@ -15,7 +15,7 @@ export default function ViewHeader({ title, Icon, onMenuClick, children }: ViewH
       <div className="flex items-center gap-2 min-w-0">
         <button 
           onClick={onMenuClick}
-          className="p-2 -ml-2 text-primary hover:text-foreground md:hidden"
+          className="p-2 -ml-2 text-muted-foreground hover:text-foreground md:hidden"
         >
           <Menu size={20} />
         </button>

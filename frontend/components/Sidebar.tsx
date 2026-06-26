@@ -266,7 +266,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
                 {/* Team Header */}
                 <button
                   onClick={() => toggleTeam(team.id)}
-                  className="w-full flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-muted-foreground hover:text-primary uppercase tracking-wider transition-colors cursor-pointer"
+                  className="w-full flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-muted-foreground hover:text-foreground uppercase tracking-wider transition-colors cursor-pointer"
                 >
                   {expandedTeams.has(team.id) ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                   <Users size={12} />

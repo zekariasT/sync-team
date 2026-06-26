@@ -11,6 +11,7 @@ import KnowledgeBaseView from '@/components/KnowledgeBaseView';
 import CommandPalette from '@/components/CommandPalette';
 import NotificationsBell from '@/components/NotificationsBell';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { AccentToggle } from '@/components/AccentToggle';
 import { Hash, Menu, X, Info } from 'lucide-react';
 
 interface DashboardShellProps {
@@ -170,11 +171,11 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
               <header className="h-14 border-b border-border flex items-center px-4 md:hidden bg-background shrink-0 sticky top-0 z-10">
                 <button 
                   onClick={() => setIsSidebarOpen(true)}
-                  className="p-2 -ml-2 text-primary hover:text-foreground"
+                  className="p-2 -ml-2 text-muted-foreground hover:text-foreground"
                 >
                   <Menu size={20} />
                 </button>
-                <h1 className="ml-2 text-sm font-black tracking-tighter text-primary truncate">SYNCPOINT_OS</h1>
+                <h1 className="ml-2 text-sm font-black tracking-tighter text-muted-foreground truncate">SYNCPOINT_OS</h1>
               </header>
               {pulseContent}
             </div>
@@ -197,11 +198,11 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
               <header className="absolute top-0 left-0 right-0 h-14 border-b border-border flex items-center px-4 md:hidden bg-background shrink-0">
                 <button 
                   onClick={() => setIsSidebarOpen(true)}
-                  className="p-2 -ml-2 text-primary hover:text-foreground"
+                  className="p-2 -ml-2 text-muted-foreground hover:text-foreground"
                 >
                   <Menu size={20} />
                 </button>
-                <h1 className="ml-2 text-sm font-black tracking-tighter text-primary">SYNCPOINT_OS</h1>
+                <h1 className="ml-2 text-sm font-black tracking-tighter text-muted-foreground">SYNCPOINT_OS</h1>
               </header>
               <div className="text-center">
                 <div className="w-20 h-20 rounded-2xl bg-muted border border-border flex items-center justify-center mx-auto mb-5">
@@ -220,6 +221,7 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
       {/* Global sticky controls — visible on every view and while scrolling.
           Headers reserve pr-48 safe zone so this never overlaps action buttons. */}
       <div className="fixed right-3 z-50 flex items-center gap-2.5 rounded-full border border-border bg-background/70 px-3 py-1.5 shadow-lg shadow-black/5 backdrop-blur-md">
+        <AccentToggle />
         <ThemeToggle />
         <Show when="signed-in">
           <span className="h-4 w-px bg-muted" />
@@ -239,7 +241,7 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
       {/* Floating Technical Overview Button */}
       <button
         onClick={() => setIsOverviewOpen(true)}
-        className="fixed bottom-28 right-6 bg-muted hover:bg-muted backdrop-blur-md border border-border text-primary p-3 rounded-full shadow-2xl transition-all z-40 group flex items-center gap-2"
+        className="fixed bottom-28 right-6 bg-muted hover:bg-muted backdrop-blur-md border border-border text-muted-foreground p-3 rounded-full shadow-2xl transition-all z-40 group flex items-center gap-2"
         title="Technical Overview"
       >
         <Info size={20} className="group-hover:text-brand-text transition-colors" />

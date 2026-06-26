@@ -39,6 +39,14 @@ export default function RootLayout({
       afterSignOutUrl="/sign-in"
     >
       <html lang="en" suppressHydrationWarning className={cn("font-sans", sans.variable, mono.variable)}>
+        <head>
+          {/* Apply the saved brand accent (Sage default / Clay) before paint to avoid a flash. */}
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `try{if(localStorage.getItem('syncpoint_accent')==='clay'){document.documentElement.dataset.accent='clay';}}catch(e){}`,
+            }}
+          />
+        </head>
         <body className="antialiased">
           <RealTimeProvider>
             <ToastProvider>

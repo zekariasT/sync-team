@@ -83,7 +83,7 @@ export default function CommandPalette({ isOpen, onClose, onSelectAction }: Comm
              onClick={() => { onSelectAction?.('create_channel'); onClose(); }}
           >
              <div className="flex items-center gap-3 text-sm font-medium">
-               <Hash size={16} className="text-primary" />
+               <Hash size={16} className="text-muted-foreground" />
                Create Channel
              </div>
           </button>
