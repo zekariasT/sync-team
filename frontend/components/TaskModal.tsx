@@ -40,7 +40,7 @@ export default function TaskModal({ isOpen, onClose, onSubmit, members, projects
       <div className="relative w-full max-w-lg bg-background border border-border rounded-xl shadow-2xl overflow-hidden p-6 animate-in fade-in zoom-in duration-200">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold">{initialData ? 'Edit Task' : 'New Task'}</h2>
-          <button onClick={onClose} className="p-1 hover:bg-muted rounded-full transition-colors">
+          <button onClick={onClose} aria-label="Close" className="p-1 hover:bg-muted rounded-full transition-colors">
             <X size={20} />
           </button>
         </div>

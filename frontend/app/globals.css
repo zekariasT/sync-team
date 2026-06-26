@@ -282,6 +282,15 @@
   color: var(--av-fg);
 }
 
+/* Keyboard focus ring for custom interactive elements (a11y: focus-states).
+   shadcn primitives manage their own focus-visible ring + set data-slot, so we
+   exclude them here to avoid a doubled ring. */
+:where(a, button, input, select, textarea, summary, [tabindex]):not([data-slot]):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 /* Presence "pulse" ring (live online indicator) */
 @keyframes pulseRing {
   0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--presence) 55%, transparent); }

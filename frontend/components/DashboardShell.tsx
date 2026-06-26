@@ -170,8 +170,9 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
             <div className="h-full overflow-y-auto">
               {/* Pulse doesn't have its own internal header yet, so we add one here */}
               <header className="h-14 border-b border-border flex items-center px-4 md:hidden bg-background shrink-0 sticky top-0 z-10">
-                <button 
+                <button
                   onClick={() => setIsSidebarOpen(true)}
+                  aria-label="Open navigation menu"
                   className="p-2 -ml-2 text-muted-foreground hover:text-foreground"
                 >
                   <Menu size={20} />
@@ -197,8 +198,9 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
           ) : activeView === 'chat' ? (
             <div className="flex-1 flex flex-col items-center justify-center h-full bg-background p-6">
               <header className="absolute top-0 left-0 right-0 h-14 border-b border-border flex items-center px-4 md:hidden bg-background shrink-0">
-                <button 
+                <button
                   onClick={() => setIsSidebarOpen(true)}
+                  aria-label="Open navigation menu"
                   className="p-2 -ml-2 text-muted-foreground hover:text-foreground"
                 >
                   <Menu size={20} />
@@ -266,7 +268,7 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
           <div className="bg-background border border-border rounded-2xl w-full max-w-5xl max-h-[90vh] shadow-2xl overflow-hidden relative flex flex-col mx-auto">
             <div className="p-6 border-b border-border flex justify-between items-center bg-muted">
               <h2 className="text-xl font-black tracking-tighter text-foreground">TECHNICAL OVERVIEW</h2>
-              <button onClick={() => setIsOverviewOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+              <button onClick={() => setIsOverviewOpen(false)} aria-label="Close" className="text-muted-foreground hover:text-foreground transition-colors">
                 <X size={24} />
               </button>
             </div>

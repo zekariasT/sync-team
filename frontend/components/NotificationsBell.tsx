@@ -110,6 +110,7 @@ export default function NotificationsBell({ onOpenVideo }: { onOpenVideo: (teamI
       <button
         onClick={() => setOpen((o) => !o)}
         className="relative flex items-center text-muted-foreground hover:text-foreground transition-colors"
+        aria-label="Notifications"
         title="Notifications"
       >
         <Bell size={18} />

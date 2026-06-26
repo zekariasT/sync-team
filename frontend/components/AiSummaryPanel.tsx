@@ -77,6 +77,7 @@ export default function AiSummaryPanel({ teamId, teamName }: AiSummaryPanelProps
           </div>
           <button
             onClick={() => setIsOpen(false)}
+            aria-label="Close"
             className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
           >
             <X size={20} />

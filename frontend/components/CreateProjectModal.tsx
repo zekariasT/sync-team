@@ -27,7 +27,7 @@ export default function CreateProjectModal({ isOpen, onClose, onSubmit }: Create
              <h2 className="text-xl font-bold">New Project</h2>
              <p className="text-xs text-muted-foreground">Chart out your long-term goals and epics.</p>
           </div>
-          <button onClick={onClose} className="p-1 hover:bg-muted rounded-full transition-colors text-foreground">
+          <button onClick={onClose} aria-label="Close" className="p-1 hover:bg-muted rounded-full transition-colors text-foreground">
             <X size={20} />
           </button>
         </div>

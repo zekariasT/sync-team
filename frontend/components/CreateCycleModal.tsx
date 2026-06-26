@@ -22,7 +22,7 @@ export default function CreateCycleModal({ isOpen, onClose, onSubmit }: CreateCy
       <div className="relative w-full max-w-sm bg-background border border-border rounded-xl shadow-2xl overflow-hidden p-6 animate-in fade-in zoom-in duration-200">
         <div className="flex justify-between items-center mb-6 text-brand-text">
           <Calendar size={24} />
-          <button onClick={onClose} className="p-1 hover:bg-muted rounded-full transition-colors text-foreground">
+          <button onClick={onClose} aria-label="Close" className="p-1 hover:bg-muted rounded-full transition-colors text-foreground">
             <X size={20} />
           </button>
         </div>
