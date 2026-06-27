@@ -67,7 +67,6 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface TeamMember {
   teamId: string;
@@ -235,19 +234,15 @@ export default function UserManagementView({ onMenuClick }: UserManagementViewPr
         confirmLabel="Delete permanently"
         onConfirm={() => handleDeleteUser(u.id)}
         trigger={
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-muted-foreground hover:text-destructive"
-                aria-label={`Delete ${u.name} from system`}
-              >
-                <Trash2 />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Delete user from system</TooltipContent>
-          </Tooltip>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:text-destructive"
+            aria-label={`Delete ${u.name} from system`}
+            title="Delete user from system"
+          >
+            <Trash2 />
+          </Button>
         }
       />
     ) : null;
