@@ -37,7 +37,7 @@ export default function TaskModal({ isOpen, onClose, onSubmit, members, projects
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-background border border-border rounded-xl shadow-2xl overflow-hidden p-6 animate-in fade-in zoom-in duration-200">
+      <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-background border border-border rounded-xl shadow-2xl p-5 sm:p-6 animate-in fade-in zoom-in duration-200">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold">{initialData ? 'Edit Task' : 'New Task'}</h2>
           <button onClick={onClose} aria-label="Close" className="p-1 hover:bg-muted rounded-full transition-colors">
@@ -58,7 +58,7 @@ export default function TaskModal({ isOpen, onClose, onSubmit, members, projects
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="relative">
               <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Project</label>
               <div className="relative">
@@ -133,7 +133,7 @@ export default function TaskModal({ isOpen, onClose, onSubmit, members, projects
         <div className="flex justify-end gap-3 mt-8">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-semibold hover:bg-muted rounded-lg transition-colors"
+            className="px-4 py-2.5 text-sm font-semibold hover:bg-muted rounded-lg transition-colors"
           >
             Cancel
           </button>
@@ -155,7 +155,7 @@ export default function TaskModal({ isOpen, onClose, onSubmit, members, projects
               }
             }}
             disabled={!title.trim()}
-            className="px-4 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-[var(--primary-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            className="px-4 py-2.5 bg-primary text-white text-sm font-bold rounded-lg hover:bg-[var(--primary-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             {initialData ? 'Save Changes' : 'Create Task'}
           </button>

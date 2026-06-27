@@ -29,7 +29,7 @@ export default function CommandPalette({ isOpen, onClose, onSelectAction }: Comm
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[20vh]" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-start justify-center px-4 pt-[16vh] sm:pt-[20vh]" onClick={onClose}>
       <div className="absolute inset-0 bg-background/80 backdrop-blur-sm pointer-events-none" />
       
       <div 
