@@ -1,43 +1,54 @@
+'use client';
+
 import { SignIn, SignUp } from '@clerk/nextjs';
 import { Activity, Boxes, Database, Radio } from 'lucide-react';
+import { useTheme } from 'next-themes';
 
-// Clerk widget themed onto the Team Pulse light tokens (auth renders on the
-// default light theme). Element classNames use our Tailwind token utilities.
-const clerkAppearance = {
-  variables: {
-    colorPrimary: '#4C6F60',
-    colorBackground: '#FCFAF6',
-    colorText: '#2B2722',
-    colorTextSecondary: '#5F5950',
-    colorInputBackground: 'rgba(92,131,116,0.06)',
-    colorInputText: '#2B2722',
-    colorNeutral: '#2B2722',
-    borderRadius: '0.7rem',
-    fontFamily: 'var(--font-geist-sans), system-ui, sans-serif',
-    fontSize: '0.95rem',
-  },
-  elements: {
-    rootBox: 'w-full',
-    cardBox: 'w-full shadow-none',
-    card: 'bg-transparent shadow-none border-0 p-0',
-    headerTitle: 'font-display tracking-tight text-foreground',
-    headerSubtitle: 'text-muted-foreground',
-    socialButtonsBlockButton:
-      'border border-border bg-muted hover:bg-surface-3 text-foreground transition-colors',
-    dividerLine: 'bg-border',
-    dividerText: 'text-text-faint uppercase tracking-[0.2em] text-[10px]',
-    formFieldLabel: 'text-muted-foreground uppercase tracking-[0.15em] text-[10px] font-semibold',
-    formFieldInput:
-      'bg-surface-2 border border-border text-foreground focus:border-brand',
-    formButtonPrimary:
-      'bg-primary hover:bg-[var(--primary-hover)] text-primary-foreground font-bold tracking-wide normal-case transition-all',
-    footer: 'bg-transparent',
-    footerActionText: 'text-muted-foreground',
-    footerActionLink: 'text-brand-text hover:text-brand font-semibold',
-    formFieldInputShowPasswordButton: 'text-muted-foreground',
-    identityPreviewEditButton: 'text-brand-text',
-  },
+// Theme-aware Clerk colours. The card background MUST follow the active theme:
+// our element text uses semantic tokens that flip light/dark, so a fixed-colour
+// card (the old bug) made the text invisible in the opposite theme.
+const CLERK_COLORS = {
+  light: { bg: '#FCFAF6', text: '#2B2722', sub: '#5F5950', inputBg: '#EFE9DE', primary: '#4C6F60' },
+  dark: { bg: '#24211E', text: '#ECE7DE', sub: '#A39B8F', inputBg: '#2B2824', primary: '#6E9A88' },
 };
+
+function buildAppearance(isDark: boolean) {
+  const c = isDark ? CLERK_COLORS.dark : CLERK_COLORS.light;
+  return {
+    variables: {
+      colorPrimary: c.primary,
+      colorBackground: c.bg,
+      colorText: c.text,
+      colorTextSecondary: c.sub,
+      colorInputBackground: c.inputBg,
+      colorInputText: c.text,
+      colorNeutral: c.text,
+      borderRadius: '0.7rem',
+      fontFamily: 'var(--font-geist-sans), system-ui, sans-serif',
+      fontSize: '0.95rem',
+    },
+    elements: {
+      rootBox: 'w-full',
+      cardBox: 'w-full shadow-none',
+      card: 'bg-transparent shadow-none border-0 p-0',
+      headerTitle: 'font-display tracking-tight text-foreground',
+      headerSubtitle: 'text-muted-foreground',
+      socialButtonsBlockButton:
+        'border border-border bg-muted hover:bg-surface-3 text-foreground transition-colors',
+      dividerLine: 'bg-border',
+      dividerText: 'text-text-faint uppercase tracking-[0.2em] text-[10px]',
+      formFieldLabel: 'text-muted-foreground uppercase tracking-[0.15em] text-[10px] font-semibold',
+      formFieldInput: 'bg-surface-2 border border-border text-foreground focus:border-brand',
+      formButtonPrimary:
+        'bg-primary hover:bg-[var(--primary-hover)] text-primary-foreground font-bold tracking-wide normal-case transition-all',
+      footer: 'bg-transparent',
+      footerActionText: 'text-muted-foreground',
+      footerActionLink: 'text-brand-text hover:text-brand font-semibold',
+      formFieldInputShowPasswordButton: 'text-muted-foreground',
+      identityPreviewEditButton: 'text-brand-text',
+    },
+  };
+}
 
 const signals = [
   { icon: Activity, label: 'REAL-TIME PULSE', sub: 'Live presence over WebSockets' },
@@ -46,6 +57,8 @@ const signals = [
 ];
 
 export default function AuthScene({ mode }: { mode: 'sign-in' | 'sign-up' }) {
+  const { resolvedTheme } = useTheme();
+  const clerkAppearance = buildAppearance(resolvedTheme === 'dark');
   return (
     <main className="relative min-h-dvh w-full overflow-x-hidden bg-background text-foreground">
       {/* Atmosphere: soft sage/primary glows + faint technical grid */}

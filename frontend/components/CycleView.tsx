@@ -161,7 +161,7 @@ export default function CycleView({ teamId, onMenuClick }: { teamId?: string; on
         {(isAdmin || isLead) && (
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="bg-primary text-white px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1 hover:bg-[var(--primary-hover)] transition-colors shadow-sm"
+            className="bg-primary text-primary-foreground px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1 hover:bg-[var(--primary-hover)] transition-colors shadow-sm"
           >
             <Plus size={16} /> <span className="hidden sm:inline">New Cycle</span>
           </button>

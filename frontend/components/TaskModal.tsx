@@ -155,7 +155,7 @@ export default function TaskModal({ isOpen, onClose, onSubmit, members, projects
               }
             }}
             disabled={!title.trim()}
-            className="px-4 py-2.5 bg-primary text-white text-sm font-bold rounded-lg hover:bg-[var(--primary-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            className="px-4 py-2.5 bg-primary text-primary-foreground text-sm font-bold rounded-lg hover:bg-[var(--primary-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             {initialData ? 'Save Changes' : 'Create Task'}
           </button>

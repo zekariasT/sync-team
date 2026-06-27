@@ -204,7 +204,7 @@ export default function VideosView({ teamId, onMenuClick }: { teamId?: string; o
                    } catch(err) { console.error('Add reaction failed', err); }
                  }}>
                    <input type="text" name="comment" placeholder="Add a comment at current time..." className="bg-transparent border border-border rounded px-2 text-sm flex-1 focus:outline-none focus:border-brand" />
-                   <button type="submit" className="bg-primary text-white p-1.5 rounded"><MessageSquare size={14} /></button>
+                   <button type="submit" className="bg-primary text-primary-foreground p-1.5 rounded"><MessageSquare size={14} /></button>
                  </form>
                </div>
              </div>

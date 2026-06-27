@@ -408,7 +408,7 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
 
         {/* Recording Indicator */}
         {recording && (
-          <div className="absolute top-4 right-4 bg-destructive text-white text-xs px-3 py-1 rounded-full animate-pulse flex items-center gap-2 font-bold shadow-[0_0_10px_rgba(157,21,21,0.5)]">
+          <div className="absolute top-4 right-4 bg-destructive text-destructive-foreground text-xs px-3 py-1 rounded-full animate-pulse flex items-center gap-2 font-bold shadow-[0_0_10px_rgba(157,21,21,0.5)]">
             <div className="w-2 h-2 bg-white rounded-full" /> RECORDING
           </div>
         )}
@@ -486,7 +486,7 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
           {!recording && recordedChunks.length === 0 && !videoUrl && (
             <button
               onClick={startRecording}
-              className="flex items-center gap-2 bg-destructive hover:bg-destructive/90 text-white px-5 py-2.5 rounded-lg font-bold transition-colors"
+              className="flex items-center gap-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground px-5 py-2.5 rounded-lg font-bold transition-colors"
             >
               <Mic size={18} /> Start Recording
             </button>
@@ -512,7 +512,7 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
               <button
                 onClick={uploadVideo}
                 disabled={uploading}
-                className="flex items-center gap-2 bg-primary hover:bg-[var(--primary-hover)] text-white px-5 py-2.5 rounded-lg font-bold transition-colors disabled:opacity-50 shadow-sm shadow-brand/20"
+                className="flex items-center gap-2 bg-primary hover:bg-[var(--primary-hover)] text-primary-foreground px-5 py-2.5 rounded-lg font-bold transition-colors disabled:opacity-50 shadow-sm shadow-brand/20"
               >
                 {uploading ? <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /> : <CheckSquare size={18} />}
                 {uploading ? 'Uploading...' : 'Save & Share'}
