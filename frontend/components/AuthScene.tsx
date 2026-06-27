@@ -47,7 +47,7 @@ const signals = [
 
 export default function AuthScene({ mode }: { mode: 'sign-in' | 'sign-up' }) {
   return (
-    <main className="relative min-h-screen w-full overflow-hidden bg-background text-foreground">
+    <main className="relative min-h-dvh w-full overflow-x-hidden bg-background text-foreground">
       {/* Atmosphere: soft sage/primary glows + faint technical grid */}
       <div
         aria-hidden
@@ -71,7 +71,7 @@ export default function AuthScene({ mode }: { mode: 'sign-in' | 'sign-up' }) {
         }}
       />
 
-      <div className="relative grid min-h-screen lg:grid-cols-[1.05fr_0.95fr]">
+      <div className="relative grid min-h-dvh lg:grid-cols-[1.05fr_0.95fr]">
         {/* ---------- Left: brand / mission panel ---------- */}
         <section className="relative hidden flex-col justify-between border-r border-border p-10 lg:flex xl:p-14">
           {/* Top status bar */}
@@ -127,7 +127,7 @@ export default function AuthScene({ mode }: { mode: 'sign-in' | 'sign-up' }) {
         </section>
 
         {/* ---------- Right: access terminal ---------- */}
-        <section className="relative flex items-center justify-center p-6 sm:p-10">
+        <section className="relative flex items-center justify-center px-4 py-8 sm:p-10">
           <div className="w-full max-w-md">
             {/* Mobile mini-wordmark */}
             <div className="mb-8 lg:hidden">
@@ -146,7 +146,7 @@ export default function AuthScene({ mode }: { mode: 'sign-in' | 'sign-up' }) {
             </div>
 
             {/* Themed Clerk widget on a surface panel */}
-            <div className="rounded-2xl border border-border bg-card p-6 shadow-card backdrop-blur-sm">
+            <div className="rounded-2xl border border-border bg-card p-3 sm:p-6 shadow-card backdrop-blur-sm">
               {mode === 'sign-in' ? (
                 <SignIn appearance={clerkAppearance} />
               ) : (
