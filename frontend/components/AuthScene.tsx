@@ -6,7 +6,7 @@ import { Activity, Boxes, Database, Radio } from 'lucide-react';
 const clerkAppearance = {
   variables: {
     colorPrimary: '#4C6F60',
-    colorBackground: 'transparent',
+    colorBackground: '#FCFAF6',
     colorText: '#2B2722',
     colorTextSecondary: '#5F5950',
     colorInputBackground: 'rgba(92,131,116,0.06)',

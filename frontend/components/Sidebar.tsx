@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useUser, useClerk, useAuth } from '@clerk/nextjs';
-import { Hash, Activity, Plus, LayoutDashboard, Users, RotateCw, Map, BookOpen, ChevronDown, ChevronRight, Video, Settings, LogOut, Check } from 'lucide-react';
+import { useUser, useAuth } from '@clerk/nextjs';
+import { Hash, Activity, Plus, LayoutDashboard, Users, RotateCw, Map, BookOpen, ChevronDown, ChevronRight, Video, Check } from 'lucide-react';
 import AiSummaryPanel from './AiSummaryPanel';
 import { InitialsAvatar } from './InitialsAvatar';
+import { UserMenu } from './UserMenu';
 import { useTeamRole } from '@/hooks/useTeamRole';
 
 interface Channel {
@@ -37,9 +38,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
   const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set());
   const [showNewChannel, setShowNewChannel] = useState<string | null>(null);
   const [newChannelName, setNewChannelName] = useState('');
-  const [showUserMenu, setShowUserMenu] = useState(false);
   const [showTeamSwitcher, setShowTeamSwitcher] = useState(false);
-  const { signOut, openUserProfile } = useClerk();
   const { getToken } = useAuth();
 
   useEffect(() => {
@@ -346,41 +345,20 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
       {/* User Info Footer */}
       {user && (
         <div className="p-3 border-t border-border relative">
-          {/* User Menu Drawer */}
-          {showUserMenu && (
-            <div className="absolute top-full left-2 right-2 bg-background border border-border rounded-xl shadow-2xl p-1 z-50 overflow-hidden backdrop-blur-md">
-              <button 
-                onClick={() => { setShowUserMenu(false); openUserProfile(); }}
-                className="w-full flex items-center gap-3 px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer"
-              >
-                <Settings size={14} className="text-muted-foreground" />
-                Manage Account
-              </button>
-              <button 
-                onClick={() => { setShowUserMenu(false); signOut({ redirectUrl: '/sign-in' }); }}
-                className="w-full flex items-center gap-3 px-3 py-2 text-xs font-semibold text-destructive hover:bg-destructive/10 rounded-lg transition-colors cursor-pointer"
-              >
-                <LogOut size={14} className="text-destructive/50" />
-                Sign Out
-              </button>
-            </div>
-          )}
-          
-          <button 
-            onClick={() => setShowUserMenu(!showUserMenu)}
-            className="w-full flex items-center gap-2 p-1.5 hover:bg-muted rounded-xl transition-all group cursor-pointer"
-          >
-            <InitialsAvatar
-              name={user.fullName || user.username}
-              seed={user.id}
-              tint="primary"
-              className="size-8 text-xs"
-            />
-            <div className="min-w-0 flex-1 text-left">
-              <p className="text-xs font-bold text-foreground truncate leading-tight">{user.fullName || user.username}</p>
-              <p className="text-[10px] text-muted-foreground truncate leading-tight">{user.primaryEmailAddress?.emailAddress}</p>
-            </div>
-          </button>
+          <UserMenu align="start">
+            <button className="w-full flex items-center gap-2 p-1.5 hover:bg-muted rounded-xl transition-all group cursor-pointer">
+              <InitialsAvatar
+                name={user.fullName || user.username}
+                seed={user.id}
+                tint="primary"
+                className="size-8 text-xs"
+              />
+              <div className="min-w-0 flex-1 text-left">
+                <p className="text-xs font-bold text-foreground truncate leading-tight">{user.fullName || user.username}</p>
+                <p className="text-[10px] text-muted-foreground truncate leading-tight">{user.primaryEmailAddress?.emailAddress}</p>
+              </div>
+            </button>
+          </UserMenu>
         </div>
       )}
     </aside>
