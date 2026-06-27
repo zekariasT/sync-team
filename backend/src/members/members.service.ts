@@ -175,6 +175,18 @@ export class MembersService {
     const target = await this.prisma.user.findUnique({ where: { id }, select: { isRoot: true } });
     if (!target) throw new NotFoundException('User not found');
     if (target.isRoot) throw new ForbiddenException('Root accounts cannot be deleted.');
-    return await this.prisma.user.delete({ where: { id } });
+    // Most of the user's records cascade-delete with them (memberships,
+    // messages, DMs, videos, video tags/reactions, notifications), and tasks
+    // assigned to them auto-unassign (assigneeId is optional → ON DELETE SET
+    // NULL). But Task.reporterId and Document.uploaderId are required FKs with
+    // no cascade, so they'd block the delete (Prisma P2003 "Foreign key
+    // constraint violated: reporterId"). Hand that owned content off to the
+    // root performing the deletion so the team's tasks/docs survive, then
+    // delete — all in one transaction so we never half-delete a user.
+    return await this.prisma.$transaction(async (tx) => {
+      await tx.task.updateMany({ where: { reporterId: id }, data: { reporterId: requesterId } });
+      await tx.document.updateMany({ where: { uploaderId: id }, data: { uploaderId: requesterId } });
+      return tx.user.delete({ where: { id } });
+    });
   }
 }
