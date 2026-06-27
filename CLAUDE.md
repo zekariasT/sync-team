@@ -239,6 +239,49 @@ Every backend endpoint requires a real Clerk Bearer token — `ClerkAuthGuard`
   filesystem, so this is local/server-rendered only — bundle the file into
   `public/` if this ever ships to a serverless host.)
 
+## Frontend design system (shadcn + "Team Pulse")
+
+The frontend was migrated off the old glassmorphism look onto **shadcn/ui** + a
+warm **"Team Pulse"** design system (imported from a claude.ai/design mockup via
+the `DesignSync` tool / `/design-login`).
+
+- **shadcn/ui** is initialized in `frontend/` (`components.json`, style
+  `radix-nova`, `radix-ui` primitives, `lucide-react` icons). Primitives live in
+  `frontend/components/ui/`; `cn()` is `@/lib/utils`. **Run the CLI from inside
+  `frontend/`** — from the repo root it misdetects the project (`cd frontend &&
+  npx shadcn@latest add <component>`, or pass `--cwd`).
+- **Theme tokens** (`frontend/app/globals.css`) are two layered:
+  1. **Raw design tokens** (the mockup's source values): `--bg`, `--surface`,
+     `--surface-2/3`, `--text`, `--text-muted/faint`, `--border-c`, `--brand`
+     (sage)/`--brand-text`/`--brand-soft`, `--primary-c`/`--primary-fg`,
+     `--presence`, `--lead-*`, `--destructive-c` — for **light** (`:root`, cream
+     `#F5F1EA`) and **dark** (`.dark`, charcoal `#1C1A18`).
+  2. **shadcn semantic bridge** mapped onto them: `--background`, `--foreground`,
+     `--primary`, `--card`, `--muted`, `--accent` (a *neutral hover-fill* — **not**
+     the brand accent; the brand sage is `--brand`), `--destructive`, `--border`,
+     `--ring`, `--sidebar*` — exposed as Tailwind utilities via `@theme inline`.
+  Every fg/bg pair is **WCAG AA verified in light + dark** by
+  `frontend/scripts/contrast-check.mjs` — run it after touching the palette.
+- **Fonts**: Geist + Geist Mono (the `geist` package; `--font-geist-sans/mono`).
+- **Role badges** use a `[data-kind]` CSS cascade + `.role-tint`: admin→sage,
+  lead→amber, member→neutral, **root→solid primary** (`RootBadge`,
+  `MemberRoleBadge`). **Avatars are initials-only — no photos anywhere**: the
+  shared `InitialsAvatar` renders a `[data-tint]` square (sage/clay/amber by
+  deterministic hash; root + the current user pin to solid primary). Don't
+  reintroduce `<img>`/Clerk photo avatars.
+- **`UserMenu`** (Manage Account / Sign Out) is shared by the sidebar footer and
+  the global pill avatar (the pill replaced Clerk's `<UserButton>`).
+- **Auth** (`AuthScene.tsx`) is a **client component** that reads `next-themes`
+  and feeds Clerk a **per-theme** colour set so the widget matches light/dark.
+  Buttons use `text-primary-foreground` / `text-destructive-foreground`, **never
+  `text-white`** on `bg-primary`/`bg-destructive` (those lighten in dark mode, so
+  white drops below AA). See `lessons.md` for both pitfalls.
+- A **Sage↔Clay** accent swap is encoded as a dormant `[data-accent="clay"]`
+  block in `globals.css` (the in-UI toggle was removed; re-add a setter on
+  `<html data-accent>` to use it).
+- Custom (non-shadcn) interactive elements get a global keyboard focus ring via
+  `:focus-visible:not([data-slot])`; shadcn primitives keep their own.
+
 ## Gotchas
 
 - Editing `.env` does **not** hot-reload — `nest start --watch` only reads env
@@ -264,3 +307,12 @@ Every backend endpoint requires a real Clerk Bearer token — `ClerkAuthGuard`
   including for admins whose result set (all teams' docs) doesn't actually
   change when switching teams — expect a brief loading-spinner flash on team
   switch; it's not a bug, just an unnecessary refetch.
+- **Never run `npx next build` while `next dev` is running** — they share the
+  `.next` directory; the build rewrites it and the dev server dies with
+  `ENOENT: app-paths-manifest.json` (500s on every route). To verify compiles
+  while dev is up, use `npx tsc --noEmit` instead.
+- Tailwind **silently drops arbitrary values with nested `min()`/commas** (e.g.
+  `[grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr))]`) — a
+  co-listed plain class then wins (here `grid-cols-1` → everything stacked).
+  Put complex grid templates in a **raw-CSS utility class** instead (see
+  `.pulse-grid` in `globals.css`).
