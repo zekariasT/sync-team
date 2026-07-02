@@ -138,13 +138,16 @@ export class MembersService {
     }
   }
 
-  async syncUser(data: { id: string, email: string, name: string, avatar?: string | null }) {
+  async syncUser(data: { id: string, email: string, name: string, avatar?: string | null, timezone?: string }) {
     const user = await this.prisma.user.upsert({
       where: { id: data.id },
       update: {
         email: data.email,
         name: data.name,
         avatar: data.avatar || null,
+        // Only overwrite when the client sent a real zone, so a missing/empty
+        // value never clobbers a good stored one back to the "UTC" default.
+        ...(data.timezone ? { timezone: data.timezone } : {}),
       },
       create: {
         id: data.id,
@@ -152,6 +155,7 @@ export class MembersService {
         name: data.name,
         avatar: data.avatar || null,
         status: 'Available',
+        ...(data.timezone ? { timezone: data.timezone } : {}),
       },
     });
 

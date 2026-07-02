@@ -1,13 +1,27 @@
 'use client';
 
-import { useEffect } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
 
+// Live presence: the set of user IDs currently holding at least one open socket,
+// kept in sync with the backend PulseGateway (presence:state snapshot on connect
+// + presence:update deltas). Consumed by PresenceIndicator to render the real
+// online/offline dot instead of one derived from the custom status text.
+// `null` means "not known yet" (no snapshot received — socket still connecting
+// or unreachable), so consumers can render a neutral state instead of falsely
+// asserting everyone is offline.
+const PresenceContext = createContext<Set<string> | null>(null);
+
+export function usePresence() {
+    return useContext(PresenceContext);
+}
+
 export default function RealTimeProvider({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const { getToken, isSignedIn, isLoaded } = useAuth();
+    const [onlineUsers, setOnlineUsers] = useState<Set<string> | null>(null);
 
     // NOTE: user sync + team auto-enroll happens in DashboardShell's init effect
     // (awaited before loading teams). It used to run here too, but two concurrent
@@ -18,7 +32,10 @@ export default function RealTimeProvider({ children }: { children: React.ReactNo
         // Don't open a socket until Clerk has settled on a signed-in session.
         // Connecting during the sign-out transition (or before auth loads) fires
         // the handshake with a null/expired token and logs console errors.
-        if (!isLoaded || !isSignedIn) return;
+        if (!isLoaded || !isSignedIn) {
+            setOnlineUsers(null);
+            return;
+        }
 
         let socket: ReturnType<typeof io> | undefined;
         let active = true;
@@ -32,7 +49,28 @@ export default function RealTimeProvider({ children }: { children: React.ReactNo
                 auth: { token },
             });
 
-            // Listen for the "statusChanged" event from the backend
+            // Full presence snapshot, pushed by the server on (re)connect.
+            socket.on('presence:state', (userIds: string[]) => {
+                setOnlineUsers(new Set(Array.isArray(userIds) ? userIds : []));
+            });
+
+            // Incremental presence transition for a single user.
+            socket.on('presence:update', ({ userId, online }: { userId: string; online: boolean }) => {
+                if (!userId) return;
+                setOnlineUsers((prev) => {
+                    // Deltas before the first snapshot are ignored — the snapshot
+                    // that follows already reflects them. No-op deltas keep the
+                    // previous Set identity so consumers don't re-render.
+                    if (!prev || prev.has(userId) === online) return prev;
+                    const next = new Set(prev);
+                    if (online) next.add(userId);
+                    else next.delete(userId);
+                    return next;
+                });
+            });
+
+            // Listen for the "statusChanged" event from the backend (custom status
+            // text — distinct from presence above).
             socket.on('statusChanged', (data) => {
                 console.log('Pulse update received!', data);
                 // This tells Next.js to re-fetch the data without a full page reload.
@@ -48,5 +86,5 @@ export default function RealTimeProvider({ children }: { children: React.ReactNo
         };
     }, [router, getToken, isSignedIn, isLoaded]);
 
-    return <>{children}</>;
+    return <PresenceContext.Provider value={onlineUsers}>{children}</PresenceContext.Provider>;
 }

@@ -177,8 +177,23 @@ Every backend endpoint requires a real Clerk Bearer token — `ClerkAuthGuard`
 - `PulseGateway` (`backend/src/pulse/pulse.gateway.ts`) is the single Socket.IO
   gateway. Sockets auth via handshake (`io(url, { auth: { token } })`), not
   HTTP headers — a different, separately-correct pattern from REST auth above.
-  Sockets join a `user:${id}` room for direct notifications and team rooms via
-  `joinTeam`.
+  On connect, sockets join a `user:${id}` room for direct notifications and are
+  **auto-joined to all of their user's `team:${id}` rooms** (root/any-admin
+  sockets also join `presence:observers` for cross-team visibility) — so
+  team-scoped events (`statusChanged`, `presence:update`, ...) arrive without an
+  explicit `joinTeam`. The `joinTeam`/`joinChannel` messages still exist for
+  rooms beyond one's memberships (gated by `canAccessTeam`); the team-room set
+  is snapshotted at connect time, so membership changes apply on reconnect.
+- **Live presence** is ref-counted per user in the gateway (in-memory,
+  per-process — needs a shared store if core-api ever scales horizontally),
+  with an 8s grace window so page reloads don't flap offline→online. Broadcasts
+  and the `presence:state` connect snapshot are **scoped to who may see that
+  user** (their team rooms + `presence:observers` + their own sockets),
+  mirroring `members.service.ts findAll` visibility — never `server.emit`
+  presence globally, that leaks online user IDs across team boundaries. Guest
+  (tokenless) sockets are excluded from presence entirely. Frontend:
+  `RealTimeProvider` exposes it via `usePresence()` (`Set<string> | null` —
+  `null` means "no snapshot yet", rendered as a neutral state, not "Offline").
 - KB indexing fan-out: `ai-worker` finishes embedding → publishes on Redis
   `kb:events` channel → `KbRealtimeListener` (backend) relays into the team's
   socket room → frontend's `RealTimeProvider`/`KnowledgeBaseView` refreshes

@@ -80,6 +80,10 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
           email: u.primaryEmailAddress?.emailAddress,
           name: u.fullName || u.username || 'Unknown',
           avatar: u.imageUrl,
+          // Capture the browser's IANA zone (e.g. "America/New_York") so the
+          // Heartbeat view shows each member's real local clock instead of the
+          // "UTC" column default. Self-heals existing users on next sign-in.
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         }),
       }).catch(err => console.error('User sync failed:', err));
 

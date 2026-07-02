@@ -5,6 +5,8 @@ import MemberRoleBadge from './MemberRoleBadge';
 import RootBadge from './RootBadge';
 import { Globe } from 'lucide-react';
 import { InitialsAvatar } from './InitialsAvatar';
+import PresenceIndicator from './PresenceIndicator';
+import PresenceCount from './PresenceCount';
 
 export default async function PulseView() {
   const user = await currentUser();
@@ -44,7 +46,7 @@ export default async function PulseView() {
           <div>
             <h1 className="font-display text-xl font-semibold tracking-tight text-text">Team Pulse</h1>
             <p className="mt-0.5 text-xs text-text-muted">
-              Real-time presence{members.length > 0 ? ` · ${members.length} online` : ''}
+              Real-time presence<PresenceCount memberIds={members.map((m: any) => m.id)} />
             </p>
           </div>
         </div>
@@ -60,7 +62,6 @@ export default async function PulseView() {
           {members.map((member: any) => {
             const isTargetMemberInLeadedTeam = member.teamMembers?.some((tm: any) => leadTeamIds.includes(tm.teamId));
             const canUpdate = isAdmin || activeUserId === member.id || isTargetMemberInLeadedTeam;
-            const offline = member.status?.toLowerCase() === 'offline';
 
             return (
               <div
@@ -79,16 +80,7 @@ export default async function PulseView() {
                     <h3 className="min-w-0 truncate text-[15px] font-semibold text-text">{member.name}</h3>
                     {member.isRoot && <RootBadge />}
                   </div>
-                  <div className="flex shrink-0 items-center gap-1.5">
-                    <span
-                      className={offline ? 'size-2 rounded-full bg-text-faint' : 'size-2 rounded-full bg-presence'}
-                      style={offline ? undefined : { boxShadow: '0 0 0 3px var(--brand-soft)' }}
-                      aria-hidden
-                    />
-                    <span className={`text-[10px] font-bold uppercase tracking-wider ${offline ? 'text-text-faint' : 'text-brand-text'}`}>
-                      {offline ? 'Offline' : 'Online'}
-                    </span>
-                  </div>
+                  <PresenceIndicator userId={member.id} />
                 </div>
 
                 {/* Teams & roles */}
