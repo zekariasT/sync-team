@@ -166,7 +166,12 @@ Every backend endpoint requires a real Clerk Bearer token — `ClerkAuthGuard`
   API route doesn't mean the route is missing; it means you're unauthenticated.
 - `POST /members/sync` (called from `DashboardShell`'s init effect) only
   upserts the Clerk user record on sign-in — it does **not** auto-enroll new
-  users into demo teams. That auto-enroll behavior was deliberately removed
+  users into demo teams. The target user id comes from the **verified token**
+  (`@UserId()`), never the request body — the DTO's `id` field is deprecated
+  and ignored (it used to be trusted, which let any signed-in user overwrite
+  any other user's record). `timezone` must be a real IANA zone
+  (`@IsTimeZone`): it feeds Luxon's `setZone` in `MemberClock`, where an
+  arbitrary string renders "Invalid DateTime" for every viewer. That auto-enroll behavior was deliberately removed
   (`members.service.ts syncUser`): re-granting `ADMIN` on every login used to
   silently clobber manual role/membership changes made between sign-ins. Team
   membership is now only granted explicitly via the team endpoints
@@ -322,6 +327,14 @@ the `DesignSync` tool / `/design-login`).
   including for admins whose result set (all teams' docs) doesn't actually
   change when switching teams — expect a brief loading-spinner flash on team
   switch; it's not a bug, just an unnecessary refetch.
+- Backend `tsconfig` is `module: nodenext` — **every** relative import needs an
+  explicit `.js` extension, *including `*.spec.ts` files* (the Nest scaffold
+  generates them without, so freshly generated specs break `tsc`). Also,
+  extensionless **subpath imports into a package with no `exports` map can
+  never resolve** under nodenext — e.g. the scaffold's
+  `import { App } from 'supertest/types'`; drop the import (the generic adds
+  nothing) rather than fighting the resolver. Keep `npx tsc --noEmit` at zero
+  errors in both `backend/` and `frontend/` so real breakage stands out.
 - **Never run `npx next build` while `next dev` is running** — they share the
   `.next` directory; the build rewrites it and the dev server dies with
   `ENOENT: app-paths-manifest.json` (500s on every route). To verify compiles

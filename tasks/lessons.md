@@ -162,3 +162,45 @@ and `postMessage`s its height back (`frontend/components/DrawioViewer.tsx`,
 served by `frontend/app/api/architecture-diagram/route.ts`). Debugging aside:
 the `curl` 404 on that API route was a separate red herring — Clerk's
 `auth.protect()` returns 404 (not 401) for unauthenticated non-page requests.
+
+## 2026-07-06 — Realtime broadcasts must be scoped like queries — a global emit is an authorization bypass
+
+All the careful per-team visibility in the HTTP layer (`findAll` reshaping,
+`checkTeamPermission`, role guards) is nullified if the socket layer then
+broadcasts the same domain data with `server.emit` and relies on clients to
+filter what they render. "Clients map this onto the member set they're allowed
+to see" is client-side authorization — anyone with a WebSocket client reads the
+raw stream, and in this gateway that includes **tokenless guest sockets** (the
+handshake falls back to `guest-demo-user` instead of rejecting). Emit
+user-scoped events into rooms that mirror the read model's visibility (team
+rooms + an observers room for root/any-admin), and filter connect-time
+snapshots per viewer. Corollary: a `@SubscribeMessage` handler that returns
+data is an API surface too — an unauthenticated socket can call it even if no
+frontend code does.
+
+Concrete instance: the first cut of live presence `server.emit`'d every
+`presence:update` and sent the full `presence:state` online-ID list to every
+socket, guests included, and a dead `presence:list` handler let any socket
+enumerate all online user IDs. Caught in the 2026-07-06 `/code-review`; fixed
+by auto-joining sockets to their user's team rooms on connect (which also fixed
+`statusChanged` never reaching clients) and scoping all presence traffic — see
+`tasks/done/004-live-presence-team-scoped-realtime-and-sync-hardening.md`.
+
+## 2026-07-06 — A new field inherits the trust model of the endpoint it rides through
+
+Adding an innocuous field to an existing write endpoint silently adopts that
+endpoint's identity and authorization assumptions. Before wiring the field in,
+re-audit the path it travels: who does the endpoint believe the caller is, and
+where does it take the *target* identity from? If the answer is "the request
+body", the new field just widened an existing spoofing hole. And validate the
+field for how it will be *consumed*, not just its type — `@IsString()` is not
+validation when the value is fed to a parser downstream.
+
+Concrete instance: `timezone` was added to `POST /members/sync`, which trusted
+the body-supplied `id` — any signed-in user could already overwrite any other
+user's name/email/avatar, and now their timezone too. Fixed by making the
+verified `@UserId()` authoritative (body `id` deprecated/ignored) and
+validating with `@IsTimeZone` (+`@MaxLength`), since the raw string went
+straight into Luxon's `setZone` and an invalid zone rendered "Invalid DateTime"
+for every viewer of `MemberClock` — see
+`tasks/done/004-live-presence-team-scoped-realtime-and-sync-hardening.md`.
