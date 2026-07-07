@@ -18,6 +18,7 @@ interface Channel {
 interface Team {
   id: string;
   name: string;
+  members?: { userId: string; role: string }[];
 }
 
 interface SidebarProps {
@@ -80,6 +81,14 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
       setLoadingTeams(false);
     });
   }, [user, getToken]);
+
+  // Channel creation is ADMIN/LEAD-of-this-team server-side — mirror that so
+  // members (incl. the public-demo guest) don't see a button that only 403s.
+  const canManageChannels = (team: Team) => {
+    if (isAdmin) return true;
+    const myRole = team.members?.find(m => m.userId === (user?.id || 'guest-demo-user'))?.role;
+    return myRole === 'ADMIN' || myRole === 'LEAD';
+  };
 
   const toggleTeam = (teamId: string) => {
     setExpandedTeams(prev => {
@@ -293,7 +302,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
                       ))}
 
                     {/* New Channel Input */}
-                    {showNewChannel === team.id ? (
+                    {canManageChannels(team) && (showNewChannel === team.id ? (
                       <div className="px-4 py-1.5 flex items-center gap-1">
                         <Hash size={14} className="text-muted-foreground shrink-0" />
                         <input
@@ -317,7 +326,7 @@ export default function Sidebar({ activeView, onViewChange, activeChannelId, onC
                         <Plus size={12} />
                         Add Channel
                       </button>
-                    )}
+                    ))}
                   </div>
                 )}
               </div>

@@ -30,7 +30,9 @@ export class AiService {
   }
 
   async summarizeTeam(teamId: string, requesterId?: string): Promise<{ summary: string; generatedAt: string }> {
-    if (requesterId) await this.checkTeamPermission(teamId, requesterId, ['ADMIN', 'LEAD']);
+    // Read-only summary of statuses every member can already see — so MEMBER
+    // may run it too (parallels KB letting members run RAG queries).
+    if (requesterId) await this.checkTeamPermission(teamId, requesterId, ['ADMIN', 'LEAD', 'MEMBER']);
 
     // 1. Fetch all team members and their current statuses
     const team = await this.prisma.team.findUnique({
