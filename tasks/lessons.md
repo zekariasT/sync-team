@@ -204,3 +204,93 @@ validating with `@IsTimeZone` (+`@MaxLength`), since the raw string went
 straight into Luxon's `setZone` and an invalid zone rendered "Invalid DateTime"
 for every viewer of `MemberClock` — see
 `tasks/done/004-live-presence-team-scoped-realtime-and-sync-hardening.md`.
+
+## 2026-06-27 — Never mix a fixed-colour surface with theme-flipping token text (or vice versa)
+
+An element is either fully theme-driven (semantic tokens on both bg and text)
+or fully fixed — not half each. A hardcoded light background paired with a
+token-based text colour that flips in dark mode will read fine in light mode
+and go illegible in dark mode (or vice versa) with no error, just bad contrast.
+
+Concrete instance: the Clerk auth card had a hardcoded light `colorBackground`
+while its text used `text-foreground` (flips near-white in dark mode) → in
+dark mode, light text on a light card = invisible. Fixed by reading
+`next-themes` `resolvedTheme` in a client component (`AuthScene.tsx`) and
+passing Clerk a per-theme colour set instead of one fixed value.
+
+## 2026-06-27 — On `bg-primary`/`bg-destructive`, use `text-{role}-foreground`, never `text-white`
+
+In a warm/dark palette those backgrounds get *lighter* in dark mode, so white
+text falls below AA (~3:1) even though it looked fine in light mode. The
+`*-foreground` tokens flip to near-black in dark mode and stay AA in both.
+(White is only correct over fixed media like video, which doesn't retheme.)
+Verify palette changes with a compositing contrast script in **both** themes,
+not by eye — see `frontend/scripts/contrast-check.mjs`.
+
+## 2026-06-27 — `asChild` must wrap a single element that renders a real DOM node and forwards ref + onClick
+
+Radix's `asChild` clones its props onto its one child — if that child is a
+context-provider/composite component that renders a fragment of multiple
+elements (not a single DOM node), the click/ref never reaches anything real
+and the action silently does nothing.
+
+Concrete instance: an `AlertDialogTrigger asChild` wrapped a `<Tooltip>`
+(renders trigger + content as separate pieces, not one DOM node), so clicking
+never opened the dialog. Fixed by composing triggers through nesting
+(`Tooltip > TooltipTrigger asChild > DialogTrigger asChild > Button`), or by
+dropping the tooltip and using a native `title` where nesting gets awkward.
+
+## 2026-06-27 — Tailwind silently drops arbitrary values containing nested `min()`/commas
+
+`[grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr))]` never
+generates — the commas inside the nested `min()` break Tailwind's arbitrary-value
+parser — and a co-listed plain class (e.g. `grid-cols-1`) then wins silently,
+with no build warning. For complex grid templates, use a **raw-CSS utility
+class** instead (see `.pulse-grid` in `frontend/app/globals.css`), and confirm
+it actually emitted (grep the compiled CSS) rather than trusting the class
+exists.
+
+## 2026-06-27 — Before deleting a row, audit every inbound FK
+
+Required, non-cascade FKs block a delete outright (Prisma `P2003`), even when
+most relations on the same model cascade fine. Handle each blocking FK
+explicitly **inside one transaction** (cascade-delete, `SET NULL`, or
+reassign) so a delete never partially completes.
+
+Concrete instance: `user.delete()` failed on `Task.reporterId` /
+`Document.uploaderId` (required, no `onDelete`) even though most of `User`'s
+other relations cascade or SET NULL. For *users* specifically, prefer
+deactivation/anonymization over hard delete (next lesson) rather than chasing
+every FK.
+
+## 2026-06-27 — Default to deactivating users, not hard-deleting them; anonymize for true erasure
+
+Mature collaboration tools (Slack/Jira/Linear) deactivate by default and keep
+authored content attributed to a "former/deactivated" user rather than
+cascading deletes through history. If true erasure is required, either
+*anonymize* (keep the row, scrub PII → "Deleted user" — preserves FKs, history,
+and GDPR compliance) or *transfer ownership* (GitHub's `@ghost`, Google
+Workspace's model). Reassigning a deleted user's content to the acting admin
+"works" but mis-attributes authorship — acceptable only as a stopgap.
+
+## 2026-06-27 — Don't run `next build` while `next dev` is running
+
+They share the `.next` directory; the build rewrites it mid-flight and the dev
+server crashes (`ENOENT: app-paths-manifest.json`, 500s on every route). Use
+`npx tsc --noEmit` to typecheck while dev is live; only run `next build` when
+no dev server is up.
+
+## 2026-06-27 — A Bash `cd` persists across calls in this harness and silently moves cwd for later commands
+
+`cd <repo-root> && git …` in one tool call leaves subsequent, unrelated calls
+(`npx shadcn add`, `sed`, …) running from that same directory instead of where
+they were assumed to run — easy to miss since each command "succeeds," just
+against the wrong path. Pass `--cwd`/absolute paths instead of relying on a
+persisted `cd`, or `cd` back explicitly in the same call.
+
+## 2026-06-27 — zsh does not word-split unquoted variables
+
+`sed … $FILES` (where `$FILES` holds multiple space-separated filenames) passes
+the whole thing as **one** argument to `sed`, which then silently no-ops
+instead of erroring. Use an array (`files=(…); … "${files[@]}"`) or `${=VAR}`
+to force splitting when a variable is meant to expand to multiple words.
