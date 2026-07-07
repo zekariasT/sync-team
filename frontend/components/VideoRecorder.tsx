@@ -283,11 +283,11 @@ export default function VideoRecorder({ teamId, onVideoUploaded, onClose }: Vide
   };
 
   const uploadVideo = async () => {
-    if (recordedChunks.length === 0 || !user) return;
+    if (recordedChunks.length === 0) return;
     setUploading(true);
     setError(null);
 
-    const userId = user.id;
+    const userId = user?.id || 'guest-demo-user';
     const blob = new Blob(recordedChunks, { type: 'video/webm' });
     const formData = new FormData();
     formData.append('file', blob, 'recording.webm');

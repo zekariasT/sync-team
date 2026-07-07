@@ -22,6 +22,9 @@ import UserManagementView from '@/components/UserManagementView';
 import DrawioViewer from '@/components/DrawioViewer';
 import { InitialsAvatar } from '@/components/InitialsAvatar';
 import { UserMenu } from '@/components/UserMenu';
+import { useTeamRole } from '@/hooks/useTeamRole';
+
+const isDemo = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 
 export default function DashboardShell({ pulseContent }: DashboardShellProps) {
   const { user } = useUser();
@@ -34,6 +37,16 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isOverviewOpen, setIsOverviewOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const { isAdmin, loading: roleLoading } = useTeamRole(teamId);
+
+  // The active view is restored from localStorage, so a non-admin (e.g. the
+  // public-demo guest) could hand-set 'admin' and land on the User Management
+  // screen. Its mutations all 403 server-side, but don't render it at all.
+  useEffect(() => {
+    if (activeView === 'admin' && !roleLoading && !isAdmin) {
+      setActiveView('pulse');
+    }
+  }, [activeView, roleLoading, isAdmin]);
 
   // Persistence: Load on mount
   useEffect(() => {
@@ -59,37 +72,42 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
   }, [activeView, activeChannelId, activeChannelName, isInitialized]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user && !isDemo) return;
     const u = user;
-    const userId = u.id;
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com";
 
     async function init() {
+      // Anonymous demo visitors have no session: getToken() resolves to null
+      // and the backend guard maps the tokenless request to guest-demo-user.
       const token = await getToken();
 
-      // Sync (and auto-enroll) this Clerk user BEFORE loading teams, so a fresh
-      // sign-in lands in a fully populated workspace without needing a refresh.
-      await fetch(`${apiUrl}/members/sync`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          id: u.id,
-          email: u.primaryEmailAddress?.emailAddress,
-          name: u.fullName || u.username || 'Unknown',
-          avatar: u.imageUrl,
-          // Capture the browser's IANA zone (e.g. "America/New_York") so the
-          // Heartbeat view shows each member's real local clock instead of the
-          // "UTC" column default. Self-heals existing users on next sign-in.
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        }),
-      }).catch(err => console.error('User sync failed:', err));
+      if (u) {
+        // Sync (and auto-enroll) this Clerk user BEFORE loading teams, so a fresh
+        // sign-in lands in a fully populated workspace without needing a refresh.
+        // Guests skip this: SyncUserDto requires email/name, and the guest row
+        // is seeded server-side.
+        await fetch(`${apiUrl}/members/sync`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            id: u.id,
+            email: u.primaryEmailAddress?.emailAddress,
+            name: u.fullName || u.username || 'Unknown',
+            avatar: u.imageUrl,
+            // Capture the browser's IANA zone (e.g. "America/New_York") so the
+            // Heartbeat view shows each member's real local clock instead of the
+            // "UTC" column default. Self-heals existing users on next sign-in.
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          }),
+        }).catch(err => console.error('User sync failed:', err));
+      }
 
       const res = await fetch(`${apiUrl}/teams`, {
         headers: {
-          'x-user-id': userId,
+          'x-user-id': u?.id || 'guest-demo-user',
           'Authorization': `Bearer ${token}`
         }
       });
@@ -196,7 +214,8 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
           ) : activeView === 'kb' ? (
             <KnowledgeBaseView onMenuClick={() => setIsSidebarOpen(true)} teamId={teamId} />
           ) : activeView === 'admin' ? (
-            <UserManagementView onMenuClick={() => setIsSidebarOpen(true)} />
+            // Blank while the role loads; the effect above bounces non-admins.
+            isAdmin ? <UserManagementView onMenuClick={() => setIsSidebarOpen(true)} /> : null
           ) : activeView === 'chat' && activeChannelId ? (
             <ChatArea onMenuClick={() => setIsSidebarOpen(true)} channelId={activeChannelId} channelName={activeChannelName || undefined} />
           ) : activeView === 'chat' ? (

@@ -93,7 +93,7 @@ export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAr
     const content = newMessage.trim();
     setNewMessage('');
 
-    const userId = user?.id || '';
+    const userId = user?.id || 'guest-demo-user';
     const token = await getToken();
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/chat/channels/${channelId}/messages`, {
