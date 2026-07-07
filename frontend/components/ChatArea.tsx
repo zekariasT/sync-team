@@ -5,6 +5,7 @@ import { useUser, useAuth } from '@clerk/nextjs';
 import { io, Socket } from 'socket.io-client';
 import { Send, Hash, Smile, Menu } from 'lucide-react';
 import ViewHeader from './ViewHeader';
+import { InitialsAvatar } from './InitialsAvatar';
 
 interface Message {
   id: string;
@@ -50,10 +51,12 @@ export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAr
 
     // Fetch existing messages
     const userId = user?.id || 'guest-demo-user';
-    const getMsgs = async () => {
+    let socket: Socket | null = null;
+
+    const init = async () => {
       const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/chat/channels/${channelId}/messages`, {
-        headers: { 
+        headers: {
           'x-user-id': userId,
           'Authorization': `Bearer ${token}`
         }
@@ -61,23 +64,26 @@ export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAr
       const data = await (res.ok ? res.json() : []);
       setMessages(data);
       setLoading(false);
+
+      // Set up WebSocket for real-time messages — pass the Clerk token so the
+      // gateway resolves the real identity (joinChannel is membership-checked).
+      socket = io(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}`, {
+        auth: { token },
+      });
+      socketRef.current = socket;
+
+      socket.emit('joinChannel', channelId);
+
+      socket.on('newMessage', (data: Message) => {
+        if (data.channelId === channelId) {
+          setMessages(prev => [...prev, data]);
+        }
+      });
     };
-    getMsgs().catch(() => setLoading(false));
-
-    // Set up WebSocket for real-time messages
-    const socket = io(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}`);
-    socketRef.current = socket;
-
-    socket.emit('joinChannel', channelId);
-
-    socket.on('newMessage', (data: Message) => {
-      if (data.channelId === channelId) {
-        setMessages(prev => [...prev, data]);
-      }
-    });
+    init().catch(() => setLoading(false));
 
     return () => {
-      socket.disconnect();
+      socket?.disconnect();
     };
   }, [channelId, user]); // Added user to the dependency array
 
@@ -88,12 +94,14 @@ export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAr
     setNewMessage('');
 
     const userId = user?.id || 'guest-demo-user';
+    const token = await getToken();
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/chat/channels/${channelId}/messages`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'x-user-id': userId
+          'x-user-id': userId,
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           senderId: userId,
@@ -155,16 +163,16 @@ export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAr
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="flex flex-col items-center gap-3">
-              <div className="w-8 h-8 border-2 border-primary/20 border-t-secondary rounded-full animate-spin" />
-              <p className="text-xs text-primary/40 font-mono">LOADING MESSAGES...</p>
+              <div className="w-8 h-8 border-2 border-border border-t-secondary rounded-full animate-spin" />
+              <p className="text-xs text-muted-foreground font-mono">LOADING MESSAGES...</p>
             </div>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <Hash size={48} className="mx-auto text-primary/15 mb-4" />
-              <h3 className="text-lg font-bold text-text mb-1">Welcome to #{channelName || 'channel'}</h3>
-              <p className="text-sm text-primary/50">This is the beginning of the conversation. Say hello! 👋</p>
+              <Hash size={48} className="mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-bold text-foreground mb-1">Welcome to #{channelName || 'channel'}</h3>
+              <p className="text-sm text-muted-foreground">This is the beginning of the conversation. Say hello! 👋</p>
             </div>
           </div>
         ) : (
@@ -173,11 +181,11 @@ export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAr
               <div key={group.date}>
                 {/* Date separator */}
                 <div className="flex items-center gap-3 my-6">
-                  <div className="flex-1 h-px bg-primary/10" />
-                  <span className="text-[10px] font-bold text-primary/40 uppercase tracking-wider px-2 py-1 bg-primary/5 rounded-full">
+                  <div className="flex-1 h-px bg-muted" />
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 py-1 bg-muted rounded-full">
                     {formatDate(group.msgs[0].createdAt)}
                   </span>
-                  <div className="flex-1 h-px bg-primary/10" />
+                  <div className="flex-1 h-px bg-muted" />
                 </div>
 
                 {/* Messages in this date group */}
@@ -188,30 +196,22 @@ export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAr
 
                   return isConsecutive ? (
                     /* Compact message (same sender, within 5 min) */
-                    <div key={msg.id} className="group flex items-start pl-12 py-0.5 hover:bg-primary/3 rounded transition-colors">
-                      <span className="text-[10px] text-primary/0 group-hover:text-primary/40 font-mono w-10 pt-0.5 shrink-0 transition-colors">
+                    <div key={msg.id} className="group flex items-start pl-12 py-0.5 hover:bg-muted rounded transition-colors">
+                      <span className="text-[10px] text-muted-foreground group-hover:text-muted-foreground font-mono w-10 pt-0.5 shrink-0 transition-colors">
                         {formatTime(msg.createdAt)}
                       </span>
-                      <p className="text-sm text-text/90 leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                      <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                     </div>
                   ) : (
                     /* Full message with avatar */
-                    <div key={msg.id} className="group flex items-start gap-3 mt-4 first:mt-0 hover:bg-primary/3 rounded p-1 -ml-1 transition-colors">
-                      <div className="w-9 h-9 rounded-lg bg-secondary/20 overflow-hidden shrink-0 mt-0.5">
-                        {msg.sender?.avatar ? (
-                          <img src={msg.sender.avatar} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-secondary text-sm font-bold">
-                            {msg.sender?.name?.charAt(0)?.toUpperCase() || '?'}
-                          </div>
-                        )}
-                      </div>
+                    <div key={msg.id} className="group flex items-start gap-3 mt-4 first:mt-0 hover:bg-muted rounded p-1 -ml-1 transition-colors">
+                      <InitialsAvatar name={msg.sender?.name} seed={msg.sender?.id} className="size-9 mt-0.5" />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-baseline gap-2">
-                          <span className="font-bold text-sm text-text">{msg.sender?.name || 'Unknown'}</span>
-                          <span className="text-[10px] text-primary/40 font-mono">{formatTime(msg.createdAt)}</span>
+                          <span className="font-bold text-sm text-foreground">{msg.sender?.name || 'Unknown'}</span>
+                          <span className="text-[10px] text-muted-foreground font-mono">{formatTime(msg.createdAt)}</span>
                         </div>
-                        <p className="text-sm text-text/90 leading-relaxed mt-0.5 whitespace-pre-wrap">{msg.content}</p>
+                        <p className="text-sm text-foreground/90 leading-relaxed mt-0.5 whitespace-pre-wrap">{msg.content}</p>
                       </div>
                     </div>
                   );
@@ -225,7 +225,7 @@ export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAr
 
       {/* Message Input */}
       <div className="px-5 pb-5 pt-2 shrink-0">
-        <div className="flex items-end gap-2 bg-primary/5 border border-primary/15 rounded-xl p-2 focus-within:border-secondary/50 transition-colors">
+        <div className="flex items-end gap-2 bg-muted border border-border rounded-xl p-2 focus-within:border-brand/50 transition-colors">
           <textarea
             rows={1}
             value={newMessage}
@@ -244,7 +244,7 @@ export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAr
                 } 
             }}
             placeholder={`Message #${channelName || 'channel'}...`}
-            className="flex-1 bg-transparent text-sm text-text px-2 py-2 focus:outline-none placeholder:text-primary/30 resize-none max-h-32 min-h-[40px]"
+            className="flex-1 bg-transparent text-sm text-foreground px-2 py-2 focus:outline-none placeholder:text-muted-foreground resize-none max-h-32 min-h-[40px]"
           />
           <button
             onClick={() => {
@@ -253,12 +253,12 @@ export default function ChatArea({ channelId, channelName, onMenuClick }: ChatAr
                 if (textarea) textarea.style.height = 'auto';
             }}
             disabled={!newMessage.trim()}
-            className="p-2 mb-1 rounded-lg bg-secondary hover:bg-secondary/80 text-background disabled:opacity-30 disabled:cursor-not-allowed transition-all shrink-0"
+            className="p-2 mb-1 rounded-lg bg-primary hover:bg-[var(--primary-hover)] text-primary-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-all shrink-0"
           >
             <Send size={16} />
           </button>
         </div>
-        <p className="text-[10px] text-primary/30 mt-1.5 text-center font-mono">
+        <p className="text-[10px] text-muted-foreground mt-1.5 text-center font-mono">
           PRESS ENTER TO SEND • SHIFT+ENTER FOR NEW LINE
         </p>
       </div>

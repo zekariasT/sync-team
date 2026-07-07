@@ -171,33 +171,33 @@ export default function DocumentUploader({ teamId, onUploadSuccess, editingDocId
       <div
         className={`w-full border-2 border-dashed rounded-xl p-8 transition-all duration-150 flex flex-col items-center justify-center text-center ${
           dragActive
-            ? 'border-secondary bg-secondary/10 scale-[1.01]'
-            : 'border-primary/20 bg-primary/5 hover:border-primary/40'
+            ? 'border-brand bg-brand/10 scale-[1.01]'
+            : 'border-border bg-muted hover:border-border'
         } ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}
         onDragEnter={handleDragEnter}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <div className="w-16 h-16 rounded-full bg-background border border-primary/20 flex items-center justify-center text-secondary mb-4 shadow-sm">
+        <div className="w-16 h-16 rounded-full bg-background border border-border flex items-center justify-center text-brand-text mb-4 shadow-sm">
           {isUploading ? (
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-secondary" />
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-brand" />
           ) : (
             <Upload size={28} className={dragActive ? 'scale-110 transition-transform' : ''} />
           )}
         </div>
 
-        <h3 className="text-lg font-bold text-text mb-1">
+        <h3 className="text-lg font-bold text-foreground mb-1">
           {editingDocId ? 'Drop to Re-upload & Update' : 'Drag & Drop Document Here'}
         </h3>
-        <p className="text-sm text-primary/50 mb-6 max-w-sm">
+        <p className="text-sm text-muted-foreground mb-6 max-w-sm">
           {editingDocId
             ? 'Upload a new version. The AI will instantly replace the knowledge vector.'
             : 'Upload PDFs or Text files. The AI will embed and atomically index the document.'}
         </p>
 
         <div className="flex gap-2">
-          <label className="cursor-pointer bg-secondary text-white px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-secondary/90 transition-colors">
+          <label className="cursor-pointer bg-primary text-primary-foreground px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-[var(--primary-hover)] transition-colors">
             Browse Files
             <input
               type="file"
@@ -211,7 +211,7 @@ export default function DocumentUploader({ teamId, onUploadSuccess, editingDocId
           {editingDocId && onCancelEdit && (
             <button
               onClick={onCancelEdit}
-              className="bg-primary/10 text-text px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-primary/20 transition-colors"
+              className="bg-muted text-foreground px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-muted transition-colors"
             >
               Cancel Update
             </button>

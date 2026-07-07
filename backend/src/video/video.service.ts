@@ -1,6 +1,7 @@
 import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service.js';
 import { AiService } from '../ai/ai.service.js';
+import { PulseGateway } from '../pulse/pulse.gateway.js';
 import { v2 as cloudinary } from 'cloudinary';
 
 @Injectable()
@@ -10,6 +11,7 @@ export class VideoService {
   constructor(
     private prisma: PrismaService,
     private aiService: AiService,
+    private gateway: PulseGateway,
   ) {
     cloudinary.config({
       cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -23,17 +25,21 @@ export class VideoService {
     const member = await this.prisma.teamMember.findUnique({
       where: { userId_teamId: { userId: requesterId, teamId } }
     });
+    const requester = await this.prisma.user.findUnique({
+      where: { id: requesterId }, select: { isRoot: true }
+    });
+    if (requester?.isRoot) return true; // global root: account-level superuser
     const anyAdmin = await this.prisma.teamMember.findFirst({
       where: { userId: requesterId, role: 'ADMIN' }
     });
-    
+
     if (anyAdmin) return true;
     if (!member) throw new ForbiddenException('You do not belong to this team');
     if (!allowedRoles.includes(member.role)) throw new ForbiddenException('Insufficient permissions');
     return true;
   }
 
-  async processVideo(teamId: string, senderId: string, fileBuffer: Buffer, mimetype: string, title?: string, requesterId?: string) {
+  async processVideo(teamId: string, senderId: string, fileBuffer: Buffer, mimetype: string, title?: string, requesterId?: string, taggedUserIds: string[] = []) {
     if (requesterId) await this.checkTeamPermission(teamId, requesterId, ['ADMIN', 'LEAD', 'MEMBER']);
     // 1. Upload to Cloudinary
     return new Promise(async (resolve, reject) => {
@@ -53,11 +59,12 @@ export class VideoService {
             const transcript = await this.aiService.transcribeAudio(fileBuffer, mimetype);
 
             // 3. Save to database
+            const resolvedTitle = title || 'Screen Recording';
             const videoMessage = await this.prisma.videoMessage.create({
               data: {
                 teamId,
                 senderId,
-                title: title || 'Screen Recording',
+                title: resolvedTitle,
                 videoUrl: result.secure_url,
                 duration: result.duration,
                 transcript: transcript,
@@ -65,16 +72,73 @@ export class VideoService {
               include: { sender: true }
             });
 
-            resolve(videoMessage);
+            // 4. Tag teammates + notify them (best-effort: never fail the upload)
+            try {
+              await this.tagAndNotify(videoMessage.id, teamId, senderId, resolvedTitle, videoMessage.sender?.name, taggedUserIds);
+            } catch (tagErr) {
+              this.logger.error('Tagging/notification failed', tagErr);
+            }
+
+            // Return the video with its tags so the client can render them immediately.
+            const withTags = await this.prisma.videoMessage.findUnique({
+              where: { id: videoMessage.id },
+              include: { sender: true, tags: { include: { user: true } } },
+            });
+
+            resolve(withTags ?? videoMessage);
           } catch(err) {
             this.logger.error('Error post upload processing', err);
             reject(err);
           }
         }
       );
-      
+
       uploadStream.end(fileBuffer);
     });
+  }
+
+  /**
+   * Persist video tags and create + push a notification to each tagged teammate.
+   * Only members of the video's team are tagged, and the sender is never notified
+   * of their own tag.
+   */
+  private async tagAndNotify(videoId: string, teamId: string, senderId: string, title: string, senderName: string | undefined, taggedUserIds: string[]) {
+    const uniqueIds = [...new Set(taggedUserIds)].filter((id) => id && id !== senderId);
+    if (uniqueIds.length === 0) return;
+
+    // Keep only ids that are actually members of this team.
+    const members = await this.prisma.teamMember.findMany({
+      where: { teamId, userId: { in: uniqueIds } },
+      select: { userId: true },
+    });
+    const recipientIds = members.map((m) => m.userId);
+    if (recipientIds.length === 0) return;
+
+    await this.prisma.videoTag.createMany({
+      data: recipientIds.map((userId) => ({ videoId, userId })),
+      skipDuplicates: true,
+    });
+
+    const actorName = senderName || 'Someone';
+    await this.prisma.notification.createMany({
+      data: recipientIds.map((userId) => ({
+        userId,
+        actorId: senderId,
+        type: 'video_tag',
+        videoId,
+        teamId,
+        message: `${actorName} tagged you in "${title}"`,
+      })),
+    });
+
+    // createMany doesn't return the created rows, so fetch them back to push
+    // full notification objects over the socket.
+    const notifications = await this.prisma.notification.findMany({
+      where: { videoId, type: 'video_tag', userId: { in: recipientIds } },
+    });
+    for (const notification of notifications) {
+      this.gateway.notifyUser(notification.userId, notification);
+    }
   }
 
   async getVideoMessages(teamId: string, requesterId?: string) {
@@ -84,6 +148,7 @@ export class VideoService {
       include: {
         sender: true,
         reactions: { include: { user: true } },
+        tags: { include: { user: true } },
       },
       orderBy: { createdAt: 'desc' }
     });

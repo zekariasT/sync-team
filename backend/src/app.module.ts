@@ -1,5 +1,4 @@
 import { Module, Global } from '@nestjs/common';
-import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
@@ -16,6 +15,8 @@ import { AiModule } from './ai/ai.module.js';
 import { VideoModule } from './video/video.module.js';
 import { TasksModule } from './tasks/tasks.module.js';
 import { KbModule } from './kb/kb.module.js';
+import { KbRealtimeListener } from './kb/kb-realtime.listener.js';
+import { NotificationsModule } from './notifications/notifications.module.js';
 
 @Global()
 @Module({
@@ -29,14 +30,15 @@ import { KbModule } from './kb/kb.module.js';
     VideoModule,
     TasksModule,
     KbModule,
-    EventEmitterModule.forRoot(),
+    NotificationsModule,
   ],
   controllers: [AppController, MembersController, TeamsController],
   providers: [
-    AppService, 
-    MembersService, 
-    PrismaService, 
+    AppService,
+    MembersService,
+    PrismaService,
     PulseGateway,
+    KbRealtimeListener,
     {
       provide: APP_GUARD,
       useClass: ClerkAuthGuard,
@@ -50,6 +52,6 @@ import { KbModule } from './kb/kb.module.js';
       useClass: ThrottlerGuard,
     },
   ],
-  exports: [PrismaService],
+  exports: [PrismaService, PulseGateway],
 })
 export class AppModule {}

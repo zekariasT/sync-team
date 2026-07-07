@@ -20,8 +20,8 @@ export default function GlobalError({
         style={{
           margin: 0,
           fontFamily: 'system-ui, -apple-system, sans-serif',
-          backgroundColor: '#020617',
-          color: '#f1f5f9',
+          backgroundColor: '#1C1A18',
+          color: '#ECE7DE',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -35,15 +35,15 @@ export default function GlobalError({
               width: '5rem',
               height: '5rem',
               borderRadius: '1rem',
-              backgroundColor: 'rgba(251, 113, 133, 0.1)',
-              border: '1px solid rgba(251, 113, 133, 0.2)',
+              backgroundColor: 'rgba(224, 130, 103, 0.12)',
+              border: '1px solid rgba(224, 130, 103, 0.3)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto 1.5rem',
             }}
           >
-            <AlertTriangle size={36} color="#fb7185" />
+            <AlertTriangle size={36} color="#E08267" />
           </div>
           <h2
             style={{
@@ -58,7 +58,7 @@ export default function GlobalError({
           <p
             style={{
               fontSize: '0.875rem',
-              color: 'rgba(148, 163, 184, 0.5)',
+              color: 'rgba(163, 155, 143, 0.85)',
               marginBottom: '2rem',
               lineHeight: 1.6,
             }}
@@ -72,8 +72,8 @@ export default function GlobalError({
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.5rem',
-              backgroundColor: '#38bdf8',
-              color: '#020617',
+              backgroundColor: '#6E9A88',
+              color: '#16201B',
               padding: '0.625rem 1.25rem',
               borderRadius: '0.75rem',
               fontSize: '0.875rem',
@@ -91,7 +91,7 @@ export default function GlobalError({
                 marginTop: '1.5rem',
                 fontSize: '10px',
                 fontFamily: 'monospace',
-                color: 'rgba(148, 163, 184, 0.3)',
+                color: 'rgba(148, 139, 126, 0.6)',
                 letterSpacing: '0.05em',
               }}
             >

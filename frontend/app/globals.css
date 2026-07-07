@@ -1,36 +1,312 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* ============================================================================
+   SyncPoint OS — "Team Pulse" design system
+   Imported from the claude.ai/design mockup (project: SyncPoint frontend
+   redesign). Warm cream/charcoal base with a sage-teal accent (Clay alt).
+
+   Two layers:
+   1. Raw design tokens (--bg, --surface, --brand, role/tint cascades) — the
+      source-of-truth values straight from the mockup.
+   2. A shadcn semantic bridge (--background, --primary, --card, …) mapped onto
+      the raw tokens so every shadcn primitive renders on-brand.
+   AA contrast verified in both themes (see scripts/contrast-check).
+   ========================================================================== */
+
 :root {
-  --text: #0f172a;       /* Deep Slate for high contrast */
-  --background: #f8fafc; /* Clean Slate background */
-  --primary: #475569;    /* Darker Slate for primary text/icons */
-  --secondary: #0284c7;  /* High-contrast Sky blue for actions */
-  --accent: #be123c;     /* Sharp Rose for accents */
+  /* ---- Raw design tokens (light) ---------------------------------------- */
+  --bg: #F5F1EA;            /* cream base */
+  --surface: #FCFAF6;
+  --surface-2: #EFE9DE;
+  --surface-3: #E8E1D4;
+  --sidebar-bg: #EFE8DD;
+  --text: #2B2722;
+  --text-muted: #5F5950;
+  --text-faint: #6A6358;
+  --border-c: #E3DBCD;
+  --border-strong: #D6CCBA;
+
+  /* Brand — sage-teal. --brand-text is the darkened accent for AA on cream. */
+  --brand: #5C8374;
+  --brand-text: #3C5A4C;
+  --brand-soft: rgba(92, 131, 116, 0.13);
+  --brand-soft-border: rgba(92, 131, 116, 0.30);
+  --primary-c: #4C6F60;
+  --primary-hover: #42604F;
+  --primary-fg: #FBF8F2;
+  --presence: #5C8374;
+
+  /* Lead (amber) role tint */
+  --lead-bg: rgba(176, 134, 52, 0.14);
+  --lead-border: rgba(176, 134, 52, 0.32);
+  --lead-text: #7A5A1E;
+
+  /* Destructive (warm red, tuned to the palette) */
+  --destructive-c: #B23A2C;
+  --destructive-fg: #FBF8F2;
+
+  --shadow: 0 1px 2px rgba(60, 50, 35, 0.05), 0 6px 18px rgba(60, 50, 35, 0.05);
+
+  /* Role-badge cascade defaults (overridden per data-kind) */
+  --b-bg: var(--surface-2);
+  --b-fg: var(--text-muted);
+  --b-bd: var(--border-c);
+  /* Avatar-tint cascade defaults (overridden per data-tint) */
+  --av-bg: var(--surface-2);
+  --av-fg: var(--text-muted);
+
+  --radius: 0.7rem; /* card≈16px, avatar≈11px, input/btn≈9px, badge≈7px */
+
+  /* ---- shadcn semantic bridge (light) ----------------------------------- */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary: var(--primary-c);
+  --primary-foreground: var(--primary-fg);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--text);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--surface-2);          /* shadcn hover-fill (NOT the brand accent) */
+  --accent-foreground: var(--text);
+  --destructive: var(--destructive-c);
+  --destructive-foreground: var(--destructive-fg);
+  --border: var(--border-c);
+  --input: var(--border-c);
+  --ring: var(--brand);
+
+  --chart-1: var(--brand);
+  --chart-2: #B07158;        /* clay   */
+  --chart-3: #B08634;        /* amber  */
+  --chart-4: #6E8FA8;        /* slate-blue */
+  --chart-5: #C2823A;        /* warm ochre (no violet anywhere) */
+
+  --sidebar: var(--sidebar-bg);
+  --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--primary-c);
+  --sidebar-primary-foreground: var(--primary-fg);
+  --sidebar-accent: var(--brand-soft);
+  --sidebar-accent-foreground: var(--brand-text);
+  --sidebar-border: var(--border-c);
+  --sidebar-ring: var(--brand);
 }
 
 .dark {
-  --text: #f1f5f9;       /* Off-white Slate */
-  --background: #020617; /* Deep Slate black */
-  --primary: #94a3b8;    /* Lighter Slate for secondary text */
-  --secondary: #38bdf8;  /* Vibrant Sky blue */
-  --accent: #fb7185;     /* Soft Rose accent */
+  /* ---- Raw design tokens (dark) ----------------------------------------- */
+  --bg: #1C1A18;            /* charcoal base */
+  --surface: #24211E;
+  --surface-2: #2B2824;
+  --surface-3: #322E29;
+  --sidebar-bg: #1F1D1A;
+  --text: #ECE7DE;
+  --text-muted: #A39B8F;
+  --text-faint: #948B7E;
+  --border-c: #34302B;
+  --border-strong: #423D36;
+
+  --brand: #7BA893;          /* lightened in dark */
+  --brand-text: #A9CDBC;
+  --brand-soft: rgba(123, 168, 147, 0.16);
+  --brand-soft-border: rgba(123, 168, 147, 0.30);
+  --primary-c: #6E9A88;
+  --primary-hover: #7BA893;
+  --primary-fg: #16201B;
+  --presence: #7BA893;
+
+  --lead-bg: rgba(214, 178, 110, 0.15);
+  --lead-border: rgba(214, 178, 110, 0.30);
+  --lead-text: #D8B673;
+
+  --destructive-c: #E08267;
+  --destructive-fg: #1C140F;
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.30), 0 8px 22px rgba(0, 0, 0, 0.28);
 }
 
+/* ---- Accent swap: Clay (switchable via data-accent on <html>) ----------- */
+[data-accent="clay"] {
+  --brand: #B07158;
+  --brand-text: #7E4A34;
+  --brand-soft: rgba(176, 113, 88, 0.14);
+  --brand-soft-border: rgba(176, 113, 88, 0.30);
+  --primary-c: #9A5E45;
+  --primary-hover: #85503B;
+  --primary-fg: #FBF6F2;
+  --presence: #B07158;
+}
+.dark[data-accent="clay"] {
+  --brand: #C98A6E;
+  --brand-text: #D9A589;
+  --brand-soft: rgba(201, 138, 110, 0.16);
+  --brand-soft-border: rgba(201, 138, 110, 0.30);
+  --primary-c: #C0795C;
+  --primary-hover: #C98A6E;
+  --primary-fg: #1C140F;
+  --presence: #C98A6E;
+}
+
+/* ---- Role-badge tints (semantic, paired with a text label, never color-only) */
+[data-kind="admin"]  { --b-bg: var(--brand-soft); --b-fg: var(--brand-text); --b-bd: var(--brand-soft-border); }
+[data-kind="member"] { --b-bg: var(--surface-2);  --b-fg: var(--text-muted);  --b-bd: var(--border-c); }
+[data-kind="lead"]   { --b-bg: var(--lead-bg);    --b-fg: var(--lead-text);   --b-bd: var(--lead-border); }
+[data-kind="root"]   { --b-bg: var(--primary-c);  --b-fg: var(--primary-fg);  --b-bd: transparent; }
+
+/* ---- Avatar tints ------------------------------------------------------- */
+[data-tint="sage"]    { --av-bg: rgba(92, 131, 116, 0.16);  --av-fg: #33503F; }
+[data-tint="clay"]    { --av-bg: rgba(176, 113, 88, 0.16);  --av-fg: #7E4A34; }
+[data-tint="amber"]   { --av-bg: rgba(176, 134, 52, 0.16);  --av-fg: #6B4F18; }
+[data-tint="primary"] { --av-bg: var(--primary-c);          --av-fg: var(--primary-fg); }
+.dark [data-tint="sage"]  { --av-bg: rgba(123, 168, 147, 0.18); --av-fg: #A9CDBC; }
+.dark [data-tint="clay"]  { --av-bg: rgba(201, 138, 110, 0.18); --av-fg: #D9A589; }
+.dark [data-tint="amber"] { --av-bg: rgba(214, 178, 110, 0.18); --av-fg: #D8B673; }
 
 @theme inline {
-  --color-text: var(--text);
   --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-text: var(--text);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Brand + surface tokens exposed as utilities (bg-brand, text-brand-text, …) */
+  --color-brand: var(--brand);
+  --color-brand-text: var(--brand-text);
+  --color-presence: var(--presence);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-text-muted: var(--text-muted);
+  --color-text-faint: var(--text-faint);
+  --color-border-strong: var(--border-strong);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-geist-sans);
+
+  --radius-sm: calc(var(--radius) * 0.55);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.45);
+  --radius-2xl: calc(var(--radius) * 1.8);
 }
 
-body {
-  background-color: var(--background);
-  color: var(--text);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  html {
+    @apply font-sans;
+    scroll-behavior: smooth;
+  }
+}
+
+/* ---- System chrome (warm scrollbar from the mockup) --------------------- */
+::selection {
+  background-color: color-mix(in srgb, var(--brand) 24%, transparent);
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+*::-webkit-scrollbar { width: 11px; height: 11px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 6px;
+  border: 3px solid var(--bg);
+}
+
+/* ---- Reusable design utilities ----------------------------------------- */
+.font-display { font-family: var(--font-display), var(--font-sans), sans-serif; }
+.shadow-card { box-shadow: var(--shadow); }
+
+/* Team Pulse member grid — multi-column, density-matched to the mockup
+   (repeat(auto-fill, minmax(358px, 1fr))). Raw CSS so the nested min() never
+   trips Tailwind's arbitrary-value parser. min(100%, …) keeps it single-column
+   without horizontal overflow on narrow viewports. */
+.pulse-grid {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr));
+}
+
+/* Role badge surface driven by the data-kind cascade above */
+.role-tint {
+  background: var(--b-bg);
+  color: var(--b-fg);
+  border-color: var(--b-bd);
+}
+/* Avatar surface driven by the data-tint cascade above */
+.avatar-tint {
+  background: var(--av-bg);
+  color: var(--av-fg);
+}
+
+/* Keyboard focus ring for custom interactive elements (a11y: focus-states).
+   shadcn primitives manage their own focus-visible ring + set data-slot, so we
+   exclude them here to avoid a doubled ring. */
+:where(a, button, input, select, textarea, summary, [tabindex]):not([data-slot]):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Presence "pulse" ring (live online indicator) */
+@keyframes pulseRing {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--presence) 55%, transparent); }
+  70%  { box-shadow: 0 0 0 7px color-mix(in srgb, var(--presence) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--presence) 0%, transparent); }
+}
+.animate-pulse-ring { animation: pulseRing 2.6s infinite; }
+
+/* Honor reduced-motion globally (a11y: reduced-motion) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

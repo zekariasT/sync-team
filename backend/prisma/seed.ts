@@ -54,7 +54,7 @@ async function main() {
       data: {
         userId: u.id,
         teamId: 'seed-team-id',
-        role: u.id === 'user-jamal' || u.id === 'guest-demo-user' ? Role.ADMIN : Role.MEMBER
+        role: u.id === 'user-jamal' ? Role.ADMIN : Role.MEMBER
       }
     });
   }
@@ -66,7 +66,7 @@ async function main() {
       data: {
         userId: uid,
         teamId: 'team-eng',
-        role: uid === 'user-jamal' || uid === 'guest-demo-user' ? Role.ADMIN : Role.MEMBER
+        role: uid === 'user-jamal' ? Role.ADMIN : Role.MEMBER
       }
     });
   }
@@ -78,7 +78,7 @@ async function main() {
       data: {
         userId: uid,
         teamId: 'team-design',
-        role: uid === 'user-elena' || uid === 'guest-demo-user' ? Role.ADMIN : Role.MEMBER
+        role: uid === 'user-elena' ? Role.ADMIN : Role.MEMBER
       }
     });
   }
@@ -176,9 +176,15 @@ async function main() {
         teamId: 'seed-team-id', title: 'Add dark mode support to chart components', state: TaskState.TODO, 
         assigneeId: 'user-elena', reporterId: 'user-sarah', projectId: project1.id, cycleId: cycle15.id 
     },
-    { 
-        teamId: 'seed-team-id', title: 'Implement user session timeout logic', state: TaskState.TODO, 
-        assigneeId: 'user-alex', reporterId: 'user-marcus', cycleId: cycle15.id 
+    {
+        teamId: 'seed-team-id', title: 'Implement user session timeout logic', state: TaskState.TODO,
+        assigneeId: 'user-alex', reporterId: 'user-marcus', cycleId: cycle15.id
+    },
+    {
+        // Assigned to the public-demo guest so anonymous visitors have a task
+        // they're allowed to drag (MEMBERs may only move their own tasks).
+        teamId: 'seed-team-id', title: 'Drag me — this task is assigned to you (Guest)', state: TaskState.TODO,
+        assigneeId: 'guest-demo-user', reporterId: 'user-jamal', cycleId: cycle15.id
     },
   ];
 

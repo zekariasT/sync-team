@@ -1,9 +1,10 @@
-import { Injectable, Logger, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Injectable, Inject, Logger, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
 import { PrismaService } from '../prisma.service.js';
 import { AiService } from '../ai/ai.service.js';
 import { Pinecone } from '@pinecone-database/pinecone';
-import { PDFParse } from 'pdf-parse';
-import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
+import { EVENTS_CLIENT } from '../messaging/messaging.module.js';
+import { DOCUMENT_UPLOADED, DOCUMENT_DELETED } from '../messaging/contracts.js';
 
 @Injectable()
 export class KbService {
@@ -13,7 +14,7 @@ export class KbService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiService: AiService,
-    private readonly eventEmitter: EventEmitter2,
+    @Inject(EVENTS_CLIENT) private readonly events: ClientProxy,
   ) {
     if (process.env.PINECONE_API_KEY) {
       this.pinecone = new Pinecone({
@@ -28,19 +29,23 @@ export class KbService {
     return process.env.PINECONE_INDEX_NAME || 'syncpoint';
   }
 
-  private async checkTeamPermission(teamId: string, requesterId: string, allowedRoles: string[]) {
+  private async checkTeamPermission(teamId: string, requesterId: string, allowedRoles: string[]): Promise<{ isAdmin: boolean }> {
     if (!requesterId) throw new ForbiddenException('Unauthorized');
     const member = await this.prisma.teamMember.findUnique({
       where: { userId_teamId: { userId: requesterId, teamId } }
     });
+    const requester = await this.prisma.user.findUnique({
+      where: { id: requesterId }, select: { isRoot: true }
+    });
+    if (requester?.isRoot) return { isAdmin: true }; // global root: account-level superuser
     const anyAdmin = await this.prisma.teamMember.findFirst({
       where: { userId: requesterId, role: 'ADMIN' }
     });
-    
-    if (anyAdmin) return true;
+
+    if (anyAdmin) return { isAdmin: true };
     if (!member) throw new ForbiddenException('You do not belong to this team');
     if (!allowedRoles.includes(member.role)) throw new ForbiddenException('Insufficient permissions');
-    return true;
+    return { isAdmin: false };
   }
 
   private async ensureIndex() {
@@ -80,6 +85,10 @@ export class KbService {
   private async extractText(file: Express.Multer.File): Promise<string> {
     let text = '';
     if (file.mimetype === 'application/pdf') {
+      // Lazy-load pdf-parse: it pulls in pdfjs, which evaluates browser globals
+      // (DOMMatrix) at module load and would crash the whole app on boot under
+      // older Node. Importing it only when a PDF is actually parsed keeps boot safe.
+      const { PDFParse } = await import('pdf-parse');
       const pdf = new PDFParse({ data: file.buffer });
       const result = await pdf.getText();
       text = result.text;
@@ -92,9 +101,10 @@ export class KbService {
   }
 
   async getDocuments(teamId: string, requesterId: string) {
-    await this.checkTeamPermission(teamId, requesterId, ['ADMIN', 'LEAD', 'MEMBER']);
+    const { isAdmin } = await this.checkTeamPermission(teamId, requesterId, ['ADMIN', 'LEAD', 'MEMBER']);
+
     return this.prisma.document.findMany({
-      where: { teamId },
+      where: isAdmin ? {} : { teamId },
       orderBy: { createdAt: 'desc' }
     });
   }
@@ -107,8 +117,8 @@ export class KbService {
 
     await this.prisma.document.delete({ where: { id: documentId } });
     
-    this.logger.log(`Document ${documentId} deleted from relational DB. Emitting sync event.`);
-    this.eventEmitter.emit('document.deleted', { documentId, teamId });
+    this.logger.log(`Document ${documentId} deleted from relational DB. Dispatching de-index job.`);
+    this.events.emit(DOCUMENT_DELETED, { documentId, teamId });
     return { success: true };
   }
 
@@ -128,8 +138,8 @@ export class KbService {
 
     const text = await this.extractText(file);
 
-    this.logger.log(`Document ${documentId} updated in relational DB. Emitting sync event.`);
-    this.eventEmitter.emit('document.updated', { document: updatedDoc, text });
+    this.logger.log(`Document ${documentId} updated in relational DB. Dispatching re-index job.`);
+    this.events.emit(DOCUMENT_UPLOADED, { document: updatedDoc, text });
     return updatedDoc;
   }
 
@@ -157,102 +167,47 @@ export class KbService {
       },
     });
 
-    this.logger.log(`Document ${document.id} saved to relational DB. Emitting sync event.`);
-    
-    // Asynchronous background task constraint
-    this.eventEmitter.emit('document.updated', { document, text });
+    this.logger.log(`Document ${document.id} saved to relational DB. Dispatching index job to ai-worker.`);
+
+    // Hand the heavy work (chunk → embed → upsert) to the ai-worker over RabbitMQ.
+    // Returns immediately; the browser is notified over WebSocket when indexing completes.
+    this.events.emit(DOCUMENT_UPLOADED, { document, text });
 
     return document;
   }
 
-  @OnEvent('document.updated', { async: true })
-  async handleDocumentSync(payload: { document: any, text: string }) {
-    const { document, text } = payload;
-    if (!process.env.PINECONE_API_KEY) return;
-
-    this.logger.log(`Background Sync: Embedding and chunking document ${document.id}...`);
-    try {
-      const index = this.pinecone.index(this.indexName);
-      
-      // Atomic Sync step 1: Extinguish any existing ghost chunks for this document
-      try {
-         await index.deleteMany({ filter: { documentId: document.id } } as any);
-      } catch (e) {
-         this.logger.log(`No existing chunks found or metadata deletion skipped: ${e}`);
-      }
-
-      // Chunk text (approx 512 tokens -> ~2000 chars)
-      const chunks = this.chunkText(text, 2000);
-      const vectors: any[] = [];
-
-      for (let i = 0; i < chunks.length; i++) {
-        const chunkContent = chunks[i];
-        
-        try {
-          // @ts-ignore
-          const embeddingResponse = await this.aiService['ai'].models.embedContent({
-             model: 'gemini-embedding-001',
-             contents: chunkContent,
-          });
-          
-          const values = embeddingResponse.embeddings?.[0]?.values;
-          if (values) {
-              vectors.push({
-                 id: `${document.id}#${i}`,
-                 values,
-                 metadata: {
-                     teamId: document.teamId,
-                     documentId: document.id,
-                     title: document.title,
-                     text: chunkContent
-                 }
-              });
-          }
-        } catch (e: any) {
-          this.logger.error(`Failed to embed chunk ${i}: ${e.message}`);
-        }
-      }
-
-      if (vectors.length > 0) {
-          await index.upsert({
-              records: vectors
-          });
-          this.logger.log(`Background Sync: Successfully locked ${vectors.length} chunks for ${document.id}`);
-      }
-    } catch (e: any) {
-        this.logger.error(`Background Sync Error: Failed to embed/upsert vector for ${document.id}: ${e.message}`);
-    }
-  }
-
-  @OnEvent('document.deleted', { async: true })
-  async handleDocumentDelete(payload: { documentId: string, teamId: string }) {
-    const { documentId } = payload;
-    if (!process.env.PINECONE_API_KEY) return;
-
-    this.logger.log(`Background Sync: Extinguishing all chunks for vector ${documentId}...`);
-    try {
-        const index = this.pinecone.index(this.indexName);
-        await index.deleteMany({ filter: { documentId } } as any);
-        this.logger.log(`Background Sync: Successfully destroyed all chunks for vector ${documentId}`);
-    } catch (e: any) {
-        this.logger.error(`Background Sync Error: Failed to drop chunks for vector ${documentId}: ${e.message}`);
-    }
-  }
+  // NOTE: The chunk → embed → upsert WRITE path (formerly @OnEvent handlers here)
+  // now lives in the standalone ai-worker service, driven by RabbitMQ events.
+  // KbService retains only the synchronous READ path (askKnowledgeBase) below.
 
   async askKnowledgeBase(teamId: string, query: string, requesterId: string): Promise<string> {
      await this.checkTeamPermission(teamId, requesterId, ['ADMIN', 'LEAD', 'MEMBER']);
      if (!process.env.PINECONE_API_KEY) {
          return "Pinecone is not configured. Please set PINECONE_API_KEY to search the Knowledge Base.";
      }
+     if (!process.env.GEMINI_API_KEY) {
+         return "Gemini is not configured. Please set GEMINI_API_KEY to search the Knowledge Base.";
+     }
 
      try {
-         // @ts-ignore
-         const embeddingResponse = await this.aiService['ai'].models.embedContent({
-             model: 'gemini-embedding-001',
-             contents: query,
-         });
-         const queryEmbedding = embeddingResponse.embeddings?.[0]?.values;
-         if (!queryEmbedding) throw new Error("Failed to embed query.");
+         let queryEmbedding: number[] | undefined;
+         try {
+             // @ts-ignore
+             const embeddingResponse = await this.aiService['ai'].models.embedContent({
+                 model: 'gemini-embedding-001',
+                 contents: query,
+                 // Must match the worker's write-path dims (index is 768, not the 3072 default).
+                 config: { outputDimensionality: 768 },
+             });
+             queryEmbedding = embeddingResponse.embeddings?.[0]?.values;
+         } catch (embedErr: any) {
+             this.logger.error('RAG embedding call failed', embedErr?.stack || embedErr);
+             return "I couldn't embed your question (the embedding service rejected the request). Check the Gemini API key and try again.";
+         }
+         if (!queryEmbedding) {
+             this.logger.error('RAG embedding returned no vector');
+             return "I couldn't embed your question — the embedding service returned no result. Try again shortly.";
+         }
 
          const index = this.pinecone.index(this.indexName);
          const searchResults = await index.query({
@@ -288,30 +243,26 @@ export class KbService {
          
          Answer concisely and clearly.`;
 
-         // @ts-ignore
-         const answerResponse = await this.aiService['ai'].models.generateContent({
-             model: 'gemini-2.5-flash-lite',
-             contents: prompt,
-         });
+         let answerResponse: any;
+         try {
+             // @ts-ignore
+             answerResponse = await this.aiService['ai'].models.generateContent({
+                 model: 'gemini-2.5-flash-lite',
+                 contents: prompt,
+             });
+         } catch (genErr: any) {
+             this.logger.error('RAG generation call failed', genErr?.stack || genErr);
+             return "I found relevant context but the answer-generation service failed. Check the Gemini API key and try again.";
+         }
 
          return answerResponse.text || "Failed to generate answer.";
-         
+
      } catch (e: any) {
-         this.logger.error(`RAG query failed: ${e.message}`);
+         // Anything not caught above (e.g. the Pinecone query) — log the full
+         // error so the real cause is visible in the server logs, not just the
+         // generic message the user sees.
+         this.logger.error('RAG query failed', e?.stack || e);
          return "I encountered an error while searching the Knowledge Base.";
      }
-  }
-
-  private chunkText(text: string, chunkSize: number, chunkOverlap: number = 200): string[] {
-    const chunks: string[] = [];
-    let cur = 0;
-    while (cur < text.length) {
-      const chunk = text.slice(cur, cur + chunkSize);
-      chunks.push(chunk);
-      cur += (chunkSize - chunkOverlap);
-      if (chunkSize <= chunkOverlap) break; 
-      if (cur + chunkOverlap >= text.length) break;
-    }
-    return chunks;
   }
 }

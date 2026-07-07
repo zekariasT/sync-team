@@ -1,7 +1,8 @@
-import { Controller, Post, Get, Patch, Delete, Body, Param, UseInterceptors, UploadedFile, UseGuards, Headers, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Delete, Body, Param, UseInterceptors, UploadedFile, UseGuards, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { KbService } from './kb.service.js';
 import { ClerkAuthGuard } from '../auth/clerk-auth.guard.js';
+import { UserId } from '../auth/user-id.decorator.js';
 
 @Controller('teams/:teamId/kb')
 @UseGuards(ClerkAuthGuard)
@@ -12,7 +13,6 @@ export class KbController {
   @UseInterceptors(FileInterceptor('file'))
   async uploadDocument(
     @Param('teamId') teamId: string,
-    @Body('uploaderId') uploaderId: string,
     @UploadedFile(
       new ParseFilePipe({
         validators: [
@@ -20,18 +20,19 @@ export class KbController {
         ],
       }),
     ) file: Express.Multer.File,
-    @Headers('x-user-id') requesterId: string
+    @UserId() requesterId: string
   ) {
     if (!file) {
       throw new Error('No file uploaded');
     }
-    return this.kbService.uploadDocument(teamId, uploaderId, file, requesterId);
+    // Uploader is the authenticated caller — never trust a client-supplied id.
+    return this.kbService.uploadDocument(teamId, requesterId, file, requesterId);
   }
 
   @Get('documents')
   async getDocuments(
     @Param('teamId') teamId: string,
-    @Headers('x-user-id') requesterId: string
+    @UserId() requesterId: string
   ) {
     return this.kbService.getDocuments(teamId, requesterId);
   }
@@ -40,7 +41,7 @@ export class KbController {
   async deleteDocument(
     @Param('teamId') teamId: string,
     @Param('documentId') documentId: string,
-    @Headers('x-user-id') requesterId: string
+    @UserId() requesterId: string
   ) {
     return this.kbService.deleteDocument(teamId, documentId, requesterId);
   }
@@ -57,7 +58,7 @@ export class KbController {
         ],
       }),
     ) file: Express.Multer.File,
-    @Headers('x-user-id') requesterId: string
+    @UserId() requesterId: string
   ) {
     if (!file) {
       throw new Error('No file uploaded');
@@ -69,7 +70,7 @@ export class KbController {
   async queryKnowledgeBase(
     @Param('teamId') teamId: string,
     @Body('query') query: string,
-    @Headers('x-user-id') requesterId: string
+    @UserId() requesterId: string
   ) {
     const answer = await this.kbService.askKnowledgeBase(teamId, query, requesterId);
     return { answer };

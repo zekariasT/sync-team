@@ -1,9 +1,12 @@
-import { ThemeToggle } from '@/components/ThemeToggle';
 import MemberClock from '@/components/MemberClock';
-import { Show, UserButton } from '@clerk/nextjs';
 import { currentUser, auth } from '@clerk/nextjs/server';
 import PulseForm from './PulseForm';
 import MemberRoleBadge from './MemberRoleBadge';
+import RootBadge from './RootBadge';
+import { Globe } from 'lucide-react';
+import { InitialsAvatar } from './InitialsAvatar';
+import PresenceIndicator from './PresenceIndicator';
+import PresenceCount from './PresenceCount';
 
 export default async function PulseView() {
   const user = await currentUser();
@@ -12,7 +15,7 @@ export default async function PulseView() {
   try {
     const { getToken } = await auth();
     const token = await getToken();
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/members`, { 
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/members`, {
       cache: 'no-store',
       headers: {
         'x-user-id': user?.id || 'guest-demo-user',
@@ -31,30 +34,31 @@ export default async function PulseView() {
 
   const currentMember = members.find(m => m.id === activeUserId);
   const isAdmin = currentMember?.teamMembers?.some((tm: any) => tm.role === 'ADMIN');
+  const isRoot = !!currentMember?.isRoot; // only root may grant/revoke ADMIN
   const leadTeamIds = currentMember?.teamMembers?.filter((tm: any) => tm.role === 'LEAD').map((tm: any) => tm.teamId) || [];
 
   return (
-    <div className="flex-1 h-screen overflow-y-auto bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-10 backdrop-blur-md bg-background/80 border-b border-primary/15 h-14 flex items-center justify-between px-6">
+    <div className="h-screen flex-1 overflow-y-auto bg-background">
+      {/* Header (pr-48 keeps the toolbar clear of the global account pill) */}
+      <header className="sticky top-0 z-10 flex h-[68px] items-center justify-between gap-4 border-b border-border bg-background/80 pl-6 pr-48 backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px] shadow-green-500 animate-pulse" />
-          <h2 className="font-bold text-text">Team Pulse</h2>
-          <span className="text-[10px] font-mono text-primary/40 bg-primary/5 px-2 py-0.5 rounded-full">
-            {members.length} ONLINE
-          </span>
+          <span className="size-2.5 shrink-0 rounded-full bg-presence animate-pulse-ring" aria-hidden />
+          <div>
+            <h1 className="font-display text-xl font-semibold tracking-tight text-text">Team Pulse</h1>
+            <p className="mt-0.5 text-xs text-text-muted">
+              Real-time presence<PresenceCount memberIds={members.map((m: any) => m.id)} />
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <ThemeToggle />
-          <Show when="signed-in">
-            <UserButton />
-          </Show>
+        <div className="hidden items-center gap-2 rounded-full border border-[var(--brand-soft-border)] bg-[var(--brand-soft)] px-3 py-1.5 sm:flex">
+          <span className="size-1.5 rounded-full bg-presence" aria-hidden />
+          <span className="text-[10.5px] font-bold uppercase tracking-[0.09em] text-brand-text">Live Feed</span>
         </div>
       </header>
 
       {/* Member Grid */}
-      <div className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div className="px-6 pb-16 pt-6">
+        <div className="pulse-grid">
           {members.map((member: any) => {
             const isTargetMemberInLeadedTeam = member.teamMembers?.some((tm: any) => leadTeamIds.includes(tm.teamId));
             const canUpdate = isAdmin || activeUserId === member.id || isTargetMemberInLeadedTeam;
@@ -62,51 +66,61 @@ export default async function PulseView() {
             return (
               <div
                 key={member.id}
-                className="bg-primary/5 border border-primary/15 p-5 rounded-xl hover:border-primary/30 transition-all group flex flex-col justify-between"
+                className="flex flex-col gap-3.5 rounded-xl border border-border bg-surface p-[18px] shadow-card"
               >
-                <div>
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-3">
-                      {member.avatar ? (
-                        <img src={member.avatar} alt="" className="w-9 h-9 rounded-lg object-cover" />
-                      ) : (
-                        <div className="w-9 h-9 rounded-lg bg-secondary/20 flex items-center justify-center text-secondary font-bold text-sm">
-                          {member.name?.charAt(0)?.toUpperCase() || '?'}
-                        </div>
-                      )}
-                      <div>
-                        <h2 className="text-base font-bold text-text">{member.name}</h2>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {member.teamMembers?.map((tm: any) => (
-                            <div key={`${member.id}-${tm.teamId}`} className="flex items-center gap-1 bg-secondary/10 px-2 py-0.5 rounded-full text-[10px] font-bold text-secondary">
-                              <span className="opacity-70 truncate max-w-[60px]">{tm.team?.name}</span>
-                              <MemberRoleBadge 
-                                memberId={member.id} 
-                                teamId={tm.teamId} 
-                                role={tm.role}
-                                canEdit={isAdmin} 
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    <span
-                      className={`w-2 h-2 rounded-full shadow-[0_0_8px] mt-2 ${
-                        member.status?.toLowerCase() === 'offline'
-                          ? 'bg-accent shadow-accent'
-                          : 'bg-green-500 shadow-green-500'
-                      }`}
-                    />
+                {/* Identity row */}
+                <div className="flex items-start gap-3">
+                  <InitialsAvatar
+                    name={member.name}
+                    seed={member.id ?? member.name}
+                    isRoot={member.isRoot}
+                    className="size-[42px]"
+                  />
+                  <div className="flex min-w-0 flex-1 items-center gap-2 self-stretch">
+                    <h3 className="min-w-0 truncate text-[15px] font-semibold text-text">{member.name}</h3>
+                    {member.isRoot && <RootBadge />}
                   </div>
-                  <p className="text-primary mt-3 italic text-sm font-medium ml-12 border-l-2 border-primary/20 pl-4 py-1">
-                    "{member.status}"
-                  </p>
-
-                  {canUpdate && <PulseForm memberId={member.id} />}
+                  <PresenceIndicator userId={member.id} />
                 </div>
-                <div className="mt-4 pt-3 border-t flex justify-between items-center border-primary/10 text-[10px] font-mono text-primary/40 ml-12">
-                  TZ: {member.timezone}
+
+                {/* Teams & roles */}
+                {member.teamMembers?.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {member.teamMembers.map((tm: any) => (
+                      <div
+                        key={`${member.id}-${tm.teamId}`}
+                        className="flex items-center gap-1 rounded-full border border-border bg-surface-2 py-0.5 pl-2 pr-1"
+                      >
+                        <span className="max-w-[72px] truncate text-[11px] font-medium text-text-muted">{tm.team?.name}</span>
+                        <MemberRoleBadge
+                          memberId={member.id}
+                          teamId={tm.teamId}
+                          role={tm.role}
+                          canEdit={isAdmin}
+                          canGrantAdmin={isRoot}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Status quote */}
+                <div className="flex items-stretch gap-2.5">
+                  <span className="w-[3px] shrink-0 rounded-sm bg-brand opacity-55" aria-hidden />
+                  <p className="m-0 text-[13.5px] font-normal italic leading-normal text-text">
+                    &ldquo;{member.status}&rdquo;
+                  </p>
+                </div>
+
+                {/* Custom-status form */}
+                {canUpdate && <PulseForm memberId={member.id} />}
+
+                {/* Footer: timezone + local clock */}
+                <div className="mt-auto flex items-center justify-between border-t border-border pt-3">
+                  <span className="flex items-center gap-1.5 font-mono text-[11px] text-text-muted">
+                    <Globe className="size-3 opacity-70" />
+                    {member.timezone}
+                  </span>
                   <MemberClock timezone={member.timezone} />
                 </div>
               </div>
@@ -115,9 +129,9 @@ export default async function PulseView() {
         </div>
 
         {members.length === 0 && (
-          <div className="text-center py-20">
-            <p className="text-primary/40 text-sm">No team members found.</p>
-            <p className="text-primary/30 text-xs mt-1">Sign in and sync your profile to appear here.</p>
+          <div className="py-20 text-center">
+            <p className="text-sm text-text-muted">No team members found.</p>
+            <p className="mt-1 text-xs text-text-faint">Sign in and sync your profile to appear here.</p>
           </div>
         )}
       </div>

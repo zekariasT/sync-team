@@ -1,11 +1,72 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { useUser, useAuth } from '@clerk/nextjs';
-import { Users, Shield, Star, User as UserIcon, Search, Mail, MapPin, Loader2, Plus, X, Trash2, ChevronDown, Menu } from 'lucide-react';
+import { Users, Search, Mail, Trash2, X, Plus, Menu, Loader2 } from 'lucide-react';
 import MemberRoleBadge from './MemberRoleBadge';
+import RootBadge from './RootBadge';
+import AddToTeamButton from './AddToTeamButton';
 import { addMember, removeMember, deleteUserSystem } from '@/app/actions';
-import { useToast } from './ToastProvider';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { InitialsAvatar } from '@/components/InitialsAvatar';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from '@/components/ui/input-group';
+import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Field,
+  FieldGroup,
+  FieldLabel,
+} from '@/components/ui/field';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface TeamMember {
   teamId: string;
@@ -19,6 +80,7 @@ interface User {
   avatar: string | null;
   status: string;
   timezone: string;
+  isRoot?: boolean;
   teamMembers: TeamMember[];
 }
 
@@ -31,381 +93,423 @@ interface UserManagementViewProps {
   onMenuClick?: () => void;
 }
 
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://syncpoint-backend.onrender.com';
+
 export default function UserManagementView({ onMenuClick }: UserManagementViewProps) {
   const { user: currentUser } = useUser();
   const { getToken } = useAuth();
-  const { success, error: toastError } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  
-  // Add member state
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newMemberEmail, setNewMemberEmail] = useState('');
-  const [selectedTeamId, setSelectedTeamId] = useState('');
-  const [adding, setAdding] = useState(false);
 
   const loadData = async () => {
     if (!currentUser) return;
     setLoading(true);
     try {
       const token = await getToken();
-      
-      // Fetch users
-      const usersRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://syncpoint-backend.onrender.com'}/members`, {
-        headers: { 'x-user-id': currentUser.id, 'Authorization': `Bearer ${token}` }
-      });
-      
-      // Fetch teams
-      const teamsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://syncpoint-backend.onrender.com'}/teams`, {
-        headers: { 'x-user-id': currentUser.id, 'Authorization': `Bearer ${token}` }
-      });
-
+      const headers = { 'x-user-id': currentUser.id, Authorization: `Bearer ${token}` };
+      const [usersRes, teamsRes] = await Promise.all([
+        fetch(`${API}/members`, { headers }),
+        fetch(`${API}/teams`, { headers }),
+      ]);
       if (usersRes.ok && teamsRes.ok) {
         setUsers(await usersRes.json());
-        const teamData = await teamsRes.json();
-        setTeams(teamData);
-        if (teamData.length > 0) setSelectedTeamId(teamData[0].id);
+        setTeams(await teamsRes.json());
       }
     } catch (err) {
       console.error('Failed to load management data:', err);
+      toast.error('Failed to load user management data');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { loadData(); }, [currentUser, getToken]);
+  useEffect(() => {
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser, getToken]);
 
-  const handleAddMember = async (e: React.FormEvent) => {
+  // Only a root user may grant/revoke the ADMIN role.
+  const currentIsRoot = users.find((u) => u.id === currentUser?.id)?.isRoot ?? false;
+
+  const handleRemoveMember = async (teamId: string, userId: string) => {
+    const res = await removeMember(teamId, userId);
+    if (res?.error) toast.error(res.error);
+    else {
+      toast.success('User removed from team');
+      loadData();
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    const res = await deleteUserSystem(userId);
+    if (res?.error) toast.error(res.error);
+    else {
+      toast.success('User deleted from system');
+      loadData();
+    }
+  };
+
+  const filteredUsers = users.filter(
+    (u) =>
+      u.name.toLowerCase().includes(search.toLowerCase()) ||
+      u.email.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  const searchBox = (
+    <InputGroup className="w-full md:w-72">
+      <InputGroupAddon>
+        <Search />
+      </InputGroupAddon>
+      <InputGroupInput
+        placeholder="Search users…"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        aria-label="Search users"
+      />
+    </InputGroup>
+  );
+
+  const teamRoles = (u: User) =>
+    u.isRoot ? (
+      <Badge variant="outline" className="border-brand-accent/30 bg-brand-accent/10 text-brand-accent">
+        Global superuser — all teams
+      </Badge>
+    ) : (
+      <div className="flex flex-wrap items-center gap-2">
+        {u.teamMembers.length > 0 ? (
+          u.teamMembers.map((tm) => (
+            <div
+              key={`${tm.teamId}-${u.id}`}
+              className="flex items-center gap-1 rounded-full border border-border bg-muted/50 py-0.5 pl-2 pr-1"
+            >
+              <span className="max-w-20 truncate text-xs font-medium text-muted-foreground">
+                {teams.find((t) => t.id === tm.teamId)?.name || 'Unknown'}
+              </span>
+              <MemberRoleBadge
+                memberId={u.id}
+                teamId={tm.teamId}
+                role={tm.role}
+                canEdit
+                canGrantAdmin={currentIsRoot}
+                onChanged={loadData}
+              />
+              <ConfirmAction
+                title="Remove from team?"
+                description={`Remove ${u.name} from ${teams.find((t) => t.id === tm.teamId)?.name || 'this team'}? They lose access to that team's workspace.`}
+                confirmLabel="Remove"
+                onConfirm={() => handleRemoveMember(tm.teamId, u.id)}
+                trigger={
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-5 rounded-full text-muted-foreground hover:text-destructive"
+                    aria-label="Remove from team"
+                  >
+                    <X />
+                  </Button>
+                }
+              />
+            </div>
+          ))
+        ) : (
+          <Badge variant="destructive">No teams</Badge>
+        )}
+        <AddToTeamButton
+          userEmail={u.email}
+          currentTeamIds={u.teamMembers.map((tm) => tm.teamId)}
+          teams={teams}
+          onAdded={loadData}
+        />
+      </div>
+    );
+
+  const deleteUserControl = (u: User) =>
+    currentIsRoot && !u.isRoot ? (
+      <ConfirmAction
+        destructive
+        title="Delete user from the entire system?"
+        description={`This permanently deletes ${u.name} (${u.email}) from every team and the platform. This cannot be undone.`}
+        confirmLabel="Delete permanently"
+        onConfirm={() => handleDeleteUser(u.id)}
+        trigger={
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:text-destructive"
+            aria-label={`Delete ${u.name} from system`}
+            title="Delete user from system"
+          >
+            <Trash2 />
+          </Button>
+        }
+      />
+    ) : null;
+
+  return (
+    <div className="relative h-screen flex-1 overflow-y-auto">
+      {/* Mobile header */}
+      <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b border-border bg-background/80 pl-2 pr-48 backdrop-blur md:hidden">
+        {onMenuClick && (
+          <Button variant="ghost" size="icon" onClick={onMenuClick} aria-label="Open navigation menu">
+            <Menu />
+          </Button>
+        )}
+        <h1 className="truncate text-sm font-bold tracking-tight">User Management</h1>
+        <div className="ml-auto">
+          <AddMemberDialog teams={teams} onAdded={loadData} compact />
+        </div>
+      </header>
+
+      <div className="mx-auto max-w-6xl p-4 md:p-8">
+        {/* Desktop header (pr-48 keeps the toolbar clear of the global account pill) */}
+        <div className="mb-8 hidden flex-col justify-between gap-4 md:flex md:flex-row md:items-center md:pr-48">
+          <div>
+            <h1 className="flex items-center gap-3 font-display text-3xl font-extrabold tracking-tight">
+              <Users className="size-7 text-primary" /> User Management
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Manage team members, roles, and access permissions.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {searchBox}
+            <AddMemberDialog teams={teams} onAdded={loadData} />
+          </div>
+        </div>
+
+        {/* Mobile search */}
+        <div className="mb-4 md:hidden">{searchBox}</div>
+
+        {loading && users.length === 0 ? (
+          <Card className="p-4">
+            <div className="flex flex-col gap-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <Skeleton className="size-10 rounded-full" />
+                  <div className="flex flex-1 flex-col gap-2">
+                    <Skeleton className="h-4 w-40" />
+                    <Skeleton className="h-3 w-56" />
+                  </div>
+                  <Skeleton className="h-6 w-24 rounded-full" />
+                </div>
+              ))}
+            </div>
+          </Card>
+        ) : filteredUsers.length === 0 ? (
+          <Card>
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <Users />
+                </EmptyMedia>
+                <EmptyTitle>No users found</EmptyTitle>
+                <EmptyDescription>
+                  {search ? 'No users match your search.' : 'Add your first team member to get started.'}
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          </Card>
+        ) : (
+          <>
+            {/* Desktop: table */}
+            <Card className="hidden overflow-hidden py-0 md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User</TableHead>
+                    <TableHead>Teams &amp; Roles</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredUsers.map((u) => (
+                    <TableRow key={u.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <InitialsAvatar name={u.name} seed={u.id} isRoot={u.isRoot} className="size-10" />
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="truncate text-sm font-semibold">{u.name}</p>
+                              {u.isRoot && <RootBadge />}
+                            </div>
+                            <p className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
+                              <Mail className="size-3" /> {u.email}
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{teamRoles(u)}</TableCell>
+                      <TableCell className="text-right">{deleteUserControl(u)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+
+            {/* Mobile: card list */}
+            <div className="flex flex-col gap-3 md:hidden">
+              {filteredUsers.map((u) => (
+                <Card key={u.id} className="gap-3 p-4">
+                  <div className="flex items-center gap-3">
+                    <InitialsAvatar name={u.name} seed={u.id} isRoot={u.isRoot} className="size-10" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="truncate text-sm font-semibold">{u.name}</p>
+                        {u.isRoot && <RootBadge />}
+                      </div>
+                      <p className="truncate text-xs text-muted-foreground">{u.email}</p>
+                    </div>
+                    {deleteUserControl(u)}
+                  </div>
+                  {teamRoles(u)}
+                </Card>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+
+function AddMemberDialog({
+  teams,
+  onAdded,
+  compact = false,
+}: {
+  teams: Team[];
+  onAdded: () => void;
+  compact?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState('');
+  const [teamId, setTeamId] = useState('');
+  const [adding, setAdding] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMemberEmail || !selectedTeamId) return;
+    if (!email || !teamId) return;
     setAdding(true);
     try {
-      const res = await addMember(selectedTeamId, newMemberEmail);
+      const res = await addMember(teamId, email);
       if (res?.error) {
-        toastError(res.error);
+        toast.error(res.error);
       } else {
-        success('User added to team successfully');
-        setShowAddModal(false);
-        setNewMemberEmail('');
-        loadData();
+        toast.success('User added to team');
+        setOpen(false);
+        setEmail('');
+        setTeamId('');
+        onAdded();
       }
-    } catch (err) {
-      toastError('Failed to add user');
+    } catch {
+      toast.error('Failed to add user');
     } finally {
       setAdding(false);
     }
   };
 
-  const handleRemoveMember = async (teamId: string, userId: string) => {
-    if (!confirm('Are you sure you want to remove this user from the team?')) return;
-    try {
-      const res = await removeMember(teamId, userId);
-      if (res?.error) {
-        toastError(res.error);
-      } else {
-        success('User removed from team');
-        loadData();
-      }
-    } catch (err) {
-      toastError('Failed to remove user');
-    }
-  };
-
-  const handleDeleteUser = async (userId: string) => {
-    if (!confirm('EXTREME WARNING: This will delete the user from the ENTIRE system. This cannot be undone. Proceed?')) return;
-    try {
-      const res = await deleteUserSystem(userId);
-      if (res?.error) {
-        toastError(res.error);
-      } else {
-        success('User deleted from system');
-        loadData();
-      }
-    } catch (err) {
-      toastError('Failed to delete user');
-    }
-  };
-
-  const filteredUsers = users.filter(u => 
-    u.name.toLowerCase().includes(search.toLowerCase()) || 
-    u.email.toLowerCase().includes(search.toLowerCase())
-  );
-
-  if (loading && users.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="w-8 h-8 text-secondary animate-spin" />
-      </div>
-    );
-  }
-
   return (
-    <div className="flex-1 h-screen overflow-y-auto bg-background relative">
-      {/* Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-background border border-primary/20 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden scale-in-center animate-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-primary/10 flex justify-between items-center bg-primary/5">
-              <h3 className="text-xl font-black tracking-tighter text-text">Add to Team</h3>
-              <button onClick={() => setShowAddModal(false)} className="text-primary/40 hover:text-text transition-colors"><X size={20} /></button>
-            </div>
-            <form onSubmit={handleAddMember} className="p-6 space-y-4">
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-primary/40 mb-1.5">User Email</label>
-                <input 
-                  type="email" 
-                  value={newMemberEmail}
-                  onChange={e => setNewMemberEmail(e.target.value)}
-                  placeholder="name@company.com"
-                  className="w-full bg-primary/5 border border-primary/15 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-secondary/50 transition-all text-text"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-primary/40 mb-1.5">Select Team</label>
-                <div className="relative group/select">
-                  <select 
-                    value={selectedTeamId}
-                    onChange={e => setSelectedTeamId(e.target.value)}
-                    className="w-full bg-primary/5 border border-primary/15 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-secondary/50 transition-all appearance-none cursor-pointer text-text"
-                    required
-                  >
-                    {teams.map(t => (
-                      <option key={t.id} value={t.id} className="bg-background text-text">
-                        {t.name}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-primary/40 group-focus-within/select:text-secondary pointer-events-none transition-colors" />
-                </div>
-              </div>
-              <button 
-                disabled={adding}
-                className="w-full bg-secondary text-background font-black uppercase tracking-widest py-3 rounded-xl hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-              >
-                {adding ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
-                Add Member
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Mobile Header */}
-      <header className="h-14 border-b border-primary/15 flex items-center px-4 md:hidden bg-background shrink-0 sticky top-0 z-10">
-        {onMenuClick && (
-          <button 
-            onClick={onMenuClick}
-            className="p-2 -ml-2 text-primary hover:text-text"
-          >
-            <Menu size={20} />
-          </button>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        {compact ? (
+          <Button size="icon" aria-label="Add member">
+            <Plus />
+          </Button>
+        ) : (
+          <Button>
+            <Plus data-icon="inline-start" /> Add Member
+          </Button>
         )}
-        <h1 className="ml-2 text-sm font-black tracking-tighter text-primary truncate">USER MANAGEMENT</h1>
-        <div className="ml-auto">
-          <button 
-            onClick={() => setShowAddModal(true)}
-            className="bg-secondary text-background p-2 rounded-lg"
-          >
-            <Plus size={16} />
-          </button>
-        </div>
-      </header>
-
-      <div className="p-4 md:p-8">
-        <div className="max-w-6xl mx-auto">
-          {/* Desktop Header */}
-          <div className="hidden md:flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-            <div>
-              <h1 className="text-3xl font-black tracking-tighter text-text mb-1 flex items-center gap-3">
-                <Users className="text-secondary" /> User Management
-              </h1>
-              <p className="text-sm text-primary/50 font-medium">Manage team members, roles, and access permissions.</p>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <div className="relative group">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/30 group-focus-within:text-secondary transition-colors" size={18} />
-                <input 
-                  type="text"
-                  placeholder="Search users..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10 pr-4 py-2.5 bg-primary/5 border border-primary/15 rounded-xl text-sm focus:outline-none focus:border-secondary/50 focus:ring-1 focus:ring-secondary/50 transition-all w-full md:w-64"
-                />
-              </div>
-              <button 
-                onClick={() => setShowAddModal(true)}
-                className="bg-secondary text-background px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 hover:brightness-110 transition-all shadow-lg shadow-secondary/20"
-              >
-                <Plus size={18} /> Add Member
-              </button>
-            </div>
-          </div>
-
-          {/* Mobile Search */}
-          <div className="md:hidden mb-4">
-            <div className="relative group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/30 group-focus-within:text-secondary transition-colors" size={16} />
-              <input 
-                type="text"
-                placeholder="Search users..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 pr-4 py-2.5 bg-primary/5 border border-primary/15 rounded-xl text-sm focus:outline-none focus:border-secondary/50 transition-all w-full"
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <form onSubmit={submit}>
+          <DialogHeader>
+            <DialogTitle>Add to team</DialogTitle>
+            <DialogDescription>Invite an existing user to one of your teams.</DialogDescription>
+          </DialogHeader>
+          <FieldGroup className="py-4">
+            <Field>
+              <FieldLabel htmlFor="member-email">User email</FieldLabel>
+              <Input
+                id="member-email"
+                type="email"
+                autoComplete="email"
+                placeholder="name@company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
               />
-            </div>
-          </div>
-
-          {/* ======= DESKTOP: Table View ======= */}
-          <div className="hidden md:block bg-primary/5 border border-primary/10 rounded-2xl overflow-hidden backdrop-blur-sm shadow-2xl">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-primary/10 bg-primary/5">
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-primary/40">User</th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-primary/40">Teams & Roles</th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-primary/40 text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-primary/5">
-                  {filteredUsers.map((u) => (
-                    <tr key={u.id} className="hover:bg-primary/5 transition-colors group">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center overflow-hidden shrink-0 group-hover:border-secondary/40 transition-colors">
-                            {u.avatar ? (
-                              <img src={u.avatar} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                              <UserIcon className="text-secondary/50" size={20} />
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-bold text-text truncate group-hover:text-secondary transition-colors">{u.name}</p>
-                            <p className="text-xs text-primary/40 flex items-center gap-1.5 truncate">
-                              <Mail size={12} className="opacity-50" /> {u.email}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-wrap gap-2">
-                          {u.teamMembers.length > 0 ? (
-                            u.teamMembers.map((tm) => (
-                              <div key={`${tm.teamId}-${u.id}`} className="flex items-center gap-1 bg-primary/5 border border-primary/10 rounded-full pl-2 pr-1 py-0.5">
-                                  <span className="text-[10px] font-bold text-primary/40 truncate max-w-[80px]">
-                                    {teams.find(t => t.id === tm.teamId)?.name || 'Unknown'}
-                                  </span>
-                                  <MemberRoleBadge 
-                                    memberId={u.id}
-                                    teamId={tm.teamId}
-                                    role={tm.role}
-                                    canEdit={true}
-                                  />
-                                  <button 
-                                    onClick={() => handleRemoveMember(tm.teamId, u.id)}
-                                    className="p-1 text-primary/20 hover:text-accent transition-colors rounded-full"
-                                    title="Remove from team"
-                                  >
-                                    <X size={10} strokeWidth={3} />
-                                  </button>
-                              </div>
-                            ))
-                          ) : (
-                            <span className="text-[10px] font-mono text-accent bg-accent/10 px-2 py-0.5 rounded-full">NO TEAMS</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <button 
-                          onClick={() => handleDeleteUser(u.id)}
-                          className="p-2 text-primary/20 hover:text-accent transition-all hover:bg-accent/10 rounded-lg"
-                          title="Delete User from System"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </td>
-                    </tr>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="member-team">Team</FieldLabel>
+              <Select value={teamId} onValueChange={setTeamId} required>
+                <SelectTrigger id="member-team" className="w-full">
+                  <SelectValue placeholder="Select a team" />
+                </SelectTrigger>
+                <SelectContent>
+                  {teams.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name}
+                    </SelectItem>
                   ))}
-                </tbody>
-              </table>
-            </div>
-            
-            {filteredUsers.length === 0 && (
-              <div className="py-20 text-center">
-                <Users size={48} className="mx-auto text-primary/10 mb-4" />
-                <p className="text-primary/40 font-medium">No users found matching your search.</p>
-              </div>
-            )}
-          </div>
+                </SelectContent>
+              </Select>
+            </Field>
+          </FieldGroup>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button type="submit" disabled={adding || !email || !teamId}>
+              {adding ? <Loader2 data-icon="inline-start" className="animate-spin" /> : <Plus data-icon="inline-start" />}
+              Add Member
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
-          {/* ======= MOBILE: Card View ======= */}
-          <div className="md:hidden space-y-3">
-            {filteredUsers.map((u) => (
-              <div key={u.id} className="bg-primary/5 border border-primary/10 rounded-xl p-4 space-y-3">
-                {/* User row */}
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center overflow-hidden shrink-0">
-                    {u.avatar ? (
-                      <img src={u.avatar} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <UserIcon className="text-secondary/50" size={20} />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-text truncate">{u.name}</p>
-                    <p className="text-xs text-primary/40 truncate">{u.email}</p>
-                  </div>
-                  <button 
-                    onClick={() => handleDeleteUser(u.id)}
-                    className="p-2 text-primary/20 hover:text-accent transition-all hover:bg-accent/10 rounded-lg shrink-0"
-                    title="Delete User from System"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-
-                {/* Teams & Roles */}
-                <div className="flex flex-wrap gap-1.5">
-                  {u.teamMembers.length > 0 ? (
-                    u.teamMembers.map((tm) => (
-                      <div key={`${tm.teamId}-${u.id}`} className="flex items-center gap-1 bg-background border border-primary/10 rounded-full pl-2 pr-1 py-0.5">
-                        <span className="text-[10px] font-bold text-primary/40 truncate max-w-[70px]">
-                          {teams.find(t => t.id === tm.teamId)?.name || 'Unknown'}
-                        </span>
-                        <MemberRoleBadge 
-                          memberId={u.id}
-                          teamId={tm.teamId}
-                          role={tm.role}
-                          canEdit={true}
-                        />
-                        <button 
-                          onClick={() => handleRemoveMember(tm.teamId, u.id)}
-                          className="p-1 text-primary/20 hover:text-accent transition-colors rounded-full"
-                          title="Remove from team"
-                        >
-                          <X size={10} strokeWidth={3} />
-                        </button>
-                      </div>
-                    ))
-                  ) : (
-                    <span className="text-[10px] font-mono text-accent bg-accent/10 px-2 py-0.5 rounded-full">NO TEAMS</span>
-                  )}
-                </div>
-              </div>
-            ))}
-
-            {filteredUsers.length === 0 && (
-              <div className="py-16 text-center">
-                <Users size={40} className="mx-auto text-primary/10 mb-4" />
-                <p className="text-primary/40 font-medium text-sm">No users found.</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+function ConfirmAction({
+  trigger,
+  title,
+  description,
+  confirmLabel,
+  onConfirm,
+  destructive = false,
+}: {
+  trigger: ReactNode;
+  title: string;
+  description: string;
+  confirmLabel: string;
+  onConfirm: () => void | Promise<void>;
+  destructive?: boolean;
+}) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={onConfirm}
+            className={destructive ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : undefined}
+          >
+            {confirmLabel}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

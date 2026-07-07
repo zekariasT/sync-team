@@ -51,10 +51,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             key={t.id} 
             className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-right-4 duration-300 min-w-[300px] max-w-md ${
               t.type === 'success' 
-                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' 
+                ? 'bg-presence/10 border-presence/20 text-presence' 
                 : t.type === 'error'
-                  ? 'bg-accent/10 border-accent/20 text-accent'
-                  : 'bg-secondary/10 border-secondary/20 text-secondary'
+                  ? 'bg-destructive/10 border-destructive/20 text-destructive'
+                  : 'bg-brand/10 border-brand/20 text-brand-text'
             }`}
           >
             <div className="shrink-0">

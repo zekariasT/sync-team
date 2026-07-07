@@ -33,10 +33,10 @@ interface Task {
 }
 
 const STATE_COLORS: Record<string, string> = {
-  TODO: 'bg-primary/30',
+  TODO: 'bg-muted',
   IN_PROGRESS: 'bg-blue-500',
   IN_REVIEW: 'bg-yellow-500',
-  DONE: 'bg-emerald-500',
+  DONE: 'bg-presence',
 };
 
 function SortableTask({ task, onClick, isOverlay = false }: { task: Task; onClick?: () => void; isOverlay?: boolean }) {
@@ -59,30 +59,30 @@ function SortableTask({ task, onClick, isOverlay = false }: { task: Task; onClic
       onClick={onClick}
       className={`bg-background border ${
         isOverlay 
-          ? 'border-secondary shadow-2xl rotate-1 scale-105' 
+          ? 'border-brand shadow-2xl rotate-1 scale-105' 
           : isDragging 
-            ? 'border-primary/10' 
-            : 'border-primary/20 hover:border-secondary/40'
+            ? 'border-border' 
+            : 'border-border hover:border-brand/40'
       } p-3 rounded-lg shadow-sm group relative select-none cursor-grab active:cursor-grabbing transition-colors`}
     >
       {/* Status dot */}
       <div className="flex items-start gap-2 mb-2">
-        <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${STATE_COLORS[task.state] || 'bg-primary/30'}`} />
-        <p className="font-semibold text-sm text-text leading-snug">{task.title}</p>
+        <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${STATE_COLORS[task.state] || 'bg-muted'}`} />
+        <p className="font-semibold text-sm text-foreground leading-snug">{task.title}</p>
       </div>
       
       <div className="flex items-center justify-between mt-2">
         {person ? (
           <div className="flex items-center gap-1.5">
-            <div className="w-5 h-5 rounded-full bg-secondary/20 border border-secondary/30 text-[9px] flex items-center justify-center font-bold text-secondary">
+            <div className="w-5 h-5 rounded-full bg-brand/10 border border-brand/30 text-[9px] flex items-center justify-center font-bold text-brand-text">
               {person.name.charAt(0)}
             </div>
-            <span className="text-[10px] text-primary/50 truncate max-w-[90px]">{person.name.split(' ')[0]}</span>
+            <span className="text-[10px] text-muted-foreground truncate max-w-[90px]">{person.name.split(' ')[0]}</span>
           </div>
         ) : (
-          <div className="w-5 h-5 rounded-full border border-dashed border-primary/20 text-[9px] flex items-center justify-center text-primary/20">?</div>
+          <div className="w-5 h-5 rounded-full border border-dashed border-border text-[9px] flex items-center justify-center text-muted-foreground">?</div>
         )}
-        <span className="text-[10px] text-primary/20 font-mono">#{task.id.substring(task.id.length - 4)}</span>
+        <span className="text-[10px] text-muted-foreground font-mono">#{task.id.substring(task.id.length - 4)}</span>
       </div>
     </div>
   );
@@ -94,11 +94,11 @@ function DroppableColumn({ status, tasks, onTaskClick }: { status: string; tasks
   return (
     <div 
       ref={setNodeRef}
-      className={`w-[85vw] md:w-80 flex flex-col bg-primary/5 rounded-xl border-2 shrink-0 p-3 h-full transition-colors ${isOver ? 'border-secondary/50 bg-secondary/5' : 'border-transparent bg-primary/5'}`}
+      className={`w-[85vw] md:w-80 flex flex-col bg-muted rounded-xl border-2 shrink-0 p-3 h-full transition-colors ${isOver ? 'border-brand/50 bg-brand/10' : 'border-transparent bg-muted'}`}
     >
-      <h3 className="font-bold text-sm mb-3 px-1 text-primary/70 flex items-center justify-between">
+      <h3 className="font-bold text-sm mb-3 px-1 text-muted-foreground flex items-center justify-between">
         <span>{status.replace('_', ' ')}</span>
-        <span className="text-xs opacity-50 font-normal bg-primary/10 px-1.5 py-0.5 rounded-full">{tasks.length}</span>
+        <span className="text-xs opacity-50 font-normal bg-muted px-1.5 py-0.5 rounded-full">{tasks.length}</span>
       </h3>
       
       <div className="flex-1 overflow-y-auto no-scrollbar">
@@ -108,7 +108,7 @@ function DroppableColumn({ status, tasks, onTaskClick }: { status: string; tasks
                <SortableTask key={task.id} task={task} onClick={() => onTaskClick(task)} />
              ))}
              {tasks.length === 0 && !isOver && (
-               <div className="flex-1 flex items-center justify-center border border-dashed border-primary/10 rounded-lg p-4 opacity-30 text-[10px] uppercase tracking-widest font-bold">
+               <div className="flex-1 flex items-center justify-center border border-dashed border-border rounded-lg p-4 opacity-30 text-[10px] uppercase tracking-widest font-bold">
                  Empty
                </div>
              )}
@@ -164,10 +164,11 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
 
   const fetchCycles = async () => {
     if (!teamId) return;
-    const userId = user?.id || 'guest-demo-user';
+    const userId = user?.id || '';
+    const token = await getToken();
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/teams/${teamId}/cycles`, {
-        headers: { 'x-user-id': userId }
+        headers: { 'x-user-id': userId, 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) setCycles(await res.json());
     } catch(err) { console.error(err); }
@@ -175,10 +176,11 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
 
   const fetchMembers = async () => {
     if (!teamId) return;
-    const userId = user?.id || 'guest-demo-user';
+    const userId = user?.id || '';
+    const token = await getToken();
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/teams/${teamId}`, {
-        headers: { 'x-user-id': userId }
+        headers: { 'x-user-id': userId, 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
         const team = await res.json();
@@ -189,10 +191,11 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
 
   const fetchTasks = async () => {
     if (!teamId) return;
-    const userId = user?.id || 'guest-demo-user';
+    const userId = user?.id || '';
+    const token = await getToken();
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/teams/${teamId}/tasks`, {
-        headers: { 'x-user-id': userId }
+        headers: { 'x-user-id': userId, 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) setTasks(await res.json());
     } catch(err) { console.error(err); }
@@ -227,13 +230,15 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
 
     if (activeTask.state !== newStatus) {
       setTasks(prev => prev.map(t => t.id === activeId ? { ...t, state: newStatus } : t));
-      const userId = user?.id || 'guest-demo-user';
+      const userId = user?.id || '';
+      const token = await getToken();
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/tasks/${activeId}/state`, {
           method: 'PATCH',
-          headers: { 
+          headers: {
             'Content-Type': 'application/json',
-            'x-user-id': userId
+            'x-user-id': userId,
+            'Authorization': `Bearer ${token}`,
           },
           body: JSON.stringify({ state: newStatus })
         });
@@ -259,20 +264,22 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
       
       const method = editingTask ? 'PATCH' : 'POST';
 
-      const userId = user?.id || 'guest-demo-user';
-      const body = editingTask 
+      const userId = user?.id || '';
+      const token = await getToken();
+      const body = editingTask
         ? JSON.stringify(data)
-        : JSON.stringify({ 
+        : JSON.stringify({
             ...data,
-            reporterId: userId, 
-            state: 'TODO' 
+            reporterId: userId,
+            state: 'TODO'
           });
 
       const res = await fetch(url, {
         method,
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'x-user-id': userId
+          'x-user-id': userId,
+          'Authorization': `Bearer ${token}`,
         },
         body
       });
@@ -318,7 +325,7 @@ export default function BoardView({ teamId, onMenuClick }: { teamId?: string; on
               setEditingTask(null);
               setIsModalOpen(true);
             }}
-            className="bg-secondary text-white px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1 hover:bg-secondary/90 transition-colors shadow-sm"
+            className="bg-primary text-primary-foreground px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1 hover:bg-[var(--primary-hover)] transition-colors shadow-sm"
           >
             <Plus size={16} /> <span className="hidden sm:inline">New Task</span>
           </button>

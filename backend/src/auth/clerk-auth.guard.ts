@@ -12,10 +12,11 @@ export class ClerkAuthGuard implements CanActivate {
     const token = authHeader?.split(' ')[1];
 
     if (!authHeader || !authHeader.startsWith('Bearer ') || !token || token === 'null' || token === 'undefined') {
-       const requesterId = request.headers['x-user-id'];
-       // For development AND public demos, allow guest-demo-user
-       if (requesterId && (process.env.NODE_ENV !== 'production' || requesterId === 'guest-demo-user')) {
-         request['user'] = { clerkId: requesterId };
+       if (process.env.DEMO_MODE === 'true') {
+         // Public portfolio demo: tokenless visitors act as the seeded guest
+         // MEMBER. Identity is hardcoded — x-user-id is never trusted (unlike
+         // the old ALLOW_INSECURE_DEV_AUTH bypass, which impersonated any id).
+         request['user'] = { clerkId: 'guest-demo-user' };
          return true;
        }
        throw new UnauthorizedException('Missing Authorization Header');

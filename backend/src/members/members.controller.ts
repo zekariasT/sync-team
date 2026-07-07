@@ -18,8 +18,10 @@ export class MembersController {
     }
 
     @Post('sync')
-    async syncUser(@Body() body: SyncUserDto) {
-        return this.membersService.syncUser(body);
+    async syncUser(@Body() body: SyncUserDto, @UserId() requesterId: string) {
+        // The verified Clerk identity is authoritative — never the body-supplied
+        // id, or any signed-in user could overwrite another user's record.
+        return this.membersService.syncUser({ ...body, id: requesterId });
     }
 
     @Patch(':id')

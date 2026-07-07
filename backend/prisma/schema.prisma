@@ -14,6 +14,7 @@ model User {
   avatar            String?
   status            String          @default("Available")
   timezone          String          @default("UTC")
+  isRoot            Boolean         @default(false)
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
   receivedDMs       DirectMessage[] @relation("ReceivedDMs")
@@ -25,6 +26,8 @@ model User {
   teamMembers       TeamMember[]
   sentVideos        VideoMessage[]  @relation("SentVideos")
   videoReactions    VideoReaction[]
+  videoTags         VideoTag[]      @relation("VideoTags")
+  notifications     Notification[]  @relation("Notifications")
 }
 
 model Team {
@@ -104,15 +107,43 @@ model VideoMessage {
   title      String?
   videoUrl   String
   duration   Float?
-  transcript String?         @db.Text
+  transcript String?         @db.LongText
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
   sender     User            @relation("SentVideos", fields: [senderId], references: [id], onDelete: Cascade)
   team       Team            @relation(fields: [teamId], references: [id], onDelete: Cascade)
   reactions  VideoReaction[]
+  tags       VideoTag[]
 
   @@index([senderId], map: "VideoMessage_senderId_fkey")
   @@index([teamId], map: "VideoMessage_teamId_fkey")
+}
+
+model VideoTag {
+  id        String       @id @default(cuid())
+  videoId   String
+  userId    String
+  createdAt DateTime     @default(now())
+  user      User         @relation("VideoTags", fields: [userId], references: [id], onDelete: Cascade)
+  video     VideoMessage @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([videoId, userId])
+  @@index([userId], map: "VideoTag_userId_fkey")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  actorId   String
+  type      String
+  videoId   String?
+  teamId    String?
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation("Notifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
 }
 
 model VideoReaction {

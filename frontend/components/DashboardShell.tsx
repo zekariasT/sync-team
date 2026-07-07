@@ -9,14 +9,22 @@ import CycleView from '@/components/CycleView';
 import RoadmapView from '@/components/RoadmapView';
 import KnowledgeBaseView from '@/components/KnowledgeBaseView';
 import CommandPalette from '@/components/CommandPalette';
-import { Hash, Menu, X, Info, ArrowRight, ShieldCheck, Zap, Bot, Shield } from 'lucide-react';
+import NotificationsBell from '@/components/NotificationsBell';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { Hash, Menu, X, Info } from 'lucide-react';
 
 interface DashboardShellProps {
   pulseContent: React.ReactNode;
 }
 
-import { useUser, useAuth } from '@clerk/nextjs';
+import { useUser, useAuth, Show } from '@clerk/nextjs';
 import UserManagementView from '@/components/UserManagementView';
+import DrawioViewer from '@/components/DrawioViewer';
+import { InitialsAvatar } from '@/components/InitialsAvatar';
+import { UserMenu } from '@/components/UserMenu';
+import { useTeamRole } from '@/hooks/useTeamRole';
+
+const isDemo = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 
 export default function DashboardShell({ pulseContent }: DashboardShellProps) {
   const { user } = useUser();
@@ -29,6 +37,16 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isOverviewOpen, setIsOverviewOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const { isAdmin, loading: roleLoading } = useTeamRole(teamId);
+
+  // The active view is restored from localStorage, so a non-admin (e.g. the
+  // public-demo guest) could hand-set 'admin' and land on the User Management
+  // screen. Its mutations all 403 server-side, but don't render it at all.
+  useEffect(() => {
+    if (activeView === 'admin' && !roleLoading && !isAdmin) {
+      setActiveView('pulse');
+    }
+  }, [activeView, roleLoading, isAdmin]);
 
   // Persistence: Load on mount
   useEffect(() => {
@@ -54,13 +72,42 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
   }, [activeView, activeChannelId, activeChannelName, isInitialized]);
 
   useEffect(() => {
-    const userId = user?.id || 'guest-demo-user';
-    
-    async function loadTeams() {
+    if (!user && !isDemo) return;
+    const u = user;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com";
+
+    async function init() {
+      // Anonymous demo visitors have no session: getToken() resolves to null
+      // and the backend guard maps the tokenless request to guest-demo-user.
       const token = await getToken();
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://syncpoint-backend.onrender.com"}/teams`, {
-        headers: { 
-          'x-user-id': userId,
+
+      if (u) {
+        // Sync (and auto-enroll) this Clerk user BEFORE loading teams, so a fresh
+        // sign-in lands in a fully populated workspace without needing a refresh.
+        // Guests skip this: SyncUserDto requires email/name, and the guest row
+        // is seeded server-side.
+        await fetch(`${apiUrl}/members/sync`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            id: u.id,
+            email: u.primaryEmailAddress?.emailAddress,
+            name: u.fullName || u.username || 'Unknown',
+            avatar: u.imageUrl,
+            // Capture the browser's IANA zone (e.g. "America/New_York") so the
+            // Heartbeat view shows each member's real local clock instead of the
+            // "UTC" column default. Self-heals existing users on next sign-in.
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          }),
+        }).catch(err => console.error('User sync failed:', err));
+      }
+
+      const res = await fetch(`${apiUrl}/teams`, {
+        headers: {
+          'x-user-id': u?.id || 'guest-demo-user',
           'Authorization': `Bearer ${token}`
         }
       });
@@ -71,7 +118,7 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
       }
     }
 
-    loadTeams().catch(err => console.error(err));
+    init().catch(err => console.error(err));
   }, [user, getToken]);
 
   useEffect(() => {
@@ -105,7 +152,7 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
   };
 
   return (
-    <div className="flex h-screen bg-background text-text overflow-hidden">
+    <div className="flex h-screen bg-background text-foreground overflow-hidden">
       <CommandPalette 
         isOpen={isCmdkOpen} 
         onClose={() => setIsCmdkOpen(false)} 
@@ -133,6 +180,8 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
           }}
           activeChannelId={activeChannelId}
           onChannelSelect={handleChannelSelect}
+          activeTeamId={teamId}
+          onTeamChange={setTeamId}
         />
       </div>
 
@@ -142,14 +191,15 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
           {activeView === 'pulse' ? (
             <div className="h-full overflow-y-auto">
               {/* Pulse doesn't have its own internal header yet, so we add one here */}
-              <header className="h-14 border-b border-primary/15 flex items-center px-4 md:hidden bg-background shrink-0 sticky top-0 z-10">
-                <button 
+              <header className="h-14 border-b border-border flex items-center px-4 md:hidden bg-background shrink-0 sticky top-0 z-10">
+                <button
                   onClick={() => setIsSidebarOpen(true)}
-                  className="p-2 -ml-2 text-primary hover:text-text"
+                  aria-label="Open navigation menu"
+                  className="p-2 -ml-2 text-muted-foreground hover:text-foreground"
                 >
                   <Menu size={20} />
                 </button>
-                <h1 className="ml-2 text-sm font-black tracking-tighter text-primary truncate">SYNCPOINT_OS</h1>
+                <h1 className="ml-2 text-sm font-black tracking-tighter text-muted-foreground truncate">SYNCPOINT_OS</h1>
               </header>
               {pulseContent}
             </div>
@@ -164,29 +214,28 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
           ) : activeView === 'kb' ? (
             <KnowledgeBaseView onMenuClick={() => setIsSidebarOpen(true)} teamId={teamId} />
           ) : activeView === 'admin' ? (
-            <div className="flex-1 flex flex-col items-center justify-center h-full bg-background text-primary/40 p-6">
-               <Shield size={48} className="mb-4 opacity-20" />
-               <p className="text-sm font-mono uppercase tracking-widest">ACCESS_RESTRICTED_FOR_DEMO</p>
-            </div>
+            // Blank while the role loads; the effect above bounces non-admins.
+            isAdmin ? <UserManagementView onMenuClick={() => setIsSidebarOpen(true)} /> : null
           ) : activeView === 'chat' && activeChannelId ? (
             <ChatArea onMenuClick={() => setIsSidebarOpen(true)} channelId={activeChannelId} channelName={activeChannelName || undefined} />
           ) : activeView === 'chat' ? (
             <div className="flex-1 flex flex-col items-center justify-center h-full bg-background p-6">
-              <header className="absolute top-0 left-0 right-0 h-14 border-b border-primary/15 flex items-center px-4 md:hidden bg-background shrink-0">
-                <button 
+              <header className="absolute top-0 left-0 right-0 h-14 border-b border-border flex items-center px-4 md:hidden bg-background shrink-0">
+                <button
                   onClick={() => setIsSidebarOpen(true)}
-                  className="p-2 -ml-2 text-primary hover:text-text"
+                  aria-label="Open navigation menu"
+                  className="p-2 -ml-2 text-muted-foreground hover:text-foreground"
                 >
                   <Menu size={20} />
                 </button>
-                <h1 className="ml-2 text-sm font-black tracking-tighter text-primary">SYNCPOINT_OS</h1>
+                <h1 className="ml-2 text-sm font-black tracking-tighter text-muted-foreground">SYNCPOINT_OS</h1>
               </header>
               <div className="text-center">
-                <div className="w-20 h-20 rounded-2xl bg-primary/5 border border-primary/15 flex items-center justify-center mx-auto mb-5">
-                  <Hash size={32} className="text-primary/30" />
+                <div className="w-20 h-20 rounded-2xl bg-muted border border-border flex items-center justify-center mx-auto mb-5">
+                  <Hash size={32} className="text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-bold text-text mb-2 text-balance">Select a Channel</h3>
-                <p className="text-sm text-primary/50 max-w-xs mx-auto text-balance">
+                <h3 className="text-lg font-bold text-foreground mb-2 text-balance">Select a Channel</h3>
+                <p className="text-sm text-muted-foreground max-w-xs mx-auto text-balance">
                   Pick a channel from the sidebar to start chatting with your team.
                 </p>
               </div>
@@ -195,80 +244,66 @@ export default function DashboardShell({ pulseContent }: DashboardShellProps) {
         </main>
       </div>
 
+      {/* Global sticky controls — visible on every view and while scrolling.
+          Headers reserve pr-48 safe zone so this never overlaps action buttons. */}
+      <div className="fixed right-3 z-50 flex items-center gap-2.5 rounded-full border border-border bg-background/70 px-3 py-1.5 shadow-lg shadow-black/5 backdrop-blur-md">
+        <ThemeToggle />
+        <Show when="signed-in">
+          <span className="h-4 w-px bg-muted" />
+          <NotificationsBell
+            onOpenVideo={(tid) => {
+              if (tid) setTeamId(tid);
+              setActiveView('videos');
+            }}
+          />
+        </Show>
+        <span className="h-4 w-px bg-muted" />
+        <Show when="signed-in">
+          <UserMenu align="end">
+            <button
+              aria-label="Account menu"
+              title="Account"
+              className="cursor-pointer rounded-lg transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            >
+              <InitialsAvatar
+                name={user?.fullName || user?.username}
+                seed={user?.id}
+                tint="primary"
+                className="size-7 text-xs"
+              />
+            </button>
+          </UserMenu>
+        </Show>
+      </div>
+
       {/* Floating Technical Overview Button */}
-      <button 
+      <button
         onClick={() => setIsOverviewOpen(true)}
-        className="fixed bottom-6 right-6 bg-primary/10 hover:bg-primary/20 backdrop-blur-md border border-primary/20 text-primary p-3 rounded-full shadow-2xl transition-all z-40 group flex items-center gap-2"
+        className="fixed bottom-28 right-6 bg-muted hover:bg-muted backdrop-blur-md border border-border text-muted-foreground p-3 rounded-full shadow-2xl transition-all z-40 group flex items-center gap-2"
         title="Technical Overview"
       >
-        <Info size={20} className="group-hover:text-secondary transition-colors" />
+        <Info size={20} className="group-hover:text-brand-text transition-colors" />
         <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 ease-in-out text-sm font-bold opacity-0 group-hover:opacity-100 pr-1">Architecture</span>
       </button>
 
       {/* Technical Overview Modal */}
       {isOverviewOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-background border border-primary/20 rounded-2xl w-full max-w-3xl max-h-[90vh] shadow-2xl overflow-hidden relative flex flex-col mx-auto">
-            <div className="p-6 border-b border-primary/10 flex justify-between items-center bg-primary/5">
-              <h2 className="text-xl font-black tracking-tighter text-text">TECHNICAL OVERVIEW</h2>
-              <button onClick={() => setIsOverviewOpen(false)} className="text-primary/50 hover:text-text transition-colors">
+          <div className="bg-background border border-border rounded-2xl w-full max-w-5xl max-h-[90vh] shadow-2xl overflow-hidden relative flex flex-col mx-auto">
+            <div className="p-6 border-b border-border flex justify-between items-center bg-muted">
+              <h2 className="text-xl font-black tracking-tighter text-foreground">TECHNICAL OVERVIEW</h2>
+              <button onClick={() => setIsOverviewOpen(false)} aria-label="Close" className="text-muted-foreground hover:text-foreground transition-colors">
                 <X size={24} />
               </button>
             </div>
-            
-            <div className="p-6 md:p-10 bg-linear-to-b from-background to-primary/5 overflow-y-auto flex-1">
-              <div className="text-center mb-10">
-                <p className="text-primary/70 text-sm max-w-xl mx-auto">
-                  SyncPoint OS uses a modern microservices architecture designed for real-time collaboration, security, and AI enrichment.
-                </p>
-              </div>
 
-              {/* Architecture Flow */}
-              <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6 relative">
-                
-                {/* Node 1: Auth */}
-                <div className="flex flex-col items-center gap-3 w-48 text-center p-5 bg-background border border-primary/20 rounded-2xl shadow-xl z-10">
-                  <div className="w-12 h-12 bg-blue-500/10 text-blue-400 rounded-full flex items-center justify-center mb-2 mx-auto ring-1 ring-blue-500/30">
-                    <ShieldCheck size={24} />
-                  </div>
-                  <h3 className="font-bold text-sm">Identity</h3>
-                  <p className="text-[10px] text-primary/50 font-mono">Clerk Auth</p>
-                  <p className="text-xs text-primary/60 mt-1 leading-tight">Secures requests via short-lived JWTs and manages user profiles.</p>
-                </div>
-
-                <ArrowRight className="text-primary/30 hidden md:block" size={24} />
-                <div className="w-px h-6 bg-primary/30 md:hidden" />
-
-                {/* Node 2: Real-time Gateway */}
-                <div className="flex flex-col items-center gap-3 w-48 text-center p-5 bg-background border border-primary/20 rounded-2xl shadow-xl z-10 relative">
-                  <div className="absolute inset-0 bg-secondary/5 rounded-2xl animate-pulse"></div>
-                  <div className="w-12 h-12 bg-secondary/10 text-secondary rounded-full flex items-center justify-center mb-2 mx-auto ring-1 ring-secondary/30 relative z-10">
-                    <Zap size={24} />
-                  </div>
-                  <h3 className="font-bold text-sm relative z-10">Pulse Gateway</h3>
-                  <p className="text-[10px] text-primary/50 font-mono relative z-10">NestJS WebSockets</p>
-                  <p className="text-xs text-primary/60 mt-1 leading-tight relative z-10">Broadcasts instant state changes and presence across teams.</p>
-                </div>
-
-                <ArrowRight className="text-primary/30 hidden md:block" size={24} />
-                <div className="w-px h-6 bg-primary/30 md:hidden" />
-
-                {/* Node 3: AI Engine */}
-                <div className="flex flex-col items-center gap-3 w-48 text-center p-5 bg-background border border-primary/20 rounded-2xl shadow-xl z-10">
-                  <div className="w-12 h-12 bg-purple-500/10 text-purple-400 rounded-full flex items-center justify-center mb-2 mx-auto ring-1 ring-purple-500/30">
-                    <Bot size={24} />
-                  </div>
-                  <h3 className="font-bold text-sm">AI Worker</h3>
-                  <p className="text-[10px] text-primary/50 font-mono">Gemini & Pinecone</p>
-                  <p className="text-xs text-primary/60 mt-1 leading-tight">Vectorizes documents for RAG and generates team summaries.</p>
-                </div>
-
-              </div>
+            <div className="p-6 md:p-8 bg-linear-to-b from-background to-primary/5 overflow-y-auto flex-1">
+              <DrawioViewer />
             </div>
-            <div className="p-4 bg-background border-t border-primary/10 flex flex-col md:flex-row justify-between items-center gap-2 text-[10px] uppercase font-bold tracking-widest text-primary/30 text-center md:text-left">
-              <span>Frontend: Vercel (Next.js)</span>
-              <span>Backend: Render (NestJS)</span>
-              <span>DB: Aiven (MySQL)</span>
+            <div className="p-4 bg-background border-t border-border flex flex-col md:flex-row justify-between items-center gap-2 text-[10px] uppercase font-bold tracking-widest text-muted-foreground text-center md:text-left">
+              <span>Client: Next.js</span>
+              <span>Services: NestJS (Core API + AI Worker)</span>
+              <span>Infra: RabbitMQ · Redis · MariaDB · Pinecone</span>
             </div>
           </div>
         </div>
