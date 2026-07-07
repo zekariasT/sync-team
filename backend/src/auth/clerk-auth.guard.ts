@@ -12,8 +12,13 @@ export class ClerkAuthGuard implements CanActivate {
     const token = authHeader?.split(' ')[1];
 
     if (!authHeader || !authHeader.startsWith('Bearer ') || !token || token === 'null' || token === 'undefined') {
-       // Real auth restored for the Loom demo: a valid Clerk Bearer token is required.
-       // (The guest-demo-user / ALLOW_INSECURE_DEV_AUTH bypass was removed.)
+       if (process.env.DEMO_MODE === 'true') {
+         // Public portfolio demo: tokenless visitors act as the seeded guest
+         // MEMBER. Identity is hardcoded — x-user-id is never trusted (unlike
+         // the old ALLOW_INSECURE_DEV_AUTH bypass, which impersonated any id).
+         request['user'] = { clerkId: 'guest-demo-user' };
+         return true;
+       }
        throw new UnauthorizedException('Missing Authorization Header');
     }
     try {

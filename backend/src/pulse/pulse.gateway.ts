@@ -47,10 +47,13 @@ export class PulseGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
         if (token && typeof token === 'string' && token !== 'null' && token !== 'undefined') {
           const claims = await this.clerkClient.verifyToken(token);
           socket.data.userId = claims.sub;
-        } else {
-          // No token → unprivileged public-demo identity. Room access is still
-          // gated by team membership below, so this cannot reach private teams.
+        } else if (process.env.DEMO_MODE === 'true') {
+          // No token → unprivileged public-demo identity, only when the demo
+          // flag is on (mirrors ClerkAuthGuard). Room access is still gated by
+          // team membership below, so this cannot reach private teams.
           socket.data.userId = GUEST_USER_ID;
+        } else {
+          return next(new Error('Unauthorized'));
         }
         next();
       } catch (err) {
