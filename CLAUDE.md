@@ -45,6 +45,9 @@ Docker, code falls back to `localhost` (see Env vars below).
   `PINECONE_INDEX_NAME`, `CLOUDINARY_*` (video uploads), `ALLOWED_ORIGINS`.
   `RABBITMQ_URL`/`REDIS_URL` are optional locally — they default to
   `amqp://guest:guest@localhost:5672` / `redis://localhost:6379` in code.
+  `DEMO_MODE=true` (public demo only) makes tokenless REST requests and socket
+  handshakes act as `guest-demo-user` — see Auth pattern below; leave unset for
+  real auth (and remember env isn't hot-reloaded — restart after changing it).
 - **`ai-worker/.env`** — needs its own copy (not auto-shared outside Docker):
   `RABBITMQ_URL`, `RABBITMQ_QUEUE` (`kb_indexing_queue`), `REDIS_URL`,
   `GEMINI_API_KEY`, `PINECONE_API_KEY`, `PINECONE_INDEX_NAME` — **must match
@@ -53,7 +56,11 @@ Docker, code falls back to `localhost` (see Env vars below).
 - **`frontend/.env.local`** — `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`,
   `CLERK_SECRET_KEY`, `NEXT_PUBLIC_API_URL` (defaults to the Render-hosted
   backend in code if unset — set this to `http://localhost:3001` for local dev
-  against a local backend).
+  against a local backend). `NEXT_PUBLIC_DEMO_MODE=true` (public demo only)
+  disables `auth.protect()` and redirects the auth pages to `/` — note
+  `NEXT_PUBLIC_*` vars are **inlined at build time**, so flipping it on a host
+  requires a rebuild, not just an env edit; pair it with `DEMO_MODE` on the
+  backend or every anonymous request will 401.
 
 ## Database
 
@@ -89,8 +96,14 @@ never created) on the shadow DB.
 ## Auth pattern (important — recurring bug source)
 
 Every backend endpoint requires a real Clerk Bearer token — `ClerkAuthGuard`
-(`backend/src/auth/clerk-auth.guard.ts`) rejects anything without one,
-**no demo/dev bypass**. It verifies the token and sets `request.user.clerkId`.
+(`backend/src/auth/clerk-auth.guard.ts`) rejects anything without one. It
+verifies the token and sets `request.user.clerkId`. **One env-gated exception**:
+with `DEMO_MODE=true` (the public portfolio demo), a *tokenless* request is
+mapped to `request.user.clerkId = 'guest-demo-user'` — a seeded plain `MEMBER`,
+identity hardcoded server-side (the client-sent `x-user-id` is still never
+trusted, unlike the old `ALLOW_INSECURE_DEV_AUTH` bypass which impersonated any
+id). Requests *with* a token always verify normally, even in demo mode. Unset
+`DEMO_MODE` = no bypass of any kind.
 
 - `@UserId()` decorator (`backend/src/auth/user-id.decorator.ts`) returns
   `request.user.clerkId` — the **verified** identity. Never trust the
@@ -155,15 +168,20 @@ Every backend endpoint requires a real Clerk Bearer token — `ClerkAuthGuard`
     root — the guard keys on the *target's* `isRoot`, not their team role.
   - Deleting a user account (`members.service.delete`) is **root-only**.
   - Capability split (the rest): `LEAD` manages the team's *work* (channels,
-    projects, cycles, tasks, KB doc edit/delete, team AI summary) but not
-    membership; `MEMBER` can read everything, post, upload videos/KB docs, and
-    only move/assign/edit tasks **assigned to them** (task writes are
-    team-scoped in `tasks.service.ts checkTaskPermission`).
+    projects, cycles, tasks, KB doc edit/delete) but not membership; `MEMBER`
+    can read everything, post, upload videos/KB docs, run the team AI summary
+    (`ai.service.ts summarizeTeam` — read-only, so member-allowed like KB RAG
+    queries), and only move/assign/edit tasks **assigned to them** (task writes
+    are team-scoped in `tasks.service.ts checkTaskPermission`).
 - Frontend: `middleware.js` uses `clerkMiddleware` + `auth.protect()` for every
   route except `/sign-in`, `/sign-up`. **Gotcha:** `auth.protect()` answers an
   unauthenticated request to a non-page route (e.g. an `/api/*` handler) with a
   **404, not a 401/403** — so a `curl` with no Clerk session getting 404 on an
   API route doesn't mean the route is missing; it means you're unauthenticated.
+  With `NEXT_PUBLIC_DEMO_MODE=true` the middleware instead protects nothing and
+  redirects `/sign-in`/`/sign-up` to `/` — the public demo is fully anonymous
+  (every visitor is `guest-demo-user`; `DashboardShell` skips `/members/sync`
+  for guests and non-admins are bounced out of the restored `'admin'` view).
 - `POST /members/sync` (called from `DashboardShell`'s init effect) only
   upserts the Clerk user record on sign-in — it does **not** auto-enroll new
   users into demo teams. The target user id comes from the **verified token**
@@ -196,7 +214,9 @@ Every backend endpoint requires a real Clerk Bearer token — `ClerkAuthGuard`
   user** (their team rooms + `presence:observers` + their own sockets),
   mirroring `members.service.ts findAll` visibility — never `server.emit`
   presence globally, that leaks online user IDs across team boundaries. Guest
-  (tokenless) sockets are excluded from presence entirely. Frontend:
+  (tokenless) sockets are only accepted when `DEMO_MODE=true` (otherwise the
+  handshake rejects them, mirroring `ClerkAuthGuard`) and are excluded from
+  presence entirely. Frontend:
   `RealTimeProvider` exposes it via `usePresence()` (`Set<string> | null` —
   `null` means "no snapshot yet", rendered as a neutral state, not "Offline").
 - KB indexing fan-out: `ai-worker` finishes embedding → publishes on Redis

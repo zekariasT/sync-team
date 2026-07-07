@@ -89,6 +89,14 @@ We implemented an atomic synchronization pipeline using `@nestjs/event-emitter`:
    npm run dev
    ```
 
+### Public demo mode (optional)
+
+The hosted portfolio demo runs fully anonymous: set `DEMO_MODE=true` in
+`backend/.env` (tokenless requests act as the seeded `guest-demo-user`, a plain
+MEMBER) and `NEXT_PUBLIC_DEMO_MODE=true` for the frontend **at build time**
+(sign-in/sign-up redirect to the workspace; no Clerk session required). Leave
+both unset for real Clerk authentication.
+
 ---
 
 ## Lessons Learned
