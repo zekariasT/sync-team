@@ -29,6 +29,15 @@ export class KbService {
     return process.env.PINECONE_INDEX_NAME || 'syncpoint';
   }
 
+  // Public-demo exception: the seeded guest (a plain MEMBER) may edit/delete KB
+  // docs so anonymous visitors can exercise the full document lifecycle. Real
+  // members keep read+upload only. Gated on DEMO_MODE (mirrors ClerkAuthGuard —
+  // without the flag no request can authenticate as the guest anyway).
+  private docManageRoles(requesterId: string): string[] {
+    const isDemoGuest = process.env.DEMO_MODE === 'true' && requesterId === 'guest-demo-user';
+    return isDemoGuest ? ['ADMIN', 'LEAD', 'MEMBER'] : ['ADMIN', 'LEAD'];
+  }
+
   private async checkTeamPermission(teamId: string, requesterId: string, allowedRoles: string[]): Promise<{ isAdmin: boolean }> {
     if (!requesterId) throw new ForbiddenException('Unauthorized');
     const member = await this.prisma.teamMember.findUnique({
@@ -110,7 +119,7 @@ export class KbService {
   }
 
   async deleteDocument(teamId: string, documentId: string, requesterId: string) {
-    await this.checkTeamPermission(teamId, requesterId, ['ADMIN', 'LEAD']);
+    await this.checkTeamPermission(teamId, requesterId, this.docManageRoles(requesterId));
     
     const doc = await this.prisma.document.findUnique({ where: { id: documentId } });
     if (!doc || doc.teamId !== teamId) throw new NotFoundException('Document not found');
@@ -123,7 +132,7 @@ export class KbService {
   }
 
   async updateDocument(teamId: string, documentId: string, file: Express.Multer.File, requesterId: string) {
-    await this.checkTeamPermission(teamId, requesterId, ['ADMIN', 'LEAD']);
+    await this.checkTeamPermission(teamId, requesterId, this.docManageRoles(requesterId));
     
     const doc = await this.prisma.document.findUnique({ where: { id: documentId } });
     if (!doc || doc.teamId !== teamId) throw new NotFoundException('Document not found');

@@ -286,7 +286,14 @@ id). Requests *with* a token always verify normally, even in demo mode. Unset
   list documents, run RAG queries, and **upload** (`kb.service.ts`'s
   `getDocuments`/`askKnowledgeBase`/`uploadDocument`); **edit/delete** is
   `ADMIN`/`LEAD` (LEAD manages team content, not membership — see the role
-  rules above). Admins/root also see indexed documents across *all* teams, not
+  rules above). **Demo-guest exception**: with `DEMO_MODE=true`,
+  `guest-demo-user` may also edit/delete (`kb.service.ts docManageRoles` widens
+  the allowed roles for that identity only — other MEMBERs still 403), capped
+  by the existing 5-docs-per-team limit in `uploadDocument`. The frontend
+  mirrors it: `KnowledgeBaseView.tsx` shows the manage affordances when
+  `isDemoGuest` (`NEXT_PUBLIC_DEMO_MODE` + no Clerk user) and swaps the
+  uploader for a "demo limit reached" notice at 5 docs (guest only — an
+  admin's list spans all teams, so its length can't be compared to the cap). Admins/root also see indexed documents across *all* teams, not
   just the currently selected one (`getDocuments` drops the `teamId` filter via
   the `isAdmin` it returns) — by design. Frontend mirrors the split:
   `KnowledgeBaseView.tsx` gates the affordances behind the team role rather

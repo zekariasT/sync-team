@@ -9,11 +9,18 @@ import ViewHeader from './ViewHeader';
 import DocumentUploader from './DocumentUploader';
 import { useTeamRole } from '../hooks/useTeamRole';
 
+const isDemo = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+const DEMO_DOC_LIMIT = 5;
+
 export default function KnowledgeBaseView({ teamId, onMenuClick }: { teamId?: string; onMenuClick?: () => void }) {
   const { user } = useUser();
   const { getToken } = useAuth();
   const { success, error: toastError } = useToast();
   const { isAdmin } = useTeamRole(teamId);
+  // Public demo: the anonymous guest may add/edit/delete docs (backend allows
+  // the guest identity specifically; the 5-doc-per-team upload cap still applies).
+  const isDemoGuest = isDemo && !user;
+  const canManageDocs = isAdmin || isDemoGuest;
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [answer, setAnswer] = useState<string | null>(null);
@@ -134,16 +141,26 @@ export default function KnowledgeBaseView({ teamId, onMenuClick }: { teamId?: st
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
           <div className="flex flex-col gap-4">
             {teamId ? (
-              isAdmin ? (
-                <DocumentUploader
-                  teamId={teamId}
-                  editingDocId={editingDocId}
-                  onCancelEdit={() => setEditingDocId(null)}
-                  onUploadSuccess={() => {
-                    fetchDocuments();
-                    setEditingDocId(null);
-                  }}
-                />
+              canManageDocs ? (
+                // For the demo guest the list is team-scoped, so its length is the
+                // real count against the cap (admins see docs across all teams, so
+                // the same comparison would be wrong for them — backend enforces
+                // the cap either way). Editing replaces a doc, so it stays allowed.
+                isDemoGuest && documents.length >= DEMO_DOC_LIMIT && !editingDocId ? (
+                  <div className="p-4 border border-border bg-muted rounded-xl text-center text-sm text-muted-foreground">
+                      Demo limit reached ({DEMO_DOC_LIMIT} documents max). Delete or update an existing document to make room.
+                  </div>
+                ) : (
+                  <DocumentUploader
+                    teamId={teamId}
+                    editingDocId={editingDocId}
+                    onCancelEdit={() => setEditingDocId(null)}
+                    onUploadSuccess={() => {
+                      fetchDocuments();
+                      setEditingDocId(null);
+                    }}
+                  />
+                )
               ) : (
                 <div className="p-4 border border-border bg-muted rounded-xl text-center text-sm text-muted-foreground">
                     Only team admins can add or manage documents. You can still ask questions below.
@@ -157,7 +174,12 @@ export default function KnowledgeBaseView({ teamId, onMenuClick }: { teamId?: st
 
             <div className="border border-border bg-muted p-6 rounded-xl relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-brand/10 rounded-bl-full -mr-4 -mt-4 opacity-50 group-hover:scale-110 transition-transform"></div>
-                <h3 className="font-bold flex items-center gap-2 mb-2"><FileText size={16} className="text-brand-text" /> Indexed Documents</h3>
+                <h3 className="font-bold flex items-center gap-2 mb-2">
+                  <FileText size={16} className="text-brand-text" /> Indexed Documents
+                  {isDemoGuest && (
+                    <span className="ml-auto text-xs font-semibold text-muted-foreground tabular-nums">{documents.length}/{DEMO_DOC_LIMIT}</span>
+                  )}
+                </h3>
                 <p className="text-sm text-muted-foreground mb-3">All files uploaded here are securely vectorized and stored in a Pinecone vector database. They are exactly 1:1 mapped to your uploaded documents.</p>
                 
                 {isLoadingDocs ? (
@@ -170,7 +192,7 @@ export default function KnowledgeBaseView({ teamId, onMenuClick }: { teamId?: st
                           <span className="text-sm font-bold truncate text-foreground">{doc.title}</span>
                           <span className="text-[10px] text-muted-foreground uppercase tracking-widest">{new Date(doc.createdAt).toLocaleDateString()}</span>
                         </div>
-                        {isAdmin && (
+                        {canManageDocs && (
                           <div className="flex gap-1 shrink-0">
                             <button
                               onClick={() => setEditingDocId(doc.id)}
