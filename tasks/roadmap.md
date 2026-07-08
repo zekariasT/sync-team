@@ -57,22 +57,20 @@ or unverified · ☐ planned/missing, inferred from schema or gaps in the code.
   Tasks, Documents — all `cuid()` IDs, cascade deletes wired correctly.
 
 ### ⚠️ Partial / inconsistent / unverified
-- **Chat socket has no auth.** `ChatArea.tsx` opens its Socket.IO connection
-  with `io(url)` — no `auth: { token }` — unlike every other socket consumer
-  in the app (`RealTimeProvider`, `KnowledgeBaseView`, `NotificationsBell` all
-  pass the Clerk token). The gateway's handshake middleware falls back such
-  unauthenticated sockets to `socket.data.userId = 'guest-demo-user'`.
+- ~~**Chat socket has no auth.**~~ ✅ Resolved: `ChatArea.tsx` now passes
+  `auth: { token }` like every other socket consumer, and the gateway's
+  guest fallback for tokenless sockets is gated behind `DEMO_MODE=true`
+  (otherwise the handshake rejects them) — see
+  `done/005-env-gated-demo-mode-merge-to-main-and-aiven-catchup.md`.
 - **`joinChannel` has no membership check** (`PulseGateway.handleJoinChannel`),
   unlike `joinTeam` which calls `canAccessTeam`. Anyone who knows/guesses a
   `channelId` can join its socket room and receive live messages in realtime,
   even though the REST history endpoint (`GET .../messages`) is correctly
   permission-checked. Inconsistent enforcement between the two paths.
-- **`POST /ai/teams/:teamId/summarize` has no permission check at all** —
-  `AiController` doesn't call any team-membership/role check before
-  `AiService.summarizeTeam(teamId)`. Any authenticated user (of any team) can
-  summarize any other team's private channel activity by guessing/enumerating
-  `teamId`s. Worth a `checkTeamPermission`-style guard, matching every other
-  team-scoped endpoint.
+- ~~**`POST /ai/teams/:teamId/summarize` has no permission check at all**~~
+  ✅ Resolved: the controller passes the verified `@UserId()` and
+  `AiService.summarizeTeam` runs `checkTeamPermission` — opened to `MEMBER`
+  (read-only summary of statuses every member already sees) as of task 005.
 - **Demo auto-enroll** (`MembersService.syncUser`): every signed-in Clerk user
   is silently made `ADMIN` of all 3 seeded demo teams. Explicitly flagged in
   the code as a temporary Loom-demo hack, not a real invite-only membership

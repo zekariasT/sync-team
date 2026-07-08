@@ -294,3 +294,34 @@ persisted `cd`, or `cd` back explicitly in the same call.
 the whole thing as **one** argument to `sed`, which then silently no-ops
 instead of erroring. Use an array (`files=(…); … "${files[@]}"`) or `${=VAR}`
 to force splitting when a variable is meant to expand to multiple words.
+
+## 2026-07-08 — A flag that changes who gets in is a three-part deploy: code, env, and the database
+
+Enabling the public-demo flag (`DEMO_MODE` → anonymous visitors become
+`guest-demo-user`) was correct in code and correctly env-gated — and still
+would have shipped two production incidents, because authorization lives in
+the *data*, not just the code:
+
+1. The prod demo DB still had `guest-demo-user` as **ADMIN** of every team
+   (leftover from an old seed). Flipping the flag would have handed every
+   anonymous visitor a working admin — the branch's seed fix was irrelevant
+   because prod was never reseeded.
+2. The prod DB schema was **behind the code** (no `User.isRoot` column, two
+   missing tables). Every permission check in the new backend selects
+   `isRoot`, so the freshly deployed backend would have 500'd on every
+   request. Caught only because a *verification query* happened to select the
+   new column — no deploy tooling would have flagged it.
+
+Rule: before enabling a flag (or merging code) that changes authentication/
+authorization posture, audit the **target environment's** database, not the
+seed or your local copy: (a) `prisma migrate diff --from-url <prod-url>
+--to-schema-datamodel prisma/schema.prisma` for schema drift — read-only and
+cheap; (b) SELECT the privileged rows the new posture will trust (role rows,
+`isRoot`, memberships) and fix them *in place* with targeted updates — don't
+assume a reseed happened, and don't reseed prod just to fix rows. Corollary
+for Next.js: `NEXT_PUBLIC_*` flags are inlined at build time, so "set the env
+var" without a rebuild silently deploys nothing.
+
+Concrete instance:
+`tasks/done/005-env-gated-demo-mode-merge-to-main-and-aiven-catchup.md`.
+

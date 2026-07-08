@@ -61,6 +61,14 @@ Docker, code falls back to `localhost` (see Env vars below).
   `NEXT_PUBLIC_*` vars are **inlined at build time**, so flipping it on a host
   requires a rebuild, not just an env edit; pair it with `DEMO_MODE` on the
   backend or every anonymous request will 401.
+- **Hosted demo topology** (`main` is the public demo, live since 2026-07-08):
+  frontend at `app.codewithzach.dev` (built with `NEXT_PUBLIC_DEMO_MODE=true`),
+  backend at `syncpoint-backend.onrender.com` (Render, `DEMO_MODE=true`,
+  free-tier cold starts — a first tokenless probe can time out), DB on Aiven
+  MySQL (see Database section). Enabling demo mode is a **three-part deploy**:
+  both env flags *and* the DB state (guest must be `MEMBER`, schema current) —
+  the flags alone are not sufficient and were not the risky part; the DB was
+  (see `tasks/lessons.md` 2026-07-08).
 
 ## Database
 
@@ -90,7 +98,22 @@ never created) on the shadow DB.
   the existing one.
 - **Legacy non-empty DB** built by the old `db push` (no `_prisma_migrations`
   rows): `migrate deploy` will P3005 — run `npx prisma migrate resolve
-  --applied 20260101000000_baseline` once, then deploy.
+  --applied 20260101000000_baseline` once, then deploy. (If the DB is also
+  *schema-behind* the baseline — the Aiven case below — first apply the
+  additive diff: `prisma migrate diff --from-url <db> --to-schema-datamodel
+  prisma/schema.prisma --script` piped into `prisma db execute`, **then**
+  resolve. Resolving first would record a schema the DB doesn't have.)
+- **The Aiven demo DB** (the hosted demo's database) was exactly that legacy
+  case and was caught up in place on 2026-07-07 (additive diff applied,
+  baseline resolved, guest demoted to MEMBER) — it now takes normal `migrate
+  deploy`. Nothing applies migrations to it automatically: after merging a
+  schema change, run `migrate deploy` against it deliberately or the deployed
+  backend will query columns that don't exist (500s everywhere).
+- **`backend/.env` holds two `DATABASE_URL` lines**: the Aiven one is
+  **commented out**; the active one is localhost. So every prisma/seed command
+  hits the *local* DB by default — to target Aiven, deliberately extract the
+  commented URL and pass it via `--url` / a `DATABASE_URL` override (and
+  sanity-check the host before any write).
 - See `tasks/done/003-video-tags-notifications-live-verified-and-migration-rebaseline.md`.
 
 ## Auth pattern (important — recurring bug source)
