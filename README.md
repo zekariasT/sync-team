@@ -10,11 +10,7 @@ SyncPoint OS is a modern, real-time collaborative workspace designed to bridge t
 
 ## Architecture
 
-```
-browser ──HTTP/WS──► core-api ──RabbitMQ──► ai-worker ──► Pinecone
-                          ▲                       │
-                          └──────Redis pub/sub────┘   (live "indexed" / notification signals)
-```
+![SyncPoint OS — C4 Level 2 container diagram: browser/Web App → Core API (NestJS) with the async RAG indexing pipeline through RabbitMQ, AI Worker, Redis, Pinecone and Gemini](docs/architecture.png)
 
 Three services + Clerk for auth:
 
@@ -22,7 +18,7 @@ Three services + Clerk for auth:
 - **`backend/`** (core-api) — NestJS, Prisma/MySQL, Socket.IO gateway. Synchronous source of truth for everything except vector search.
 - **`ai-worker/`** — NestJS microservice. Consumes document-indexing jobs from RabbitMQ, embeds with Gemini, writes to Pinecone, and publishes "indexed" events to Redis so core-api can relay them to the browser over WebSocket — documents flip to "searchable" live, without a page reload.
 
-The full C4-style diagram lives in [`docs/syncpoint.drawio`](docs/syncpoint.drawio) and is rendered in-app by the Technical Overview modal.
+The diagram above is exported from [`docs/syncpoint.drawio`](docs/syncpoint.drawio) — the editable source of truth, also rendered in-app by the Technical Overview modal.
 
 ---
 
